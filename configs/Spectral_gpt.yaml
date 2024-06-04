@@ -1,0 +1,14 @@
+encoder_model_args:
+  model_name: prithvi
+  model_weights: ./pretrained/
+  num_frames: 12
+  t_patch_size: 3
+  depth: 12
+  embed_dim: 768
+  img_size: 128
+  in_chans: 1
+  num_classes: 15
+  num_heads: 12
+  patch_size: 8
+  mlp_ratio: 4
+
