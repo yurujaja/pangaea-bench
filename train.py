@@ -91,7 +91,8 @@ def load_checkpoint(encoder, ckpt_path, model="prithvi"):
     return msg 
 
 
-def get_encoder_model(cfg, load_pretrained=True):
+
+def get_encoder_model(cfg, load_pretrained=True, frozen_backbone=True):
     # create model
     encoders = {
         'prithvi' : prithvi_vit_base,
@@ -108,6 +109,10 @@ def get_encoder_model(cfg, load_pretrained=True):
     encoder_weights = cfg["encoder_weights"]    
     if encoder_weights is not None and load_pretrained:
         load_checkpoint(encoder_model, encoder_weights, encoder_name)
+
+    if frozen_backbone:
+        for param in encoder_model.parameters():
+            param.requires_grad = False
         
     return encoder_model
 
