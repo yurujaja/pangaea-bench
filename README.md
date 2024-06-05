@@ -37,7 +37,7 @@ wget https://zenodo.org/records/8412455/files/SpectralGPT.pth -O pretrained/Spec
 ```
 
 ### Pipeline -demo
-To quickly get started, utilize the simple [MADOS dataset](https://zenodo.org/records/10664073) to establish the complete pipeline for semantic segmentation:
+To quickly get started, utilize [MADOS dataset](https://zenodo.org/records/10664073) to establish the complete pipeline for semantic segmentation:
 ```
 python train.py configs/Prithvi_100M_config.yaml --path /your/datapath
 ```
