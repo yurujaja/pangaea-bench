@@ -61,5 +61,5 @@ python train.py configs/Prithvi_100M_config.yaml --path /your/datapath
 TODO: here are some aspects that should be improved:
 - config file: we should uniform the task parameters and the encoder parameters (some of them are redundant). Moreover, we should remove all the argparse from the training loop but the one about the paths and the training strategies (e.g. GPUs)
 - add a strategy to combine multitemporal input data: some encoders should already support multitemporal data (e.g. Prithvi), for some others we should add a strategy to combine them (e.g. U-TAE)
-- improve the "adapt_input" function, which is used to - - adapt the input shape of the data to be processed into the models. At the moments, it supports just the mentioned models. Moreover, for selecting the correct number of bands, just Sentinel-2 is supported. When a model needs more bands than the data have we are zero padding the missing channels.
+- improve the `adapt_input` function (in `train.py`), which is used to adapt the input shape of the data to be processed into the models. At the moments, it supports just the mentioned models. Moreover, for selecting the correct number of bands, just Sentinel-2 is supported. When a model needs more bands than the data have we are zero padding the missing channels.
 
