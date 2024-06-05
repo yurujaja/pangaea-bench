@@ -123,7 +123,6 @@ class MADOS(Dataset): # Extend PyTorch's Dataset class
         self.y = []           # Loaded Output masks
             
         self.tiles = glob(os.path.join(path,'*'))
-        # print(self.tiles)
         self.tiles = self.tiles[:2]
 
         for tile in tqdm(self.tiles, desc = 'Load '+mode+' set to memory'):
@@ -205,20 +204,8 @@ class MADOS(Dataset): # Extend PyTorch's Dataset class
         if self.mode=='train':
             image, target = self.join_transform(image, target)
 
-        # NEW
-        a, b, c = image.shape
-        zeros = np.zeros((a,b,1))
-        image = np.concatenate((image, zeros), axis = -1)
-        # print(bands_mean)
-        bands_mean_ = np.append(bands_mean.copy(), 0)
-        # print(bands_mean_)
-        bands_std_ = np.append(bands_std.copy(), 0)
-        # print(image.shape)
-        # if self.resize:
-        #     image = 
-        #     target = 
 
-        image = ((image.astype(np.float32).transpose(2, 0, 1).copy() - bands_mean_.reshape(-1,1,1))/ bands_std_.reshape(-1,1,1)).squeeze()
+        image = ((image.astype(np.float32).transpose(2, 0, 1).copy() - bands_mean.reshape(-1,1,1))/ bands_std.reshape(-1,1,1)).squeeze()
         target = target.squeeze()
 
         # print("dataloader", image.shape)

@@ -47,7 +47,7 @@ class UperNetViT(nn.Module):
         self.encoder = encoder
         self.embed_dim = embed_dim
         self.encoder_type = encoder_type
-        
+        self.img_size = img_size
         self.L = int(img_size/patch_size)**2
 
         self.cls_seg = nn.Sequential(
@@ -102,7 +102,7 @@ class UperNetViT(nn.Module):
         }
 
     def forward(self, x1):
-        # TODO: 
+        # TODO: to support other models
         if self.encoder_type in ["prithvi", "mae", "scale_mae"]:
             x, _, _ = self.encoder.forward_encoder(x1, mask_ratio= 0.0)
         else:
@@ -147,6 +147,10 @@ class UperNetViT(nn.Module):
         x = self.decoder(m)
         x = self.cls_seg(x)
         # x = self.sm(x)
+
+        # Match the size between output logits and input image size
+        if x.shape[2:] != (self.img_size, self.img_size):
+            x = nn.functional.interpolate(x, size=(self.img_size, self.img_size), mode="bilinear", align_corners=False)
 
         # return {'out': x}
         return x

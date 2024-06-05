@@ -10,6 +10,9 @@ Description: train.py includes the training process for the
 import sys
 import os
 import os.path as osp
+import pdb
+
+os.environ['CUDA_VISIBLE_DEVICES'] ="3"
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'datasets')))
 try:
     from datasets.mados import *
@@ -38,6 +41,8 @@ from torch.nn import functional as F
 from torchvision.transforms import functional as T
 from timm.utils import ModelEma
 
+from calflops import calculate_flops
+
 sys.path.append(up(os.path.abspath(__file__)))
 # print(up(os.path.abspath(__file__)))
 sys.path.append(os.path.join(up(up(os.path.abspath(__file__))), 'tasks'))
@@ -63,8 +68,7 @@ def load_config(cfg_path):
 
 
 def load_checkpoint(encoder, ckpt_path, model="prithvi"):
-    # TODO: cpu
-    checkpoint = torch.load(ckpt_path, map_location=torch.device('cpu'))
+    checkpoint = torch.load(ckpt_path, map_location='cpu')
     logging.info("Load pre-trained checkpoint from: %s" % ckpt_path)
 
     if model == "prithvi":
@@ -172,17 +176,18 @@ def seed_worker(worker_id):
     random.seed(worker_seed)
 
 
+
 def parse_args(input_args=None):
     parser = argparse.ArgumentParser(description='Train a downstreamtask with geospatial foundation models.')
     parser.add_argument('config', help='train config file path')
-    parser.add_argument('--work-dir', default='./work-dir', help='the dir to save logs and models')
+    parser.add_argument('--workdir', default='./work-dir', help='the dir to save logs and models')
 
-    parser.add_argument('--path', help='Path of the images')
+    parser.add_argument('--path', default='data/MADOS', help='Path of the images')
   
     parser.add_argument('--mode', default='train', help='select between train or test ')
     parser.add_argument('--epochs', default=80, type=int, help='Number of epochs to run')
     parser.add_argument('--batch', default=2, type=int, help='Batch size')
-    parser.add_argument('--resume_from_epoch', default=0, type=int, help='load model from previous epoch')
+    parser.add_argument('--resume_from', type=int, help='load model from previous epoch')
     
     parser.add_argument('--input_channels', default=11, type=int, help='Number of input bands')
     parser.add_argument('--output_channels', default=15, type=int, help='Number of output classes')
@@ -222,6 +227,7 @@ def parse_args(input_args=None):
     args = vars(args)  # convert to ordinary dict
     
     # lr_steps list or single float
+    '''
     lr_steps = ast.literal_eval(args['lr_steps'])
     if type(lr_steps) is list:
         pass
@@ -231,12 +237,50 @@ def parse_args(input_args=None):
         raise
         
     args['lr_steps'] = lr_steps
+    '''
     
 
-    if not os.path.exists(args.work_dir):
-        os.makedirs(args.work_dir, exist_ok=True)
+    if not os.path.exists(args['workdir']):
+        os.makedirs(args['workdir'], exist_ok=True)
 
     return args
+
+def adapt_input(tensor, size, bands = ["a", "b"], type = "image", encoder_type = "spectral_gpt", device=torch.device('cuda')):
+        # shape = tensor.shape
+        sentinel2 = {"B1" : 0, "B2" : 1, "B3" : 2, "B4" : 3, "B5" : 4, "B6" : 5, "B7" : 6, "B8" : 7, "B8a" : 8, "B9" : 9, "B10" : 10, "B11" : 11, "B12" : 12}
+        if type == "target":
+            return T.resize(img = tensor, size = (size, size), interpolation = T.InterpolationMode.NEAREST)
+        elif type == "image":
+            if len(tensor.shape) == 4:
+                Bs, C, H, W = tensor.shape
+                n_tensor = T.resize(img = tensor, size = (size, size), interpolation = T.InterpolationMode.BILINEAR).float()
+                if encoder_type in ("prithvi"):
+                    n_tensor = n_tensor.unsqueeze(dim = 2)
+                    Te = 1
+            elif len(tensor.shape) == 5:
+                Bs, C, Te, H, W = tensor.shape
+                n_tensor = torch.empty((Bs, C, Te, size, size)).to(device).float()
+        
+                for i in range(Te):
+                    n_tensor[:,:,i,:,:] = T.resize(img = tensor[:,:,i,:,:], size = (size, size), interpolation = T.InterpolationMode.BILINEAR)
+                if encoder_type in ("spectral_gpt"):
+                    n_tensor = n_tensor.squeeze()
+
+            if len(bands) < C:
+                indexes = [sentinel2[x] for x in bands]
+                n_tensor = n_tensor.index_select(1, torch.LongTensor(indexes).to(device))
+            if len(bands) > C:
+                # # ze = len(bands) - C
+                if len(n_tensor.shape) == 4:
+                    zero_tensor = torch.zeros((Bs, (len(bands) - C),size,size)).to(device)
+                elif len(n_tensor.shape) == 5:
+                    zero_tensor = torch.zeros((Bs, (len(bands) - C),Te, size,size)).to(device)
+                n_tensor = torch.concat((n_tensor, zero_tensor), dim = 1)
+
+            return n_tensor
+
+
+
 
 
 def main(args):
@@ -247,10 +291,11 @@ def main(args):
 
     # setup logging, make one log on every process with the configuration for debugging.
     timestamp = time.strftime('%Y%m%d_%H%M%S', time.localtime())
-    exp_name = f'{os.path.splitext(osp.basename(args.config))[0]}-{timestamp}'  
-    exp_dir = osp.join(args.work_dir, exp_name)
+    exp_name = f"{os.path.splitext(osp.basename(args['config']))[0]}-{timestamp}"
+    exp_dir = osp.join(args['workdir'], exp_name)
     os.makedirs(exp_dir, exist_ok=True)
     log_file = osp.join(exp_dir, f'{exp_name}.log')
+    os.makedirs(os.path.join(exp_dir, 'checkpoints'), exist_ok=True)
     logging.basicConfig(
         filename=log_file,
         format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
@@ -262,9 +307,9 @@ def main(args):
     logging.info(json.dumps(args, indent = 2))
 
     # Load Config file
-    model_config = load_config(args.config)
+    model_config = load_config(args['config'])
     encoder_name = model_config['encoder_name']
-    logging.info(f"Loaded configuration: {config}")
+    logging.info(f"Loaded configuration: {model_config}")
 
     
     # Tensorboard
@@ -275,7 +320,7 @@ def main(args):
     
     # Construct Data loader
     dataset_train = MADOS(args['path'], splits_path, 'train')
-    dataset_val = MADOS(args['path'], splits_path, 'val')
+    dataset_val = MADOS(args['path'], splits_path, 'train')
     
     train_loader = DataLoader(  dataset_train, 
                                 batch_size = args['batch'], 
@@ -296,33 +341,38 @@ def main(args):
                                 prefetch_factor = args['prefetch_factor'],
                                 persistent_workers= args['persistent_workers'],
                                 worker_init_fn=seed_worker,     
-                                generator=g)         
+                                generator=g)    
+         
     
     # Use gpu or cpu
     if torch.cuda.is_available():
         device = torch.device("cuda")
     else:
         device = torch.device("cpu")
-    # TODO
-    device = torch.device("cpu")
+
     logging.info(f'Device used: {device}')
+
+   
 
     # Get the encoder 
     encoder = get_encoder_model(model_config, load_pretrained=True)
     encoder.to(device)
 
     model = create_task_model(model_config, encoder)
+    model.to(device)
     
-    input1 = torch.rand(2, 6, 1, 224, 224)
-    output = model(input1)#["out"]
-    print((output.shape))
+    # input1 = torch.rand(2, 6, 1, 224, 224)
+    # output = model(input1)#["out"]
+    # print((output.shape))
+
+
 
     # Load model from specific epoch to continue the training or start the evaluation
     if args['resume_from'] is not None:
         model_file = args['resume_from']
         logging.info('Loading model files from folder: %s' % model_file)
 
-        checkpoint = torch.load(model_file, map_location = device)
+        checkpoint = torch.load(model_file, map_location='cpu')
         model.load_state_dict(checkpoint)
 
         del checkpoint  # dereference
@@ -364,21 +414,40 @@ def main(args):
             
             i_board = 0
             for it, (image, target) in enumerate(tqdm(train_loader, desc="training")):
-                
                 it = len(train_loader) * (epoch-1) + it  # global training iteration
-                
-                # TODO
-                image = T.resize(img = image, size = (128, 128), interpolation = T.InterpolationMode.BILINEAR).squeeze().cuda().float()
-                target = T.resize(img = target, size = (128, 128), interpolation = T.InterpolationMode.NEAREST).squeeze().long().cuda()
+                image = image.to(device)
+                target = target.to(device)
 
+                image = adapt_input(tensor=image, 
+                                    size=model_config['encoder_model_args']['img_size'],
+                                    bands=model_config['encoder_train_params']['bands'],
+                                    type='image',
+                                    encoder_type=encoder_name,
+                                    )
+                target = adapt_input(tensor=target, 
+                                    size=model_config['encoder_model_args']['img_size'],
+                                    
+                                    type='target',
+                                    encoder_type=encoder_name,
+                                    )
+                
+                if epoch == start_epoch and it == 0:
+
+                    flops, macs, params = calculate_flops(model=model, 
+                                        input_shape=tuple(image.size()),
+                                        output_as_string=True,
+                                        output_precision=4)
+                    logging.info(f"Model FLOPs:{flops}   MACs:{macs}    Params:{params}")
+ 
+            
                 # print("batch after resize", image.shape)
 
                 optimizer.zero_grad()
 
-                output = model(image)["out"]
+                logits = model(image)
                 # print(output.shape)
-                logits = F.upsample(input=output, 
-                                     size=image.size()[2:4], mode='bilinear')
+                # logits = F.upsample(input=output, 
+                #                   size=image.size()[2:4], mode='bilinear')
                 
                 loss = criterion(logits, target)
 
@@ -400,10 +469,11 @@ def main(args):
             
             logging.info("Training loss was: " + str(sum(training_loss) / training_batches))
             
+            
             ckpt_path = os.path.join(exp_dir, 'checkpoints', f'{epoch}.pth')
+            
             torch.save(model.state_dict(), ckpt_path)
             logging.info(f"Save models to {ckpt_path}")
-            
            
             # Start Evaluation                                         
             if epoch % eval_every == 0 or epoch==1:
@@ -422,13 +492,21 @@ def main(args):
                         image = image.to(device)
                         target = target.to(device)
 
-                        # TODO
-                        image = T.resize(img = image, size = (128, 128), interpolation =  T.InterpolationMode.BILINEAR).cuda().float()
-                        target = T.resize(img = target, size = (128, 128), interpolation =  T.InterpolationMode.NEAREST).long().cuda()
-    
-                        logits = model(image)["out"]
-                        logits = F.upsample(input=logits, size=(
-                        target.shape[-2], target.shape[-1]), mode='bilinear')
+                        image = adapt_input(tensor=image, 
+                                    size=model_config['encoder_model_args']['img_size'],
+                                    bands=model_config['encoder_train_params']['bands'],
+                                    type='image',
+                                    encoder_type=encoder_name,
+                                    )
+                        target = adapt_input(tensor=target, 
+                                    size=model_config['encoder_model_args']['img_size'],                               
+                                    type='target',
+                                    encoder_type=encoder_name,
+                                    )
+ 
+                        logits = model(image)
+                        #logits = F.upsample(input=logits, size=(
+                        #target.shape[-2], target.shape[-1]), mode='bilinear')
                         
                         
                         loss = criterion(logits, target)

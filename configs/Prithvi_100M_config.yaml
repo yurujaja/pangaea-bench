@@ -14,12 +14,12 @@ encoder_model_args:
   tubelet_size: 1
 encoder_train_params:
   bands:
-    - B02
-    - B03
-    - B04
-    - B05
-    - B06
-    - B07
+    - B2
+    - B3
+    - B4
+    - B5
+    - B6
+    - B7
   data_mean:
     - 775.2290211032589
     - 1080.992780391705
@@ -43,3 +43,4 @@ task_model_args:
   patch_size: 16
   img_size: 224
   in_chans: 6
+  encoder_type: prithvi
