@@ -44,22 +44,29 @@ python train.py configs/Prithvi_100M_config.yaml --path /your/datapath
 #### Note:
 - **Configurations**: The current configurations include parameters related to foundation model encoders and downstream task models. Future updates will aim to enhance configuration files to support additional tasks.
 - **Logging**: By default, logs and checkpoints are stored in the `work_dir`.
-- **The Mados dataset** in use is a simple example that only iterates over the first few data items. To do so, we added the following line 126 in `datasets/mados.py`. Also, the validation dataloder is set to be the same as train dataloader (line 323 in `train.py`).
+- **The Mados dataset** in use is a simple example that only iterates over the first few data items. To do so, we added the following line 126 in `datasets/mados.py`. Also, the validation dataloder is set to be the same as the train dataloader (line 323 in `train.py`).
     ```
     self.tiles = self.tiles[:2]
     ```
+- **Design Choices**: to make the comparison fairer we have implemented (so far) the two following solutions: 
+    - For the UperNet, SpectralGPT uses a small linear projector to adjust the spectral dimension. We left this projection also when it's not strictly needed (e.g. Prithvi) to make the comparison uniform
+    - We inserted a FLOPs/MACs computation. In fact, different models can have different sizes and hyperparameters, so comparing the performances without considering the needed computation would be a limit. For example, Prithvi pretrained model has 1/4 of GFLOPs w.r.t. SpectralGPT pretrained model (e.g. SpectralGPT uses a patch size of 8 w.r.t. Prithvi that uses 16). We can also consider adding inference times when we will develop the test.py
     
 ###  How to Contribute
 
 #### New code
 - **Datasets**: Add your dataset code within the `datasets` folder.
 - **Foundation Models**: Integrate new foundation model code under the `models` folder.
-- **Downstream Tasks**: Insert the code for downstream tasks within the `tasks` folder. This may also necessitate modifications to `training.py` to accommodate new tasks.
+- **Downstream Tasks**: Insert the code for downstream tasks (i.e. change detection) within the `tasks` folder. This may also necessitate modifications to `train.py` to accommodate new tasks.
+- **Add the Test**: Create a `test.py`, following a similar structure of `train.py`
 
 #### Existing code
 
 TODO: here are some aspects that should be improved:
 - config file: we should uniform the task parameters and the encoder parameters (some of them are redundant). Moreover, we should remove all the argparse from the training loop but the one about the paths and the training strategies (e.g. GPUs)
 - add a strategy to combine multitemporal input data: some encoders should already support multitemporal data (e.g. Prithvi), for some others we should add a strategy to combine them (e.g. U-TAE)
-- improve the `adapt_input` function (in `train.py`), which is used to adapt the input shape of the data to be processed into the models. At the moments, it supports just the mentioned models. Moreover, for selecting the correct number of bands, just Sentinel-2 is supported. When a model needs more bands than the data have we are zero padding the missing channels.
+- improve the `adapt_input` function (in `train.py`), which is used to adapt the input shape of the data to be processed into the models. 
+    - At the moment, it supports just the mentioned models (and dataset) -> NEW MODELS TO BE ADDED
+    - Moreover, for selecting the correct number of bands, just Sentinel-2 is supported -> TO SHAPE IT ALSO FOR OTHER MODALITIES
+    - When a model needs more bands than the data have we are adding zero channels at the end of the available bands. We should change it to padding the missing channels. -> TO FIX THIS ERROR
 
