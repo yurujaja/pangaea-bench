@@ -1,36 +1,57 @@
-encoder_name: spectral_gpt
-encoder_weights: ./pretrained/SpectralGPT+.pth
-encoder_model_args:
-  num_frames: 12    # number of spectral bands
-  t_patch_size: 3
-  depth: 12
-  embed_dim: 768
-  img_size: 128
-  in_chans: 1      # number of temporal frames
-  num_classes: 15
-  num_heads: 12
-  patch_size: 8
-  mlp_ratio: 4
-encoder_train_params:
-  bands:
-    - B1
-    - B2
-    - B3
-    - B4
-    - B5
-    - B6
-    - B7
-    - B8
-    - B8a
-    - B9
-    - B10
-    - B11
-task_model_name: upernet
-task_model_args:
-  num_frames: 12
-  t_patch_size: 3
-  patch_size: 8
-  img_size: 128
-  in_chans: 1
-  encoder_type: spectral_gpt
+gfm_encoder:
+  encoder_name: spectral_gpt
+  encoder_weights: ./pretrained/SpectralGPT+.pth
+  encoder_model_args:
+    num_frames: 12    # number of spectral bands
+    t_patch_size: 3
+    depth: 12
+    embed_dim: 768
+    img_size: 128
+    in_chans: 1      # number of temporal frames
+    num_classes: 15
+    num_heads: 12
+    patch_size: 8
+    mlp_ratio: 4
+  encoder_train_params:
+    bands:
+      - B1
+      - B2
+      - B3
+      - B4
+      - B5
+      - B6
+      - B7
+      - B8
+      - B8a
+      - B9
+      - B10
+      - B11
+task:
+  task_model_name: upernet
+  task_model_args:
+    num_frames: 12
+    t_patch_size: 3
+    patch_size: 8
+    img_size: 128
+    in_chans: 1
+    encoder_type: spectral_gpt
+  task_train_params:
+    mode: train
+    epochs: 80
+    input_channels: 11
+    output_channels: 15
+    weight_param: 1.03
+    label_smoothing: 0.0
+    clip_grad: null
+    lr: 2.0e-4
+    decay: 0
+    reduce_lr_on_plateau: 0
+    lr_steps: [45,65]
+    eval_every: 1
+  data_loader:
+    batch: 2
+    num_workers: 0
+    pin_memory: False
+    prefetch_factor: 2
+    persistent_workers: False
 
