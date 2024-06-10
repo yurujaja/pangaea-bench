@@ -1,6 +1,6 @@
 gfm_encoder:
   encoder_name: prithvi
-  encoder_weights: ./pretrained/Prithvi_100M.pt
+  encoder_weights: /geomatics/gpuserver-0/vmarsocci/pretrained_models/Prithvi_100M.pt
   encoder_model_args:
     decoder_depth: 8
     decoder_embed_dim: 512

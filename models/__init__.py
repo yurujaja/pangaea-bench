@@ -11,6 +11,8 @@
 ####-----NEW
 from .spectralgpt import VisionTransformer
 from .prithvi import MaskedAutoencoderViT
+from .scalemae import ScaleMAE_baseline
 
 spectral_gpt_vit_base = VisionTransformer
 prithvi_vit_base = MaskedAutoencoderViT
+scale_mae_large = ScaleMAE_baseline

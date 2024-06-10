@@ -26,8 +26,8 @@ class UperNetViT(nn.Module):
             in_chans=3,
             num_classes=10,
             embed_dim=768,
-            depth=12,
-            num_heads=12,
+            # depth=12,
+            # num_heads=12,
             mlp_ratio=4.0,
             no_qkv_bias=False,
             qk_scale=None,
@@ -103,9 +103,9 @@ class UperNetViT(nn.Module):
 
     def forward(self, x1):
         # TODO: to support other models
-        if self.encoder_type in ["prithvi", "mae", "scale_mae"]:
+        if self.encoder_type in ["prithvi", "mae"]:
             x, _, _ = self.encoder.forward_encoder(x1, mask_ratio= 0.0)
-        else:
+        elif self.encoder_type in ["prithvi", "scale_mae", "spectral_gpt"]:
             x = self.encoder(x1)
 
         N, B, C = x.shape
@@ -294,8 +294,8 @@ def upernet_vit_base(encoder, num_classes = 15, in_chans = 1, t_patch_size = 1, 
         encoder = encoder,
         patch_size=patch_size,
         embed_dim=embed_dim,
-        depth=12,
-        num_heads=12,
+        # depth=12,
+        # num_heads=12,
         mlp_ratio=4,
         num_frames=num_frames,
         t_patch_size=t_patch_size,

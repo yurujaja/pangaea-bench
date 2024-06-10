@@ -43,9 +43,7 @@ sys.path.append(os.path.join(up(up(os.path.abspath(__file__))), 'models'))
 
 # from tasks.models_vit_tensor_CD_2 import *
 from tasks import upernet_vit_base
-from models import prithvi_vit_base, spectral_gpt_vit_base
-
-
+from models import prithvi_vit_base, spectral_gpt_vit_base, scale_mae_large
 
 from utils.metrics import Evaluation
 from utils.pos_embed import interpolate_pos_embed
@@ -65,8 +63,13 @@ def load_checkpoint(encoder, ckpt_path, model="prithvi"):
         checkpoint_model = checkpoint
         del checkpoint_model["pos_embed"]
         del checkpoint_model["decoder_pos_embed"]
-    elif model == "spectral_gpt":
+    elif model in ["spectral_gpt"]:
         checkpoint_model = checkpoint["model"]
+    elif model in ["scale_mae"]:
+        checkpoint_model = checkpoint["model"]
+        checkpoint_model = {"model."+k: v for k, v in checkpoint_model.items()}
+
+    # print(checkpoint_model.keys())
 
     state_dict = encoder.state_dict()
 
@@ -97,6 +100,7 @@ def get_encoder_model(cfg, load_pretrained=True, frozen_backbone=True):
     encoders = {
         "prithvi": prithvi_vit_base,
         "spectral_gpt": spectral_gpt_vit_base,
+        "scale_mae": scale_mae_large,
     }
     encoder_name = cfg["encoder_name"]
     if encoder_name not in encoders:
@@ -108,7 +112,8 @@ def get_encoder_model(cfg, load_pretrained=True, frozen_backbone=True):
     # load pretrained weights if there are any
     encoder_weights = cfg["encoder_weights"]
     if encoder_weights is not None and load_pretrained:
-        load_checkpoint(encoder_model, encoder_weights, encoder_name)
+        msg = load_checkpoint(encoder_model, encoder_weights, encoder_name)
+        print(msg)
 
     if frozen_backbone:
         for param in encoder_model.parameters():
@@ -271,6 +276,7 @@ def adapt_input(
         if len(bands) < C:
             indexes = [sentinel2[x] for x in bands]
             n_tensor = n_tensor.index_select(1, torch.LongTensor(indexes).to(device))
+            #in rgb case, we should reorder them TO DO
         if len(bands) > C:
             # # ze = len(bands) - C
             if len(n_tensor.shape) == 4:
