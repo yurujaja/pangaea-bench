@@ -60,6 +60,7 @@ python train.py configs/Prithvi_100M_config.yaml --path /your/datapath
 #### Note:
 - **Configurations**: The current configurations include parameters related to foundation model encoders and downstream task models. Future updates will aim to enhance configuration files to support additional tasks.
 - **Logging**: By default, logs and checkpoints are stored in the `work_dir`.
+- **RemoteClip**: to support RemoteClip you have to add `pool_type: "none"` in the `vision_cfg` part of the correspondent configs that you find in the installed package (i.e. `open_clip/tree/main/src/open_clip/model_configs/ViT-B-32.json` and `open_clip/tree/main/src/open_clip/model_configs/ViT-L-14.json`). This enables the encoder to retrieve all the tokens in output of the transformer encoder (and not just the first one), so that they can be used for the downstream task (semantic segmentation with UperNet)
 - **The Mados dataset** in use is a simple example that only iterates over the first few data items. To do so, we added the following line 126 in `datasets/mados.py`. Also, the validation dataloder is set to be the same as the train dataloader (line 323 in `train.py`).
     ```
     self.tiles = self.tiles[:2]
