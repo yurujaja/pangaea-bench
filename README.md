@@ -3,6 +3,7 @@
 Currently supported foundation models:
 - Prithvi
 - SpectralGPT
+- Scale-MAE
 
 Currently supported tasks:
 - Upernet for semantic segmentation
@@ -34,6 +35,9 @@ wget https://huggingface.co/ibm-nasa-geospatial/Prithvi-100M/resolve/main/Prithv
 wget https://zenodo.org/records/8412455/files/SpectralGPT+.pth -O pretrained/SpectralGPT+.pth
 # or SpectralGTP
 wget https://zenodo.org/records/8412455/files/SpectralGPT.pth -O pretrained/SpectralGPT.pth
+
+# Scale-MAE
+wget https://github.com/bair-climate-initiative/scale-mae/releases/download/base-800/scalemae-vitlarge-800.pth
 ```
 
 ### Pipeline -demo
@@ -57,16 +61,17 @@ python train.py configs/Prithvi_100M_config.yaml --path /your/datapath
 #### New code
 - **Datasets**: Add your dataset code within the `datasets` folder.
 - **Foundation Models**: Integrate new foundation model code under the `models` folder.
-- **Downstream Tasks**: Insert the code for downstream tasks (i.e. change detection) within the `tasks` folder. This may also necessitate modifications to `train.py` to accommodate new tasks.
-- **Add the Test**: Create a `test.py`, following a similar structure of `train.py`
+- **Downstream Tasks**: Insert the code for downstream tasks (i.e. change detection, multi-temporal sem-seg) within the `tasks` folder. This may also necessitate modifications to `train.py` to accommodate new tasks.
+- **Add the Test**: Create a `test.py`, following a similar structure to `train.py`
 
 #### Existing code
 
 TODO: here are some aspects that should be improved:
 - config file: we should uniform the task parameters and the encoder parameters (some of them are redundant). Moreover, we should remove all the argparse from the training loop but the one about the paths and the training strategies (e.g. GPUs)
-- add a strategy to combine multitemporal input data: some encoders should already support multitemporal data (e.g. Prithvi), for some others we should add a strategy to combine them (e.g. U-TAE)
+- add a strategy to combine multitemporal input data: some encoders should already support multitemporal data (e.g. Prithvi), for some others we should add a strategy to combine them (e.g. [L-TAE](https://github.com/VSainteuf/utae-paps/tree/main))
 - improve the `adapt_input` function (in `train.py`), which is used to adapt the input shape of the data to be processed into the models. 
     - At the moment, it supports just the mentioned models (and dataset) -> NEW MODELS TO BE ADDED
     - Moreover, for selecting the correct number of bands, just Sentinel-2 is supported -> TO SHAPE IT ALSO FOR OTHER MODALITIES
     - When a model needs more bands than the data have we are adding zero channels at the end of the available bands. We should change it to padding the missing channels. -> TO FIX THIS ERROR
+    - When just RGB are used, we should reorder them -> TO FIX THIS ERROR
 
