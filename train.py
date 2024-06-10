@@ -43,7 +43,7 @@ sys.path.append(os.path.join(up(up(os.path.abspath(__file__))), 'models'))
 
 # from tasks.models_vit_tensor_CD_2 import *
 from tasks import upernet_vit_base
-from models import prithvi_vit_base, spectral_gpt_vit_base, scale_mae_large
+from models import prithvi_vit_base, spectral_gpt_vit_base, scale_mae_large, croma, remote_clip
 
 from utils.metrics import Evaluation
 from utils.pos_embed import interpolate_pos_embed
@@ -59,10 +59,25 @@ def load_checkpoint(encoder, ckpt_path, model="prithvi"):
     checkpoint = torch.load(ckpt_path, map_location="cpu")
     logging.info("Load pre-trained checkpoint from: %s" % ckpt_path)
 
-    if model == "prithvi":
+    # print(checkpoint.keys())
+
+    if model in ["prithvi"]:
         checkpoint_model = checkpoint
         del checkpoint_model["pos_embed"]
         del checkpoint_model["decoder_pos_embed"]
+    elif model in ["remote_clip"]:
+        checkpoint_model = checkpoint
+        checkpoint_model = {"model."+k: v for k, v in checkpoint_model.items()}
+    elif model in ["croma"]:
+        if encoder.modality == "optical":
+            checkpoint_model = checkpoint["s2_encoder"]
+            checkpoint_model = {"s2_encoder."+k: v for k, v in checkpoint_model.items()}
+        elif encoder.modality == "SAR":
+            checkpoint_model = checkpoint["s1_encoder"]
+            checkpoint_model = {"s1_encoder."+k: v for k, v in checkpoint_model.items()}
+        elif encoder.modality == "both":
+            checkpoint_model = checkpoint["joint_encoder"]
+            checkpoint_model = {"joint_encoder."+k: v for k, v in checkpoint_model.items()}
     elif model in ["spectral_gpt"]:
         checkpoint_model = checkpoint["model"]
     elif model in ["scale_mae"]:
@@ -101,6 +116,8 @@ def get_encoder_model(cfg, load_pretrained=True, frozen_backbone=True):
         "prithvi": prithvi_vit_base,
         "spectral_gpt": spectral_gpt_vit_base,
         "scale_mae": scale_mae_large,
+        "croma": croma,
+        "remote_clip": remote_clip,
     }
     encoder_name = cfg["encoder_name"]
     if encoder_name not in encoders:

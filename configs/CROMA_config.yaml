@@ -1,0 +1,66 @@
+gfm_encoder:
+  encoder_name: croma
+  encoder_weights: /geomatics/gpuserver-0/vmarsocci/pretrained_models/CROMA_large.pt
+  encoder_model_args:
+    # decoder_depth: 8
+    # decoder_embed_dim: 512
+    # decoder_num_heads: 16
+    # depth: 24
+    modality: "optical" #should support also both and radar
+    size: "large" #support also base 
+    embed_dim: 1024
+    img_size: 120
+    in_chans: 12
+    # num_frames: 1  # TODO
+    # num_heads: 16
+    patch_size: 8
+    # tubelet_size: 1
+    # global_pool: True
+  encoder_train_params:
+    bands:
+      - B1
+      - B2
+      - B3
+      - B4
+      - B5
+      - B6
+      - B7
+      - B8
+      - B8a
+      - B9
+      - B10
+      - B11
+    # mask_ratio: 0.75
+    # random_cropping: true
+task:
+  task_model_name: upernet
+  task_model_args:
+    embed_dim: 1024
+    num_frames: 1
+    t_patch_size: 1
+    patch_size: 8
+    img_size: 120
+    in_chans: 12
+    encoder_type: croma
+  task_train_params:
+    mode: train
+    epochs: 80
+    input_channels: 3
+    output_channels: 15
+    weight_param: 1.03
+    label_smoothing: 0.0
+    clip_grad: null
+    lr: 2.0e-4
+    decay: 0
+    reduce_lr_on_plateau: 0
+    lr_steps: [45,65]
+    eval_every: 1
+  data_loader:
+    batch: 2
+    num_workers: 0
+    pin_memory: False
+    prefetch_factor: 2
+    persistent_workers: False
+
+
+

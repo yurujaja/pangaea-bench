@@ -4,6 +4,8 @@ Currently supported foundation models:
 - Prithvi
 - SpectralGPT
 - Scale-MAE
+- RemoteCLIP 
+- CROMA (just multispectral)
 
 Currently supported tasks:
 - Upernet for semantic segmentation
@@ -38,6 +40,16 @@ wget https://zenodo.org/records/8412455/files/SpectralGPT.pth -O pretrained/Spec
 
 # Scale-MAE
 wget https://github.com/bair-climate-initiative/scale-mae/releases/download/base-800/scalemae-vitlarge-800.pth
+
+# RemoteCLIP Base
+wget https://huggingface.co/chendelong/RemoteCLIP/blob/main/RemoteCLIP-ViT-B-32.pt
+# or RemoteCLIP Large
+wget https://huggingface.co/chendelong/RemoteCLIP/blob/main/RemoteCLIP-ViT-L-14.pt
+
+# CROMA Base
+wget https://huggingface.co/antofuller/CROMA/blob/main/CROMA_base.pt
+# or CROMA Large
+wget https://huggingface.co/antofuller/CROMA/blob/main/CROMA_large.pt
 ```
 
 ### Pipeline -demo
@@ -61,14 +73,19 @@ python train.py configs/Prithvi_100M_config.yaml --path /your/datapath
 #### New code
 - **Datasets**: Add your dataset code within the `datasets` folder.
 - **Foundation Models**: Integrate new foundation model code under the `models` folder.
-- **Downstream Tasks**: Insert the code for downstream tasks (i.e. change detection, multi-temporal sem-seg) within the `tasks` folder. This may also necessitate modifications to `train.py` to accommodate new tasks.
-- **Add the Test**: Create a `test.py`, following a similar structure to `train.py`
+- **Downstream Tasks**: Insert the code for downstream tasks (i.e. change detection) within the `tasks` folder. This may also necessitate modifications to `train.py` to accommodate new tasks.
+- **Add the Test**: Create a `test.py`, following a similar structure of `train.py`
 
 #### Existing code
 
 TODO: here are some aspects that should be improved:
-- config file: we should uniform the task parameters and the encoder parameters (some of them are redundant). Moreover, we should remove all the argparse from the training loop but the one about the paths and the training strategies (e.g. GPUs)
-- add a strategy to combine multitemporal input data: some encoders should already support multitemporal data (e.g. Prithvi), for some others we should add a strategy to combine them (e.g. [L-TAE](https://github.com/VSainteuf/utae-paps/tree/main))
+- config file: 
+    - we should uniform the task parameters and the encoder parameters (some of them are redundant). 
+    - we should remove all the argparse from the training loop but the one about the paths and the training strategies (e.g. GPUs)
+    - we should remove the mean and the std parameters from the config and let the normalization in each dataset loading
+    - create the config for `RemoteClip_large` and `CROMA_base` (easy)
+- support SAR and multimodality data for CROMA (should be easy)
+- add a strategy to combine multitemporal input data: some encoders should already support multitemporal data (e.g. Prithvi), for some others we should add a strategy to combine them (e.g. U-TAE)
 - improve the `adapt_input` function (in `train.py`), which is used to adapt the input shape of the data to be processed into the models. 
     - At the moment, it supports just the mentioned models (and dataset) -> NEW MODELS TO BE ADDED
     - Moreover, for selecting the correct number of bands, just Sentinel-2 is supported -> TO SHAPE IT ALSO FOR OTHER MODALITIES

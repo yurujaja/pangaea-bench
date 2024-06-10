@@ -104,22 +104,25 @@ class UperNetViT(nn.Module):
     def forward(self, x1):
         # TODO: to support other models
         if self.encoder_type in ["prithvi", "mae"]:
-            x, _, _ = self.encoder.forward_encoder(x1, mask_ratio= 0.0)
-        elif self.encoder_type in ["scale_mae", "spectral_gpt"]:
-            x = self.encoder(x1)
+            seg1, _, _ = self.encoder.forward_encoder(x1, mask_ratio= 0.0)
+        elif self.encoder_type in ["prithvi", "scale_mae", "spectral_gpt"]:
+            seg1 = self.encoder(x1)
+        elif self.encoder_type in ["croma"]:
+            seg1 = self.encoder(x1)["optical_encodings"]
+        elif self.encoder_type in ["remote_clip"]:
+            seg1 = self.encoder.model.encode_image(x1)
+        
+        # remove the cls token
+        if self.encoder_type in ["remote_clip", "scale_mae", "prithvi"]:
+            seg1 = seg1[:, 1: ,:]
 
-        N, B, C = x.shape
-        L = self.L
-        T = self.t
-        seg1 = x
-
-        if B % L != 0:
-            seg1 = seg1[:,1:,:]
-
-        seg1 = seg1.view([N, T, L, C])
-        # # except:
-            
-        #     seg1 = seg1.view([N, T, L, C])
+        N, B, C = seg1.shape
+        
+        # for single temporal we basically squeeze 
+        if self.t == 1:
+            seg1 = seg1.view([N, self.t, B, C])
+        else:
+            seg1 = seg1.view([N, self.t, self.L, C])
 
 
         seg1 = seg1.permute(0, 2, 3, 1)

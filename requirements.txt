@@ -23,3 +23,5 @@ tensorboard==2.14.0
 einops==0.8.0
 calflops==0.2.9
 transformers==4.41.2
+open_clip_torch==2.24.0
+huggingface_hub==0.23.1
