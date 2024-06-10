@@ -105,7 +105,7 @@ class UperNetViT(nn.Module):
         # TODO: to support other models
         if self.encoder_type in ["prithvi", "mae"]:
             x, _, _ = self.encoder.forward_encoder(x1, mask_ratio= 0.0)
-        elif self.encoder_type in ["prithvi", "scale_mae", "spectral_gpt"]:
+        elif self.encoder_type in ["scale_mae", "spectral_gpt"]:
             x = self.encoder(x1)
 
         N, B, C = x.shape
