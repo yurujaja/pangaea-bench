@@ -62,9 +62,7 @@ class PatchEmbed(nn.Module):
             img_size[0] // patch_size[0],
             img_size[1] // patch_size[1],
         )
-        print(
-            f"img_size {img_size} patch_size {patch_size} frames {frames} t_patch_size {t_patch_size}"
-        )
+
         self.img_size = img_size
         self.patch_size = patch_size
 
@@ -94,6 +92,7 @@ class PatchEmbed(nn.Module):
         x = self.proj(x).flatten(3)
         x = torch.einsum("ncts->ntsc", x)  # [N, T, H*W, C]
         return x
+
 
 
 class Attention(nn.Module):
@@ -261,11 +260,11 @@ class BasicBlock_us(nn.Module):
 class VisionTransformer(nn.Module):
     def __init__(
             self,
-            num_frames,
+            in_chans,
             t_patch_size,
             img_size=224,
             patch_size=16,
-            in_chans=3,
+            num_frames=3,
             num_classes=10,
             embed_dim=768,
             depth=12,
@@ -289,7 +288,7 @@ class VisionTransformer(nn.Module):
         # --------------------------------------------------------------------------
         # MAE encoder specifics
         self.patch_embed = PatchEmbed(
-            img_size, patch_size, in_chans, embed_dim, num_frames, t_patch_size
+            img_size, patch_size, num_frames, embed_dim, in_chans, t_patch_size
         )
         num_patches = self.patch_embed.num_patches
         input_size = self.patch_embed.input_size
@@ -432,11 +431,11 @@ class VisionTransformer(nn.Module):
 
 def vit_base_patch8(num_classes = 15,**kwargs):
     model = VisionTransformer(
-            num_frames=12, 
+            in_chans=12, 
             t_patch_size=3, 
             img_size = 128, 
             patch_size=8,
-            in_chans=1,
+            num_frames=1,
             num_classes=num_classes,
             embed_dim=768,
             depth=12,

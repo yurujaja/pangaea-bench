@@ -23,7 +23,7 @@ class UperNetViT(nn.Module):
             encoder,
             img_size=224,
             patch_size=16,
-            in_chans=3,
+            # t_frames=3,
             num_classes=10,
             embed_dim=768,
             # depth=12,
@@ -121,6 +121,7 @@ class UperNetViT(nn.Module):
         # for single temporal we basically unsqueeze 
         if self.t == 1:
             seg1 = seg1.view([N, self.t, B, C])
+        # 
         else:
             seg1 = seg1.view([N, self.t, self.L, C])
 
@@ -289,11 +290,10 @@ class FPNHEAD(nn.Module):
         return x
 
 
-def upernet_vit_base(encoder, num_classes = 15, in_chans = 1, t_patch_size = 1, num_frames = 1, patch_size = 16, img_size = 224, embed_dim = 768, **kwargs):
+def upernet_vit_base(encoder, num_classes = 15, t_patch_size = 1, num_frames = 1, patch_size = 16, img_size = 224, embed_dim = 768, **kwargs):
     
     model = UperNetViT(
         img_size=img_size,
-        in_chans=in_chans,
         encoder = encoder,
         patch_size=patch_size,
         embed_dim=embed_dim,

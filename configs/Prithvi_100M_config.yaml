@@ -44,7 +44,7 @@ task:
     t_patch_size: 1
     patch_size: 16
     img_size: 224
-    in_chans: 6
+    # in_chans: 6
     encoder_type: prithvi
   task_train_params:
     mode: train

@@ -1,13 +1,13 @@
 gfm_encoder:
   encoder_name: spectral_gpt
-  encoder_weights: ./pretrained/SpectralGPT+.pth
+  encoder_weights: /geomatics/gpuserver-0/vmarsocci/pretrained_models/SpectralGPT.pth
   encoder_model_args:
-    num_frames: 12    # number of spectral bands
+    in_chans: 12    # number of spectral bands
     t_patch_size: 3
     depth: 12
     embed_dim: 768
     img_size: 128
-    in_chans: 1      # number of temporal frames
+    num_frames: 1      # number of temporal frames 
     num_classes: 15
     num_heads: 12
     patch_size: 8
@@ -33,7 +33,7 @@ task:
     t_patch_size: 3
     patch_size: 8
     img_size: 128
-    in_chans: 1
+    # in_chans: 1
     encoder_type: spectral_gpt
   task_train_params:
     mode: train

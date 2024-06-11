@@ -40,7 +40,7 @@ task:
     t_patch_size: 1
     patch_size: 8
     img_size: 120
-    in_chans: 12
+    # in_chans: 12
     encoder_type: croma
   task_train_params:
     mode: train

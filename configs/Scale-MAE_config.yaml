@@ -29,7 +29,7 @@ task:
     t_patch_size: 1
     patch_size: 16
     img_size: 224
-    in_chans: 3
+    # in_chans: 3
     encoder_type: scale_mae
   task_train_params:
     mode: train

@@ -31,7 +31,7 @@ task:
     t_patch_size: 1
     patch_size: 32
     img_size: 224
-    in_chans: 3
+    # in_chans: 3
     encoder_type: remote_clip
   task_train_params:
     mode: train
