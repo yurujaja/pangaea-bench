@@ -105,7 +105,7 @@ class UperNetViT(nn.Module):
         # TODO: to support other models
         if self.encoder_type in ["prithvi", "mae"]:
             seg1, _, _ = self.encoder.forward_encoder(x1, mask_ratio= 0.0)
-        elif self.encoder_type in ["prithvi", "scale_mae", "spectral_gpt"]:
+        elif self.encoder_type in ["scale_mae", "spectral_gpt"]:
             seg1 = self.encoder(x1)
         elif self.encoder_type in ["croma"]:
             seg1 = self.encoder(x1)["optical_encodings"]
@@ -118,7 +118,7 @@ class UperNetViT(nn.Module):
 
         N, B, C = seg1.shape
         
-        # for single temporal we basically squeeze 
+        # for single temporal we basically unsqueeze 
         if self.t == 1:
             seg1 = seg1.view([N, self.t, B, C])
         else:
@@ -153,7 +153,7 @@ class UperNetViT(nn.Module):
 
         # Match the size between output logits and input image size
         if x.shape[2:] != (self.img_size, self.img_size):
-            x = nn.functional.interpolate(x, size=(self.img_size, self.img_size), mode="bilinear", align_corners=False)
+            x = nn.functional.interpolate(x, size=(self.img_size, self.img_size), mode='nearest', align_corners=False)
 
         # return {'out': x}
         return x
