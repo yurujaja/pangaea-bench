@@ -36,7 +36,7 @@ task:
   task_model_name: upernet
   task_model_args:
     embed_dim: 1024
-    num_frames: 1
+    num_frames: 5
     t_patch_size: 1
     patch_size: 8
     img_size: 120

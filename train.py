@@ -457,6 +457,7 @@ def main(args):
                     type="image",
                     encoder_type=encoder_name,
                 )
+
                 target = adapt_input(
                     tensor=target,
                     size=encoder_cfg["encoder_model_args"]["img_size"],

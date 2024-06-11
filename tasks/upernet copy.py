@@ -24,7 +24,6 @@ class UperNetViT(nn.Module):
             img_size=224,
             patch_size=16,
             # t_frames=3,
-            num_bands = None,
             num_classes=10,
             embed_dim=768,
             # depth=12,
@@ -40,7 +39,6 @@ class UperNetViT(nn.Module):
             sep_pos_embed=True,
             cls_embed=False,
             encoder_type="prithvi",
-            # multitemporal = False,
             **kwargs,
     ):
         super().__init__()
@@ -49,7 +47,6 @@ class UperNetViT(nn.Module):
         self.encoder = encoder
         self.embed_dim = embed_dim
         self.encoder_type = encoder_type
-        self.multitemporal = True if (num_frames > 1) else False # and encoder_type != "spectral_gpt") else False
         self.img_size = img_size
         self.L = int(img_size/patch_size)**2
 
@@ -90,19 +87,9 @@ class UperNetViT(nn.Module):
             # 2048, 16, 16
         )
 
-        # print(num_bands)
-        num_bands = t_patch_size if num_bands == None else num_bands
-        # print(num_bands)
-        self.t = num_bands // t_patch_size
+        self.t = num_frames // t_patch_size
         self.fc = nn.Sequential(
             nn.Linear(self.t, 1))
-        
-        if self.multitemporal:
-            self.t_map = nn.Sequential(
-                nn.Linear(num_frames, 1))
-            self.num_frames = num_frames
-        else:
-            self.t_map = nn.Identity()
 
     @torch.jit.ignore
     def no_weight_decay(self):
@@ -113,59 +100,36 @@ class UperNetViT(nn.Module):
             "pos_embed_temporal",
             "pos_embed_class",
         }
-    
-    def encoder_single_image(self, x1):
-        if self.encoder_type in ["prithvi", "mae"]:
-            seg1, _, _ = self.encoder.forward_encoder(x1, mask_ratio= 0.0)
-
-        elif self.encoder_type in ["scale_mae"]:
-            seg1 = self.encoder(x1)
-
-        elif self.encoder_type in ["spectral_gpt"]:
-            seg1 = self.encoder(x1)
-            N, B, C = seg1.shape
-            seg1 = seg1.view([N, self.t, self.L, C])
-            seg1 = seg1.permute(0, 2, 3, 1)
-            seg1 = self.fc(seg1).squeeze()
-
-        elif self.encoder_type in ["croma"]:
-            seg1 = self.encoder(x1)["optical_encodings"]
-
-        elif self.encoder_type in ["remote_clip"]:
-            seg1 = self.encoder.model.encode_image(x1)
-
-        return seg1
-    
-    def encoding(self, x1):
-        if self.multitemporal:
-            if self.encoder_type not in ("prithvi"):
-                enc = []
-                for i in range(x1.shape[1]):
-                    enc.append(self.encoder_single_image(x1[:,i,:,:]))
-                return torch.stack(enc, dim = 1)
-            else:
-                x1 = self.encoder_single_image(x1)
-                N, B, C = x1.shape
-                x1 = x1[:, 1: ,:]
-                return x1.view([N, self.num_frames, self.L, C])
-        else:
-            return self.encoder_single_image(x1)
 
     def forward(self, x1):
-        seg1 = self.encoding(x1)
-
+        # TODO: to support other models
+        if self.encoder_type in ["prithvi", "mae"]:
+            seg1, _, _ = self.encoder.forward_encoder(x1, mask_ratio= 0.0)
+        elif self.encoder_type in ["scale_mae", "spectral_gpt"]:
+            seg1 = self.encoder(x1)
+        elif self.encoder_type in ["croma"]:
+            seg1 = self.encoder(x1)["optical_encodings"]
+        elif self.encoder_type in ["remote_clip"]:
+            seg1 = self.encoder.model.encode_image(x1)
+        
         # remove the cls token
-        if not self.multitemporal and (self.encoder_type in ["remote_clip", "scale_mae", "prithvi"]):  
+        if self.encoder_type in ["remote_clip", "scale_mae", "prithvi"]:
             seg1 = seg1[:, 1: ,:]
-        elif self.multitemporal and (self.encoder_type in ["remote_clip", "scale_mae"]):
-            seg1 = seg1[:, :, 1: ,:]
+
+        N, B, C = seg1.shape
+        
+        # for single temporal we basically unsqueeze 
+        if self.t == 1:
+            seg1 = seg1.view([N, self.t, B, C])
+        # 
+        else:
+            seg1 = seg1.view([N, self.t, self.L, C])
 
 
-        if self.multitemporal:
-            seg1 = seg1.permute(0, 2, 3, 1)
-            seg1 = self.t_map(seg1).squeeze()
+        seg1 = seg1.permute(0, 2, 3, 1)
+        seg1 = self.fc(seg1)
 
-        N, s, _ = seg1.shape
+        _, s, _, _ = seg1.shape
         w = int(math.sqrt(s, ))
         seg1 = seg1.reshape(N, w, w, self.embed_dim).permute(0, 3, 1, 2).contiguous()
 
@@ -190,7 +154,7 @@ class UperNetViT(nn.Module):
 
         # Match the size between output logits and input image size
         if x.shape[2:] != (self.img_size, self.img_size):
-            x = nn.functional.interpolate(x, size=(self.img_size, self.img_size), mode='nearest')
+            x = nn.functional.interpolate(x, size=(self.img_size, self.img_size), mode='nearest', align_corners=False)
 
         # return {'out': x}
         return x
@@ -326,7 +290,7 @@ class FPNHEAD(nn.Module):
         return x
 
 
-def upernet_vit_base(encoder, num_classes = 15, t_patch_size = 1, num_bands = None, num_frames = 1, patch_size = 16, img_size = 224, embed_dim = 768, **kwargs):
+def upernet_vit_base(encoder, num_classes = 15, t_patch_size = 1, num_frames = 1, patch_size = 16, img_size = 224, embed_dim = 768, **kwargs):
     
     model = UperNetViT(
         img_size=img_size,
@@ -335,7 +299,6 @@ def upernet_vit_base(encoder, num_classes = 15, t_patch_size = 1, num_bands = No
         embed_dim=embed_dim,
         # depth=12,
         # num_heads=12,
-        num_bands = num_bands,
         mlp_ratio=4,
         num_frames=num_frames,
         t_patch_size=t_patch_size,

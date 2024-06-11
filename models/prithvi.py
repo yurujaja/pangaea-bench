@@ -314,7 +314,7 @@ class MaskedAutoencoderViT(nn.Module):
         loss = self.forward_loss(imgs, pred, mask)
         return loss, pred, mask
 
-def vit_base_patch16_prithvi(num_classes = 15, **kwargs):
+def vit_base_patch16_prithvi(num_classes = 15, num_frames = 1, **kwargs):
     
     model = MaskedAutoencoderViT(
         decoder_depth = 8, 
@@ -324,7 +324,7 @@ def vit_base_patch16_prithvi(num_classes = 15, **kwargs):
         embed_dim =  768, 
         img_size = 224,
         in_chans= 6,
-        num_frames= 1,
+        num_frames= num_frames,
         num_heads=12,
         patch_size= 16,
         tubelet_size= 1,
@@ -336,10 +336,10 @@ def vit_base_patch16_prithvi(num_classes = 15, **kwargs):
 
 if __name__ == '__main__':
 
-    input1 = torch.rand(2, 6, 1, 224, 224)
+    input1 = torch.rand(2, 6, 5, 224, 224)
 
-    model = vit_base_patch16_prithvi()
+    model = vit_base_patch16_prithvi(num_frames=5)
 
-    output = model(input1)
+    output = model.forward_encoder(input1, mask_ratio=.0)
     print(len(output))
-    print((output.shape))
+    print(output[0].shape)

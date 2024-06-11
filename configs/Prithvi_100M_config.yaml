@@ -9,7 +9,7 @@ gfm_encoder:
     embed_dim: 768
     img_size: 224
     in_chans: 6
-    num_frames: 1  # TODO
+    num_frames: 5  # TODO
     num_heads: 12
     patch_size: 16
     tubelet_size: 1
@@ -40,7 +40,7 @@ gfm_encoder:
 task:
   task_model_name: upernet
   task_model_args:
-    num_frames: 1
+    num_frames: 5
     t_patch_size: 1
     patch_size: 16
     img_size: 224

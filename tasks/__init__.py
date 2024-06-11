@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
 from .upernet import upernet_vit_base
+# from ..models import *
 
 upernet_vit_base = upernet_vit_base
-# if __name__ == '__main__':
 
+# if __name__ == '__main__':
+#     import torch
 #     # import ..models import *
 
 #     encoder = spectral_gpt_vit_base

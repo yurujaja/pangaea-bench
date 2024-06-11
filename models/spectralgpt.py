@@ -81,6 +81,7 @@ class PatchEmbed(nn.Module):
         )
 
     def forward(self, x):
+        # print(x.shape)
 
         B, C, T, H, W = x.shape  #2,1,10,512,512
 
@@ -429,9 +430,9 @@ class VisionTransformer(nn.Module):
             "pos_embed_class",
         }
 
-def vit_base_patch8(num_classes = 15,**kwargs):
+def vit_base_patch8(num_classes = 15, in_chans = 12, **kwargs):
     model = VisionTransformer(
-            in_chans=12, 
+            in_chans=in_chans, 
             t_patch_size=3, 
             img_size = 128, 
             patch_size=8,
