@@ -124,9 +124,9 @@ class UperNetViT(nn.Module):
         elif self.encoder_type in ["spectral_gpt"]:
             seg1 = self.encoder(x1)
             N, B, C = seg1.shape
-            seg1 = seg1.view([N, self.t, self.L, C])
-            seg1 = seg1.permute(0, 2, 3, 1)
-            seg1 = self.fc(seg1).squeeze()
+            seg1 = seg1.view([N, self.t, self.L, C]) #(Bs, spectral_group, channels, feature_dim)
+            seg1 = seg1.permute(0, 2, 3, 1)          #(Bs, channels, feature_dim, spectral_group)
+            seg1 = self.fc(seg1).squeeze(dim=-1)     #(Bs, channels, feature_dim)
 
         elif self.encoder_type in ["croma"]:
             seg1 = self.encoder(x1)["optical_encodings"]
@@ -164,7 +164,9 @@ class UperNetViT(nn.Module):
         if self.multitemporal:
             seg1 = seg1.permute(0, 2, 3, 1)
             seg1 = self.t_map(seg1).squeeze()
-
+        
+        # print(seg1.shape)
+        # print(self.multitemporal)
         N, s, _ = seg1.shape
         w = int(math.sqrt(s, ))
         seg1 = seg1.reshape(N, w, w, self.embed_dim).permute(0, 3, 1, 2).contiguous()
