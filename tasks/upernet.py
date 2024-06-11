@@ -154,7 +154,7 @@ class UperNetViT(nn.Module):
 
         # Match the size between output logits and input image size
         if x.shape[2:] != (self.img_size, self.img_size):
-            x = nn.functional.interpolate(x, size=(self.img_size, self.img_size), mode='nearest', align_corners=False)
+            x = nn.functional.interpolate(x, size=(self.img_size, self.img_size), mode='nearest')
 
         # return {'out': x}
         return x
