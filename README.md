@@ -8,7 +8,7 @@ Currently supported foundation models:
 - CROMA (just multispectral)
 
 Currently supported tasks:
-- Upernet for semantic segmentation
+- Upernet for semantic segmentation (also multitemporal)
 
 ### Setup
 Clone the repository:
@@ -58,7 +58,7 @@ To quickly get started, utilize [MADOS dataset](https://zenodo.org/records/10664
 python train.py configs/Prithvi_100M_config.yaml --path /your/datapath
 ```
 #### Note:
-- **Configurations**: The current configurations include parameters related to foundation model encoders and downstream task models. Future updates will aim to enhance configuration files to support additional tasks.
+- **Configurations**: The current configurations include parameters related to foundation model encoders and downstream task models. Future updates will aim to enhance configuration files to support additional tasks. To support multitemporal, please add the `num_frames` parameter in the config. Consider that in all the configs, it appears in the `task` parameters. For Prithvi it appears also in the `encoder` parameter.
 - **Logging**: By default, logs and checkpoints are stored in the `work_dir`.
 - **RemoteClip**: to support RemoteClip you have to add `pool_type: "none"` in the `vision_cfg` part of the correspondent configs that you find in the installed package (i.e. `open_clip/tree/main/src/open_clip/model_configs/ViT-B-32.json` and `open_clip/tree/main/src/open_clip/model_configs/ViT-L-14.json`). This enables the encoder to retrieve all the tokens in output of the transformer encoder (and not just the first one), so that they can be used for the downstream task (semantic segmentation with UperNet)
 - **The Mados dataset** in use is a simple example that only iterates over the first few data items. To do so, we added the following line 126 in `datasets/mados.py`. Also, the validation dataloder is set to be the same as the train dataloader (line 323 in `train.py`).
@@ -66,7 +66,7 @@ python train.py configs/Prithvi_100M_config.yaml --path /your/datapath
     self.tiles = self.tiles[:2]
     ```
 - **Design Choices**: to make the comparison fairer we have implemented (so far) the two following solutions: 
-    - For the UperNet, SpectralGPT uses a small linear projector to adjust the spectral dimension. We left this projection also when it's not strictly needed (e.g. Prithvi) to make the comparison uniform
+    - So far, the multitemporal mechanism is a simple linear layer (L-TAE is suggested to be implemented)
     - We inserted a FLOPs/MACs computation. In fact, different models can have different sizes and hyperparameters, so comparing the performances without considering the needed computation would be a limit. For example, Prithvi pretrained model has 1/4 of GFLOPs w.r.t. SpectralGPT pretrained model (e.g. SpectralGPT uses a patch size of 8 w.r.t. Prithvi that uses 16). We can also consider adding inference times when we will develop the test.py
     
 ###  How to Contribute
@@ -85,8 +85,9 @@ TODO: here are some aspects that should be improved:
     - we should remove all the argparse from the training loop but the one about the paths and the training strategies (e.g. GPUs)
     - we should remove the mean and the std parameters from the config and let the normalization in each dataset loading
     - create the config for `RemoteClip_large` and `CROMA_base` (easy)
+    - create the config to distinguish multitemporal and unitemporal training (easy)
 - support SAR and multimodality data for CROMA (should be easy)
-- add a strategy to combine multitemporal input data: some encoders should already support multitemporal data (e.g. Prithvi), for some others we should add a strategy to combine them (e.g. U-TAE)
+- implement L-TAE to improve multitemporal (so far there is just a linear layer) 
 - improve the `adapt_input` function (in `train.py`), which is used to adapt the input shape of the data to be processed into the models. 
     - At the moment, it supports just the mentioned models (and dataset) -> NEW MODELS TO BE ADDED
     - Moreover, for selecting the correct number of bands, just Sentinel-2 is supported -> TO SHAPE IT ALSO FOR OTHER MODALITIES
