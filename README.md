@@ -5,6 +5,8 @@ Currently supported foundation models:
 - SpectralGPT
 - Scale-MAE
 - RemoteCLIP 
+- SSL4EO (data2vec, MoCov3, DINO and MAE)
+- DOFA
 - CROMA (just multispectral)
 
 Currently supported tasks:
@@ -50,6 +52,14 @@ wget https://huggingface.co/chendelong/RemoteCLIP/blob/main/RemoteCLIP-ViT-L-14.
 wget https://huggingface.co/antofuller/CROMA/blob/main/CROMA_base.pt
 # or CROMA Large
 wget https://huggingface.co/antofuller/CROMA/blob/main/CROMA_large.pt
+
+# DOFA Base
+wget https://huggingface.co/XShadow/DOFA/blob/main/DOFA_ViT_base_e100.pth
+# or DOFA Large
+wget https://huggingface.co/XShadow/DOFA/blob/main/DOFA_ViT_large_e100.pth
+
+# SSL4EO
+You can find all the links in their official repository: https://github.com/zhu-xlab/SSL4EO-S12/tree/main
 ```
 
 ### Pipeline -demo
@@ -74,12 +84,12 @@ python train.py configs/Prithvi_100M_config.yaml --path /your/datapath
 #### New code
 - **Datasets**: Add your dataset code within the `datasets` folder.
 - **Foundation Models**: Integrate new foundation model code under the `models` folder.
-  - [ ] SSL4EO-S12
+  - [X] SSL4EO-S12
   - [ ] CROMA
   - [X] Scale-MAE
   - [ ] SatlasNet
   - [X] Prithvi
-  - [ ] DOFA
+  - [X] DOFA
   - [X] SpectralGPT
   - [X] RemoteCLIP
   - [ ] (ms)GFM

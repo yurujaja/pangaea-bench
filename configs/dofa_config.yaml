@@ -1,40 +1,32 @@
 gfm_encoder:
-  encoder_name: scale_mae
-  encoder_weights: /geomatics/gpuserver-0/vmarsocci/pretrained_models/scalemae-vitlarge-800.pth
+  encoder_name: dofa
+  encoder_weights: /geomatics/gpuserver-0/vmarsocci/pretrained_models/DOFA_ViT_base_e100.pth
   encoder_model_args:
-    # decoder_depth: 8
-    # decoder_embed_dim: 512
-    # decoder_num_heads: 16
-    # depth: 24
-    embed_dim: 1024
     img_size: 224
-    in_chans: 3
-    # num_frames: 1  # TODO
-    # num_heads: 16
-    patch_size: 16
-    # tubelet_size: 1
-    global_pool: True
+    # in_chans: 3
+    embed_dim: 768
   encoder_train_params:
     bands:
       - B2
       - B3
       - B4
-    mask_ratio: 0.75
+    mask_ratio: 0.
     random_cropping: true
 task:
   task_model_name: upernet
   task_model_args:
-    embed_dim: 1024
-    num_frames: 5
+    embed_dim: 768
+    num_frames: 1
     t_patch_size: 1
     patch_size: 16
     img_size: 224
     # in_chans: 3
-    encoder_type: scale_mae
+    encoder_type: dofa
+    wave_list: [1,1,1]
   task_train_params:
     mode: train
     epochs: 80
-    input_channels: 3
+    input_channels: 13
     output_channels: 15
     weight_param: 1.03
     label_smoothing: 0.0

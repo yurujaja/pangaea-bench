@@ -42,7 +42,7 @@ sys.path.append(os.path.join(up(up(os.path.abspath(__file__))), 'models'))
 
 # from tasks.models_vit_tensor_CD_2 import *
 from tasks import upernet_vit_base
-from models import prithvi_vit_base, spectral_gpt_vit_base, scale_mae_large, croma, remote_clip
+from models import prithvi_vit_base, spectral_gpt_vit_base, scale_mae_large, croma, remote_clip, ssl4eo_dino_small, ssl4eo_moco_small, ssl4eo_data2vec_small, choose_dofa, choose_ssl4eo_mae
 
 from utils.metrics import Evaluation
 from utils.pos_embed import interpolate_pos_embed
@@ -60,13 +60,13 @@ def load_checkpoint(encoder, ckpt_path, model="prithvi"):
 
     # print(checkpoint.keys())
 
-    if model in ["prithvi"]:
+    if model in ["prithvi", "remote_clip", "dofa"]:
         checkpoint_model = checkpoint
-        del checkpoint_model["pos_embed"]
-        del checkpoint_model["decoder_pos_embed"]
-    elif model in ["remote_clip"]:
-        checkpoint_model = checkpoint
-        checkpoint_model = {"model."+k: v for k, v in checkpoint_model.items()}
+        if model == "prithvi":
+            del checkpoint_model["pos_embed"]
+            del checkpoint_model["decoder_pos_embed"]
+        elif model in ["remote_clip"]:
+            checkpoint_model = {"model."+k: v for k, v in checkpoint_model.items()}
     elif model in ["croma"]:
         if encoder.modality == "optical":
             checkpoint_model = checkpoint["s2_encoder"]
@@ -77,11 +77,17 @@ def load_checkpoint(encoder, ckpt_path, model="prithvi"):
         elif encoder.modality == "both":
             checkpoint_model = checkpoint["joint_encoder"]
             checkpoint_model = {"joint_encoder."+k: v for k, v in checkpoint_model.items()}
-    elif model in ["spectral_gpt"]:
+    elif model in ["spectral_gpt", "ssl4eo_data2vec", "ssl4eo_mae"]:
         checkpoint_model = checkpoint["model"]
     elif model in ["scale_mae"]:
         checkpoint_model = checkpoint["model"]
         checkpoint_model = {"model."+k: v for k, v in checkpoint_model.items()}
+    elif model in ["ssl4eo_moco"]:
+        checkpoint_model = checkpoint["state_dict"]
+        checkpoint_model = {k.replace("module.base_encoder.",""): v for k, v in checkpoint_model.items()}
+    elif model in ["ssl4eo_dino"]:
+        checkpoint_model = checkpoint["teacher"]
+        checkpoint_model = {k.replace("backbone.",""): v for k, v in checkpoint_model.items()}
 
     # print(checkpoint_model.keys())
 
@@ -111,12 +117,19 @@ def load_checkpoint(encoder, ckpt_path, model="prithvi"):
 
 def get_encoder_model(cfg, load_pretrained=True, frozen_backbone=True):
     # create model
+    # encoder_size = cfg["encoder_size"] if not None else "base"
+    embed_dim = str(cfg["encoder_model_args"]["embed_dim"])
     encoders = {
         "prithvi": prithvi_vit_base,
         "spectral_gpt": spectral_gpt_vit_base,
         "scale_mae": scale_mae_large,
         "croma": croma,
         "remote_clip": remote_clip,
+        "ssl4eo_mae": choose_ssl4eo_mae(embed_dim),
+        "ssl4eo_dino" : ssl4eo_dino_small,
+        "ssl4eo_moco" : ssl4eo_moco_small,
+        "ssl4eo_data2vec": ssl4eo_data2vec_small,
+        "dofa": choose_dofa(embed_dim),
     }
     encoder_name = cfg["encoder_name"]
     if encoder_name not in encoders:
@@ -389,6 +402,13 @@ def main(args):
 
     model = create_task_model(task_cfg, encoder)
     model.to(device)
+
+    # #TEST
+    # input = torch.randn(2, 3, 224, 224).to(device)
+    # output = model(input)
+    # print(input.shape)
+    # print(output.shape)
+    # sys.exit("Test finito")
 
     # Load model from specific epoch to continue the training or start the evaluation
     if args["resume_from"] is not None:
