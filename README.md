@@ -97,7 +97,7 @@ TODO: here are some aspects that should be improved:
     - create the configs to distinguish multitemporal and unitemporal training (easy)
     - add the multitemporal strategy parameter (e.g. "linear" or "ltae") to the config and pass it to the model (easy)
 - support SAR and multimodality data for CROMA (easy)
-- improve the `adapt_input` function (in `train.py`), which is used to adapt the input shape of the data to be processed into the models. 
+- improve the `adapt_input` function (in `train.py`), which is used to adapt the input shape of the data to be processed into the models **to do it through the config (e.g. pass the list of bands through the config)** 
     - At the moment, it supports just the mentioned models (and dataset) -> NEW MODELS TO BE ADDED
     - Moreover, for selecting the correct number of bands, just Sentinel-2 is supported -> TO SHAPE IT ALSO FOR OTHER MODALITIES
     - When a model needs more bands than the data have we are adding zero channels at the end of the available bands. We should change it to padding the missing channels. -> TO FIX THIS ERROR
