@@ -42,7 +42,7 @@ sys.path.append(os.path.join(up(up(os.path.abspath(__file__))), 'models'))
 
 # from tasks.models_vit_tensor_CD_2 import *
 from tasks import upernet_vit_base
-from models import prithvi_vit_base, spectral_gpt_vit_base, scale_mae_large, croma, remote_clip, ssl4eo_dino_small, ssl4eo_moco_small, ssl4eo_data2vec_small, choose_ssl4eo_mae
+from models import prithvi_vit_base, spectral_gpt_vit_base, scale_mae_large, croma, remote_clip, ssl4eo_dino_small, ssl4eo_moco_small, ssl4eo_data2vec_small, choose_dofa, choose_ssl4eo_mae
 
 from utils.metrics import Evaluation
 from utils.pos_embed import interpolate_pos_embed
@@ -60,13 +60,13 @@ def load_checkpoint(encoder, ckpt_path, model="prithvi"):
 
     # print(checkpoint.keys())
 
-    if model in ["prithvi"]:
+    if model in ["prithvi", "remote_clip", "dofa"]:
         checkpoint_model = checkpoint
-        del checkpoint_model["pos_embed"]
-        del checkpoint_model["decoder_pos_embed"]
-    elif model in ["remote_clip"]:
-        checkpoint_model = checkpoint
-        checkpoint_model = {"model."+k: v for k, v in checkpoint_model.items()}
+        if model == "prithvi":
+            del checkpoint_model["pos_embed"]
+            del checkpoint_model["decoder_pos_embed"]
+        elif model in ["remote_clip"]:
+            checkpoint_model = {"model."+k: v for k, v in checkpoint_model.items()}
     elif model in ["croma"]:
         if encoder.modality == "optical":
             checkpoint_model = checkpoint["s2_encoder"]
@@ -77,7 +77,7 @@ def load_checkpoint(encoder, ckpt_path, model="prithvi"):
         elif encoder.modality == "both":
             checkpoint_model = checkpoint["joint_encoder"]
             checkpoint_model = {"joint_encoder."+k: v for k, v in checkpoint_model.items()}
-    elif model in ["spectral_gpt", "ssl4eo_data2vec"]:
+    elif model in ["spectral_gpt", "ssl4eo_data2vec", "ssl4eo_mae"]:
         checkpoint_model = checkpoint["model"]
     elif model in ["scale_mae"]:
         checkpoint_model = checkpoint["model"]
@@ -88,9 +88,7 @@ def load_checkpoint(encoder, ckpt_path, model="prithvi"):
     elif model in ["ssl4eo_dino"]:
         checkpoint_model = checkpoint["teacher"]
         checkpoint_model = {k.replace("backbone.",""): v for k, v in checkpoint_model.items()}
-    elif model in ["ssl4eo_mae"]:
-        checkpoint_model = checkpoint["model"]
-        # checkpoint_model = {k.replace("module.base_encoder.",""): v for k, v in checkpoint_model.items()}
+
     # print(checkpoint_model.keys())
 
     state_dict = encoder.state_dict()
@@ -131,6 +129,7 @@ def get_encoder_model(cfg, load_pretrained=True, frozen_backbone=True):
         "ssl4eo_dino" : ssl4eo_dino_small,
         "ssl4eo_moco" : ssl4eo_moco_small,
         "ssl4eo_data2vec": ssl4eo_data2vec_small,
+        "dofa": choose_dofa(embed_dim),
     }
     encoder_name = cfg["encoder_name"]
     if encoder_name not in encoders:
@@ -358,36 +357,36 @@ def main(args):
 
     splits_path = os.path.join(args["path"], "splits")
 
-    # Construct Data loader
-    dataset_train = MADOS(args["path"], splits_path, "train")
-    dataset_val = MADOS(args["path"], splits_path, "train")
+    # # Construct Data loader
+    # dataset_train = MADOS(args["path"], splits_path, "train")
+    # dataset_val = MADOS(args["path"], splits_path, "train")
 
-    dl_cfg = task_cfg["data_loader"]
+    # dl_cfg = task_cfg["data_loader"]
 
-    train_loader = DataLoader(
-        dataset_train,
-        batch_size=dl_cfg["batch"],
-        shuffle=True,
-        num_workers=dl_cfg["num_workers"],
-        pin_memory=dl_cfg["pin_memory"],
-        prefetch_factor=dl_cfg["prefetch_factor"],
-        persistent_workers=dl_cfg["persistent_workers"],
-        worker_init_fn=seed_worker,
-        generator=g,
-        drop_last=True,
-    )
+    # train_loader = DataLoader(
+    #     dataset_train,
+    #     batch_size=dl_cfg["batch"],
+    #     shuffle=True,
+    #     num_workers=dl_cfg["num_workers"],
+    #     pin_memory=dl_cfg["pin_memory"],
+    #     prefetch_factor=dl_cfg["prefetch_factor"],
+    #     persistent_workers=dl_cfg["persistent_workers"],
+    #     worker_init_fn=seed_worker,
+    #     generator=g,
+    #     drop_last=True,
+    # )
 
-    val_loader = DataLoader(
-        dataset_val,
-        batch_size=dl_cfg["batch"],
-        shuffle=False,
-        num_workers=dl_cfg["num_workers"],
-        pin_memory=dl_cfg["pin_memory"],
-        prefetch_factor=dl_cfg["prefetch_factor"],
-        persistent_workers=dl_cfg["persistent_workers"],
-        worker_init_fn=seed_worker,
-        generator=g,
-    )
+    # val_loader = DataLoader(
+    #     dataset_val,
+    #     batch_size=dl_cfg["batch"],
+    #     shuffle=False,
+    #     num_workers=dl_cfg["num_workers"],
+    #     pin_memory=dl_cfg["pin_memory"],
+    #     prefetch_factor=dl_cfg["prefetch_factor"],
+    #     persistent_workers=dl_cfg["persistent_workers"],
+    #     worker_init_fn=seed_worker,
+    #     generator=g,
+    # )
 
     # Use gpu or cpu
     if torch.cuda.is_available():
@@ -404,12 +403,12 @@ def main(args):
     model = create_task_model(task_cfg, encoder)
     model.to(device)
 
-    # #TEST
-    # input = torch.randn(2, 5, 13, 224, 224).to(device)
-    # output = model(input)
-    # print(input.shape)
-    # print(output.shape)
-    # sys.exit("Test finito")
+    #TEST
+    input = torch.randn(2, 3, 224, 224).to(device)
+    output = model(input)
+    print(input.shape)
+    print(output.shape)
+    sys.exit("Test finito")
 
     # Load model from specific epoch to continue the training or start the evaluation
     if args["resume_from"] is not None:

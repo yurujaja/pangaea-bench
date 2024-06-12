@@ -48,6 +48,7 @@ class UperNetViT(nn.Module):
             cls_embed=False,
             encoder_type="prithvi",
             mt_strategy = "ltae",
+            wave_list = None,
             **kwargs,
     ):
         super().__init__()
@@ -97,6 +98,9 @@ class UperNetViT(nn.Module):
             # 2048, 16, 16
         )
 
+        #for DOFA
+        self.wave_list = wave_list
+
         num_bands = t_patch_size if num_bands == None else num_bands
         self.t = num_bands // t_patch_size
         self.fc = nn.Sequential(
@@ -128,6 +132,9 @@ class UperNetViT(nn.Module):
 
         elif self.encoder_type in ["scale_mae", "ssl4eo_dino", "ssl4eo_moco"]:
             seg1 = self.encoder(x1)
+
+        elif self.encoder_type in ["dofa"]:
+            seg1 = self.encoder.forward_features(x1, wave_list=self.wave_list)
 
         elif self.encoder_type in ["ssl4eo_data2vec"]:
             seg1 = self.encoder(x1, bool_masked_pos=None, return_all_tokens=True)
@@ -166,9 +173,9 @@ class UperNetViT(nn.Module):
         seg1 = self.encoding(x1)
 
         # remove the cls token
-        if not self.multitemporal and (self.encoder_type in ["remote_clip", "ssl4eo_dino", "ssl4eo_mae", "ssl4eo_moco", "scale_mae", "prithvi"]):  
+        if not self.multitemporal and (self.encoder_type in ["remote_clip", "ssl4eo_dino", "ssl4eo_mae", "dofa", "ssl4eo_moco", "scale_mae", "prithvi"]):  
             seg1 = seg1[:, 1: ,:]
-        elif self.multitemporal and (self.encoder_type in ["remote_clip", "ssl4eo_dino", "ssl4eo_moco", "ssl4eo_mae", "scale_mae"]):
+        elif self.multitemporal and (self.encoder_type in ["remote_clip", "ssl4eo_dino", "ssl4eo_moco", "dofa", "ssl4eo_mae", "scale_mae"]):
             seg1 = seg1[:, :, 1: ,:]
 
 
