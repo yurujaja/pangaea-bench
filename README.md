@@ -74,6 +74,15 @@ python train.py configs/Prithvi_100M_config.yaml --path /your/datapath
 #### New code
 - **Datasets**: Add your dataset code within the `datasets` folder.
 - **Foundation Models**: Integrate new foundation model code under the `models` folder.
+  - [ ] SSL4EO-S12
+  - [ ] CROMA
+  - [X] Scale-MAE
+  - [ ] SatlasNet
+  - [X] Prithvi
+  - [ ] DOFA
+  - [X] SpectralGPT
+  - [X] RemoteCLIP
+  - [ ] (ms)GFM
 - **Downstream Tasks**: Insert the code for downstream tasks (i.e. change detection) within the `tasks` folder. This may also necessitate modifications to `train.py` to accommodate new tasks.
 - **Add the Test**: Create a `test.py`, following a similar structure of `train.py`
 
@@ -85,9 +94,9 @@ TODO: here are some aspects that should be improved:
     - we should remove all the argparse from the training loop but the one about the paths and the training strategies (e.g. GPUs)
     - we should remove the mean and the std parameters from the config and let the normalization in each dataset loading
     - create the config for `RemoteClip_large` and `CROMA_base` (easy)
-    - create the config to distinguish multitemporal and unitemporal training (easy)
-- support SAR and multimodality data for CROMA (should be easy)
-- implement L-TAE to improve multitemporal (so far there is just a linear layer) 
+    - create the configs to distinguish multitemporal and unitemporal training (easy)
+    - add the multitemporal strategy parameter (e.g. "linear" or "ltae") to the config and pass it to the model (easy)
+- support SAR and multimodality data for CROMA (easy)
 - improve the `adapt_input` function (in `train.py`), which is used to adapt the input shape of the data to be processed into the models. 
     - At the moment, it supports just the mentioned models (and dataset) -> NEW MODELS TO BE ADDED
     - Moreover, for selecting the correct number of bands, just Sentinel-2 is supported -> TO SHAPE IT ALSO FOR OTHER MODALITIES
