@@ -16,6 +16,8 @@ import os
 
 import math
 
+from .ltae import LTAE2d
+
 # from ..models import *
 
 class UperNetViT(nn.Module):
@@ -45,7 +47,7 @@ class UperNetViT(nn.Module):
             sep_pos_embed=True,
             cls_embed=False,
             encoder_type="prithvi",
-            # multitemporal = False,
+            mt_strategy = "ltae",
             **kwargs,
     ):
         super().__init__()
@@ -95,20 +97,21 @@ class UperNetViT(nn.Module):
             # 2048, 16, 16
         )
 
-        # print(num_bands)
         num_bands = t_patch_size if num_bands == None else num_bands
-        # print(num_bands)
         self.t = num_bands // t_patch_size
         self.fc = nn.Sequential(
             nn.Linear(self.t, 1))
         
         if self.multitemporal:
-            self.t_map = nn.Sequential(
-                nn.Linear(num_frames, 1))
+            self.mt_strategy = mt_strategy
             self.num_frames = num_frames
-        else:
-            self.t_map = nn.Identity()
-
+            if mt_strategy == "linear":
+                self.t_map = nn.Sequential(
+                    nn.Linear(num_frames, 1))
+            elif mt_strategy == "ltae":
+                self.t_map = LTAE2d(positional_encoding=False, in_channels=self.embed_dim, 
+                                    mlp=[self.embed_dim, self.embed_dim], d_model=self.embed_dim)
+            
     @torch.jit.ignore
     def no_weight_decay(self):
         return {
@@ -167,33 +170,30 @@ class UperNetViT(nn.Module):
 
 
         if self.multitemporal:
-            seg1 = seg1.permute(0, 2, 3, 1)
-            seg1 = self.t_map(seg1).squeeze()
+            if self.mt_strategy == "linear":
+                seg1 = seg1.permute(0, 2, 3, 1)
+                seg1 = self.t_map(seg1).squeeze()
+            elif self.mt_strategy == "ltae":
+                #TO DO clean the code
+                N, t, s, c = seg1.shape 
+                w = int(math.sqrt(s, ))
+                seg1 = seg1.reshape(N, t, w, w, c).permute(0, 1, 4, 2, 3)
+                seg1 = self.t_map(seg1).reshape(N, c, s).permute(0, 2, 1)
         
-        # print(seg1.shape)
-        # print(self.multitemporal)
         N, s, _ = seg1.shape
         w = int(math.sqrt(s, ))
         seg1 = seg1.reshape(N, w, w, self.embed_dim).permute(0, 3, 1, 2).contiguous()
 
         m = {}
 
-        # m[0] = self.conv0(x)  # 256,128,128
         m[0] = self.conv0(seg1)  # 256,128,128
-
-        # m[1] = self.conv1(x)  # 512,64,64
         m[1] = self.conv1(seg1)  # 512,64,64
-
-        # m[2] = self.conv2(x)  # 1024,32,32
         m[2] = self.conv2(seg1)  # 1024,32,32
-
-        # m[3] = self.conv3(x)  # 2048,16,16
         m[3] = self.conv3(seg1)  # 2048,16,16
 
         m = list(m.values())
         x = self.decoder(m)
         x = self.cls_seg(x)
-        # x = self.sm(x)
 
         # Match the size between output logits and input image size
         if x.shape[2:] != (self.img_size, self.img_size):
