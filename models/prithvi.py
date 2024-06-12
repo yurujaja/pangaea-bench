@@ -1,4 +1,9 @@
-# Obtained from: https://huggingface.co/ibm-nasa-geospatial/Prithvi-100M/blob/main/Prithvi.py
+# -*- coding: utf-8 -*-
+''' 
+Adapted from: https://huggingface.co/ibm-nasa-geospatial/Prithvi-100M/blob/main/Prithvi.py
+Modifications: modifications for compatibility with the benchmark
+Authors: Yuru Jia, Valerio Marsocci
+'''
 
 from functools import partial
 

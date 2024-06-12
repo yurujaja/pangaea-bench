@@ -1,4 +1,10 @@
-# Adapted from: https://github.com/bair-climate-initiative/scale-mae/blob/main/mae/main_finetune.py
+# -*- coding: utf-8 -*-
+''' 
+Adapted from: https://github.com/mvrl/rshf
+Modifications: modifications for compatibility with the benchmark
+Authors: Yuru Jia, Valerio Marsocci
+'''
+
 import torch
 from functools import partial
 import timm.models.vision_transformer

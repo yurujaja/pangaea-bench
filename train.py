@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
-# Obtained from:
-
-
-#!/usr/bin/env python
-
-# os.environ["CUDA_VISIBLE_DEVICES"] = "3"
+''' 
+Adapted from: https://github.com/gkakogeorgiou/mados
+Modifications: support different datasets, models, and tasks
+Authors: Yuru Jia, Valerio Marsocci
+'''
 
 import sys
 import os

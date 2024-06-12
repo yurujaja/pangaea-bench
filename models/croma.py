@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+''' 
+Adapted from: https://github.com/mvrl/rshf
+Modifications: modifications for compatibility with the benchmark
+Authors: Yuru Jia, Valerio Marsocci
+'''
+
 from torch import nn, einsum
 from einops import rearrange
 import math

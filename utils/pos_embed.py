@@ -1,7 +1,9 @@
-# --------------------------------------------------------
-# References:
-# MAE: https://github.com/facebookresearch/mae
-# --------------------------------------------------------
+# -*- coding: utf-8 -*-
+''' 
+Adapted from: https://github.com/facebookresearch/mae
+Modifications: minimal modifications
+Authors: Yuru Jia, Valerio Marsocci
+'''
 
 import numpy as np
 

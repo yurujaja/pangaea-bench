@@ -1,4 +1,9 @@
-#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+''' 
+Adapted from: https://github.com/danfenghong/IEEE_TPAMI_SpectralGPT
+Modifications: support different encoders and multi-temporal support
+Authors: Yuru Jia, Valerio Marsocci
+'''
 
 from functools import partial
 import torch.nn.functional as F

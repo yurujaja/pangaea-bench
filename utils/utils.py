@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
+''' 
+Adapted from: https://github.com/gkakogeorgiou/mados
+Modifications: minimal modifications
+Authors: Yuru Jia, Valerio Marsocci
 '''
-Author: Ioannis Kakogeorgiou
-Email: gkakogeorgiou@gmail.com
-Python Version: 3.7.10
-Description: assets.py includes the appropriate mappings.
-'''
+
 import numpy as np
 
 def bool_flag(s):

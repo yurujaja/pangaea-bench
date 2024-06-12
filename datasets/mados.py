@@ -1,14 +1,8 @@
 # -*- coding: utf-8 -*-
-
-
-
+''' 
+Adapted from: https://github.com/gkakogeorgiou/mados
 '''
-Author: Ioannis Kakogeorgiou
-Email: gkakogeorgiou@gmail.com
-Python Version: 3.7.10
-Description: dataset.py includes the appropriate data loader for 
-             pixel-level semantic segmentation.
-'''
+
 import os
 import random
 from tqdm import tqdm

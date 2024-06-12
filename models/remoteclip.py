@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+''' 
+Adapted from: https://github.com/mvrl/rshf
+Modifications: modifications for compatibility with the benchmark
+Authors: Yuru Jia, Valerio Marsocci
+'''
+
 import open_clip
 import torch.nn as nn
 from huggingface_hub import PyTorchModelHubMixin

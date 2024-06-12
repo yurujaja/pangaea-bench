@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
+''' 
+Adapted from: https://github.com/gkakogeorgiou/mados
+Modifications: minimal modifications
+Authors: Yuru Jia, Valerio Marsocci
 '''
-Author: Ioannis Kakogeorgiou
-Email: gkakogeorgiou@gmail.com
-Python Version: 3.7.10
-Description: metrics.py includes the proposed metrics for both
-             pixel-level semantic segmentation and multi-label 
-             classification tasks.
-'''
+
 from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score, jaccard_score, hamming_loss, label_ranking_loss, coverage_error
 import sklearn.metrics as metr
 import numpy as np
