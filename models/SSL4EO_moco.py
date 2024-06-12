@@ -1,8 +1,9 @@
-# Copyright (c) Facebook, Inc. and its affiliates.
-# All rights reserved.
-
-# This source code is licensed under the license found in the
-# LICENSE file in the root directory of this source tree.
+# -*- coding: utf-8 -*-
+''' 
+Adapted from: https://github.com/zhu-xlab/SSL4EO-S12/tree/main
+Modifications: modifications for compatibility with the benchmark
+Authors: Yuru Jia, Valerio Marsocci
+'''
 
 import math
 import torch
@@ -20,7 +21,6 @@ __all__ = [
     'vit_conv_small',
     'vit_conv_base',
 ]
-
 
 class VisionTransformerMoCo(VisionTransformer):
     def __init__(self, stop_grad_conv1=False, **kwargs):

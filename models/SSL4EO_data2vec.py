@@ -1,14 +1,10 @@
-# --------------------------------------------------------
-# BEIT: BERT Pre-Training of Image Transformers (https://arxiv.org/abs/2106.08254)
-# Github source: https://github.com/microsoft/unilm/tree/master/beit
-# Copyright (c) 2021 Microsoft
-# Licensed under The MIT License [see LICENSE for details]
-# By Hangbo Bao
-# Based on timm and DeiT code bases
-# https://github.com/rwightman/pytorch-image-models/tree/master/timm
-# https://github.com/facebookresearch/deit/
-# --------------------------------------------------------'
-# Copyright (c) Meta Platforms, Inc. and affiliates
+# -*- coding: utf-8 -*-
+''' 
+Adapted from: https://github.com/zhu-xlab/SSL4EO-S12/tree/main
+Modifications: modifications for compatibility with the benchmark
+Authors: Yuru Jia, Valerio Marsocci
+'''
+
 import math
 import torch
 import torch.nn as nn
@@ -16,6 +12,8 @@ from functools import partial
 
 from timm.models.registry import register_model
 from timm.models.layers import trunc_normal_ as __call_trunc_normal_
+from timm.models.layers import drop_path, to_2tuple, trunc_normal_
+import torch.nn.functional as F
 
 
 def trunc_normal_(tensor, mean=0.0, std=1.0):
@@ -26,17 +24,6 @@ __all__ = [
     "beit_base_patch16_224",
     # 'beit_large_patch16_224_8k_vocab',
 ]
-
-
-import math
-from functools import partial
-
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from timm.models.layers import drop_path, to_2tuple, trunc_normal_
-from timm.models.registry import register_model
-
 
 def _cfg(url='', **kwargs):
     return {

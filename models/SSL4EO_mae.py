@@ -1,3 +1,9 @@
+# -*- coding: utf-8 -*-
+''' 
+Adapted from: https://github.com/zhu-xlab/SSL4EO-S12/tree/main
+Modifications: modifications for compatibility with the benchmark
+Authors: Yuru Jia, Valerio Marsocci
+'''
 
 
 from functools import partial
