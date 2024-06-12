@@ -42,8 +42,8 @@ sys.path.append(os.path.join(up(up(os.path.abspath(__file__))), 'models'))
 
 # from tasks.models_vit_tensor_CD_2 import *
 from tasks import upernet_vit_base
-from models import prithvi_vit_base, spectral_gpt_vit_base, scale_mae_large, croma, remote_clip, ssl4eo_dino_small, ssl4eo_moco_small, ssl4eo_data2vec_small, choose_dofa, choose_ssl4eo_mae
-
+from models import prithvi_vit_base, spectral_gpt_vit_base, scale_mae_large, croma, remote_clip, ssl4eo_dino_small, ssl4eo_moco_small, ssl4eo_data2vec_small, gfm_swin_base, choose_dofa, choose_ssl4eo_mae
+from models import adapt_gfm_pretrained
 from utils.metrics import Evaluation
 from utils.pos_embed import interpolate_pos_embed
 
@@ -88,7 +88,8 @@ def load_checkpoint(encoder, ckpt_path, model="prithvi"):
     elif model in ["ssl4eo_dino"]:
         checkpoint_model = checkpoint["teacher"]
         checkpoint_model = {k.replace("backbone.",""): v for k, v in checkpoint_model.items()}
-
+    elif model in ["gfm_swin"]:
+        checkpoint_model = adapt_gfm_pretrained(encoder, checkpoint)
     # print(checkpoint_model.keys())
 
     state_dict = encoder.state_dict()
@@ -130,6 +131,7 @@ def get_encoder_model(cfg, load_pretrained=True, frozen_backbone=True):
         "ssl4eo_moco" : ssl4eo_moco_small,
         "ssl4eo_data2vec": ssl4eo_data2vec_small,
         "dofa": choose_dofa(embed_dim),
+        "gfm_swin": gfm_swin_base,
     }
     encoder_name = cfg["encoder_name"]
     if encoder_name not in encoders:

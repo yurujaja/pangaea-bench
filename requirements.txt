@@ -25,3 +25,4 @@ calflops==0.2.9
 transformers==4.41.2
 open_clip_torch==2.24.0
 huggingface_hub==0.23.1
+yacs==0.1.8

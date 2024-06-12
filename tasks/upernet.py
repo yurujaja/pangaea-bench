@@ -152,6 +152,9 @@ class UperNetViT(nn.Module):
         elif self.encoder_type in ["remote_clip"]:
             seg1 = self.encoder.model.encode_image(x1)
 
+        elif self.encoder_type in ["gfm_swin"]:
+            seg1 = self.encoder.forward_features(x1)
+
         return seg1
     
     def encoding(self, x1):
