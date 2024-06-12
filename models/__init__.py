@@ -28,20 +28,29 @@ gfm_swin_base = GFM_SwinTransformer
 adapt_gfm_pretrained = adapt_gfm_pretrained
 #SSL4EO models
 def choose_ssl4eo_mae(size = '384'):
-    return {
+    dict = {
         '384': mae_vit_small_patch16_dec512d8b,
         '768': mae_vit_base_patch16_dec512d8b,
         '1024': mae_vit_large_patch16_dec512d8b,
         '1280': mae_vit_huge_patch14_dec512d8b,
         
-    }[size]
+    }
+    if size in dict:
+        return dict[size]
+    else:
+        pass
+    
 
 #SSL4EO models
 def choose_dofa(size = '384'):
-    return {
+    dict = {
         '384': vit_small_patch16,
         '768': vit_base_patch16,
         '1024': vit_large_patch16,
         '1280': vit_huge_patch14,
         
-    }[size]
+    }
+    if size in dict:
+        return dict[size]
+    else:
+        pass
