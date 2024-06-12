@@ -53,7 +53,7 @@ wget https://huggingface.co/antofuller/CROMA/blob/main/CROMA_base.pt
 wget https://huggingface.co/antofuller/CROMA/blob/main/CROMA_large.pt
 
 # SSL4EO
-You can find all the links in the official [repo](https://github.com/zhu-xlab/SSL4EO-S12/tree/main) 
+You can find all the links in their official repository: https://github.com/zhu-xlab/SSL4EO-S12/tree/main
 ```
 
 ### Pipeline -demo
