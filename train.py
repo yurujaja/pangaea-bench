@@ -357,36 +357,36 @@ def main(args):
 
     splits_path = os.path.join(args["path"], "splits")
 
-    # # Construct Data loader
-    # dataset_train = MADOS(args["path"], splits_path, "train")
-    # dataset_val = MADOS(args["path"], splits_path, "train")
+    # Construct Data loader
+    dataset_train = MADOS(args["path"], splits_path, "train")
+    dataset_val = MADOS(args["path"], splits_path, "train")
 
-    # dl_cfg = task_cfg["data_loader"]
+    dl_cfg = task_cfg["data_loader"]
 
-    # train_loader = DataLoader(
-    #     dataset_train,
-    #     batch_size=dl_cfg["batch"],
-    #     shuffle=True,
-    #     num_workers=dl_cfg["num_workers"],
-    #     pin_memory=dl_cfg["pin_memory"],
-    #     prefetch_factor=dl_cfg["prefetch_factor"],
-    #     persistent_workers=dl_cfg["persistent_workers"],
-    #     worker_init_fn=seed_worker,
-    #     generator=g,
-    #     drop_last=True,
-    # )
+    train_loader = DataLoader(
+        dataset_train,
+        batch_size=dl_cfg["batch"],
+        shuffle=True,
+        num_workers=dl_cfg["num_workers"],
+        pin_memory=dl_cfg["pin_memory"],
+        prefetch_factor=dl_cfg["prefetch_factor"],
+        persistent_workers=dl_cfg["persistent_workers"],
+        worker_init_fn=seed_worker,
+        generator=g,
+        drop_last=True,
+    )
 
-    # val_loader = DataLoader(
-    #     dataset_val,
-    #     batch_size=dl_cfg["batch"],
-    #     shuffle=False,
-    #     num_workers=dl_cfg["num_workers"],
-    #     pin_memory=dl_cfg["pin_memory"],
-    #     prefetch_factor=dl_cfg["prefetch_factor"],
-    #     persistent_workers=dl_cfg["persistent_workers"],
-    #     worker_init_fn=seed_worker,
-    #     generator=g,
-    # )
+    val_loader = DataLoader(
+        dataset_val,
+        batch_size=dl_cfg["batch"],
+        shuffle=False,
+        num_workers=dl_cfg["num_workers"],
+        pin_memory=dl_cfg["pin_memory"],
+        prefetch_factor=dl_cfg["prefetch_factor"],
+        persistent_workers=dl_cfg["persistent_workers"],
+        worker_init_fn=seed_worker,
+        generator=g,
+    )
 
     # Use gpu or cpu
     if torch.cuda.is_available():
@@ -403,12 +403,12 @@ def main(args):
     model = create_task_model(task_cfg, encoder)
     model.to(device)
 
-    #TEST
-    input = torch.randn(2, 3, 224, 224).to(device)
-    output = model(input)
-    print(input.shape)
-    print(output.shape)
-    sys.exit("Test finito")
+    # #TEST
+    # input = torch.randn(2, 3, 224, 224).to(device)
+    # output = model(input)
+    # print(input.shape)
+    # print(output.shape)
+    # sys.exit("Test finito")
 
     # Load model from specific epoch to continue the training or start the evaluation
     if args["resume_from"] is not None:
