@@ -6,11 +6,11 @@ gfm_encoder:
     # decoder_embed_dim: 512
     # decoder_num_heads: 16
     # depth: 24
-    modality: "optical" #should support also both and radar
+    modality: "joint" #should support also both and radar
     size: "large" #support also base 
     embed_dim: 1024
     img_size: 120
-    in_chans: 12
+    in_chans: 2
     # num_frames: 1  # TODO
     # num_heads: 16
     patch_size: 8

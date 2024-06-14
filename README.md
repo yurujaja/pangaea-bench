@@ -7,10 +7,12 @@ Currently supported foundation models:
 - RemoteCLIP 
 - SSL4EO (data2vec, MoCov3, DINO and MAE)
 - DOFA
+- GFM
 - CROMA (just multispectral)
 
 Currently supported tasks:
 - Upernet for semantic segmentation (also multitemporal)
+- Change Detetction (bitemporal)
 
 ### Setup
 Clone the repository:
@@ -92,13 +94,16 @@ python train.py configs/Prithvi_100M_config.yaml --path /your/datapath
   - [X] DOFA
   - [X] SpectralGPT
   - [X] RemoteCLIP
-  - [ ] (ms)GFM
-- **Downstream Tasks**: Insert the code for downstream tasks (i.e. change detection) within the `tasks` folder. This may also necessitate modifications to `train.py` to accommodate new tasks.
+  - [X] GFM (msGFM's weights are not released)
+- **Downstream Tasks**: Insert the code for downstream tasks (i.e. change detection) within the `tasks` folder. This may also necessitate modifications to `train.py` to accommodate new tasks. The tasks to be supported are: multitemporal change detection and pixel-level regression.
 - **Add the Test**: Create a `test.py`, following a similar structure of `train.py`
 
 #### Existing code
 
 TODO: here are some aspects that should be improved:
+- new tasks:
+    - support multitemporality for change detection (should be easy, if following what we did for upernet)
+    - support pixel level regression (should be easy, changing the loss when using upernet)
 - config file: 
     - we should uniform the task parameters and the encoder parameters (some of them are redundant). 
     - we should remove all the argparse from the training loop but the one about the paths and the training strategies (e.g. GPUs)
