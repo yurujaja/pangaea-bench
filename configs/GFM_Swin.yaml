@@ -41,7 +41,7 @@ task:
     batch: 2
     num_workers: 0
     pin_memory: False
-    prefetch_factor: 2
+    prefetch_factor: null
     persistent_workers: False
 
 

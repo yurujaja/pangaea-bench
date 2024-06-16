@@ -17,8 +17,9 @@ import os
 import math
 
 from .ltae import LTAE2d
-
+import pdb
 # from ..models import *
+
 
 class UperNetViT(nn.Module):
     """Vision Transformer with support for global average pooling"""
@@ -154,6 +155,9 @@ class UperNetViT(nn.Module):
 
         elif self.encoder_type in ["gfm_swin"]:
             seg1 = self.encoder.forward_features(x1)
+        elif self.encoder_type in ["satlas_pretrain"]:
+            raw_feature = self.encoder(x1)[0]
+            seg1 = raw_feature
 
         return seg1
     
@@ -174,7 +178,6 @@ class UperNetViT(nn.Module):
 
     def forward(self, x1):
         seg1 = self.encoding(x1)
-
         # remove the cls token
         if not self.multitemporal and (self.encoder_type in ["remote_clip", "ssl4eo_dino", "ssl4eo_mae", "dofa", "ssl4eo_moco", "scale_mae", "prithvi"]):  
             seg1 = seg1[:, 1: ,:]
@@ -182,7 +185,7 @@ class UperNetViT(nn.Module):
             seg1 = seg1[:, :, 1: ,:]
 
 
-        if self.multitemporal:
+        if self.multitemporal and self.encoder_type not in ["satlas_pretrain"]:
             if self.mt_strategy == "linear":
                 seg1 = seg1.permute(0, 2, 3, 1)
                 seg1 = self.t_map(seg1).squeeze()
@@ -193,9 +196,10 @@ class UperNetViT(nn.Module):
                 seg1 = seg1.reshape(N, t, w, w, c).permute(0, 1, 4, 2, 3)
                 seg1 = self.t_map(seg1).reshape(N, c, s).permute(0, 2, 1)
         
-        N, s, _ = seg1.shape
-        w = int(math.sqrt(s, ))
-        seg1 = seg1.reshape(N, w, w, self.embed_dim).permute(0, 3, 1, 2).contiguous()
+        if self.encoder_type not in ["satlas_pretrain"]:
+            N, s, _ = seg1.shape
+            w = int(math.sqrt(s, ))
+            seg1 = seg1.reshape(N, w, w, self.embed_dim).permute(0, 3, 1, 2).contiguous()
 
         m = {}
 

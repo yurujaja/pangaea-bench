@@ -27,7 +27,7 @@ task:
   task_model_name: upernet
   task_model_args:
     embed_dim: 512
-    num_frames: 5
+    num_frames: 1
     t_patch_size: 1
     patch_size: 32
     img_size: 224
@@ -50,7 +50,7 @@ task:
     batch: 2
     num_workers: 0
     pin_memory: False
-    prefetch_factor: 2
+    prefetch_factor: null
     persistent_workers: False
 
 

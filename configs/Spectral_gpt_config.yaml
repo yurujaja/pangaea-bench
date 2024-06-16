@@ -30,7 +30,7 @@ task:
   task_model_name: upernet
   task_model_args:
     num_bands: 12
-    num_frames: 5
+    num_frames: 1
     t_patch_size: 3
     patch_size: 8
     img_size: 128
@@ -51,7 +51,7 @@ task:
     eval_every: 1
   data_loader:
     batch: 2
-    num_workers: 0
+    num_workers: 1
     pin_memory: False
     prefetch_factor: 2
     persistent_workers: False

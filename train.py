@@ -42,16 +42,22 @@ sys.path.append(os.path.join(up(up(os.path.abspath(__file__))), 'models'))
 
 # from tasks.models_vit_tensor_CD_2 import *
 from tasks import upernet_vit_base
-from models import prithvi_vit_base, spectral_gpt_vit_base, scale_mae_large, croma, remote_clip, ssl4eo_dino_small, ssl4eo_moco_small, ssl4eo_data2vec_small, gfm_swin_base, choose_dofa, choose_ssl4eo_mae
+from models import prithvi_vit_base, spectral_gpt_vit_base, scale_mae_large, croma, remote_clip, ssl4eo_dino_small, ssl4eo_moco_small, ssl4eo_data2vec_small, gfm_swin_base, satlasnet
+from models import choose_dofa, choose_ssl4eo_mae
 from models import adapt_gfm_pretrained
 from utils.metrics import Evaluation
 from utils.pos_embed import interpolate_pos_embed
-
+import pdb
 
 
 def load_config(cfg_path):
     with open(cfg_path, "r") as file:
-        return yaml.safe_load(file)
+        config = yaml.safe_load(file)
+        print(config['gfm_encoder']['encoder_name'])
+        print(type(config['gfm_encoder']['encoder_name']))
+        print(config['task']['task_model_args']['encoder_type'])
+        print(type(config['task']['task_model_args']['encoder_type']))
+        return config
 
 
 def load_checkpoint(encoder, ckpt_path, model="prithvi"):
@@ -90,6 +96,8 @@ def load_checkpoint(encoder, ckpt_path, model="prithvi"):
         checkpoint_model = {k.replace("backbone.",""): v for k, v in checkpoint_model.items()}
     elif model in ["gfm_swin"]:
         checkpoint_model = adapt_gfm_pretrained(encoder, checkpoint)
+    elif model in ["satlas_pretrain"]:
+        logging.info("Loading pretrained model is already done when initializing the model.")
     # print(checkpoint_model.keys())
 
     state_dict = encoder.state_dict()
@@ -119,7 +127,7 @@ def load_checkpoint(encoder, ckpt_path, model="prithvi"):
 def get_encoder_model(cfg, load_pretrained=True, frozen_backbone=True):
     # create model
     # encoder_size = cfg["encoder_size"] if not None else "base"
-    embed_dim = str(cfg["encoder_model_args"]["embed_dim"])
+    embed_dim = str(cfg["encoder_model_args"]["embed_dim"]) if cfg["encoder_model_args"].get("embed_dim") else None
     encoders = {
         "prithvi": prithvi_vit_base,
         "spectral_gpt": spectral_gpt_vit_base,
@@ -132,19 +140,27 @@ def get_encoder_model(cfg, load_pretrained=True, frozen_backbone=True):
         "ssl4eo_data2vec": ssl4eo_data2vec_small,
         "dofa": choose_dofa(embed_dim),
         "gfm_swin": gfm_swin_base,
+        "satlas_pretrain": satlasnet,
     }
     encoder_name = cfg["encoder_name"]
     if encoder_name not in encoders:
         raise ValueError(f"{encoder_name} is not yet supported.")
-
-    encoder_model_args = cfg["encoder_model_args"]
-    encoder_model = encoders[encoder_name](**encoder_model_args)
-
-    # load pretrained weights if there are any
     encoder_weights = cfg["encoder_weights"]
+    encoder_model_args = cfg["encoder_model_args"]
+    
+    if encoder_name in ["satlas_pretrain"]:
+        encoder_model_args["weights"] = torch.load(encoder_weights, map_location="cpu") if encoder_weights is not None else None
+        encoder_model = encoders[encoder_name](**encoder_model_args)
+    else:
+        encoder_model = encoders[encoder_name](**encoder_model_args)
+    # load pretrained weights if there are any
+    
     if encoder_weights is not None and load_pretrained:
-        msg = load_checkpoint(encoder_model, encoder_weights, encoder_name)
-        print(msg)
+        if encoder_name in ["satlas_pretrain"]:
+            pass
+        else:
+            msg = load_checkpoint(encoder_model, encoder_weights, encoder_name)
+            print(msg)
 
     if frozen_backbone:
         for param in encoder_model.parameters():
@@ -161,6 +177,10 @@ def create_task_model(cfg, encoder):
     if model_name not in models:
         raise ValueError(f"{model_name} is not yet supported.")
     model_args = cfg["task_model_args"]
+    
+    if model_args["encoder_type"] in ['satlas_pretrain']:
+        model_args["embed_dim"] = encoder.backbone.out_channels[0][1]
+
     model = models[model_name](encoder=encoder, **model_args)
 
     return model
@@ -431,8 +451,8 @@ def main(args):
     criterion = torch.nn.CrossEntropyLoss(
         ignore_index=-1,
         reduction="mean",
-        weight=weight.to(device),
-        label_smoothing=task_args["label_smoothing"],
+        # weight=weight.to(device),
+        # label_smoothing=task_args["label_smoothing"],
     )
 
     optimizer = torch.optim.Adam(
@@ -456,6 +476,8 @@ def main(args):
     epochs = task_args["epochs"]
     eval_every = task_args["eval_every"]
 
+    img_size = encoder_cfg["encoder_model_args"]["img_size"] if encoder_cfg["encoder_model_args"].get("img_size") else None
+
     # Write model-graph to Tensorboard
     if task_args["mode"] == "train":
         # Start Training!
@@ -471,9 +493,12 @@ def main(args):
                 image = image.to(device)
                 target = target.to(device)
 
+                if img_size is None:
+                    img_size = image.shape[-1]
+
                 image = adapt_input(
                     tensor=image,
-                    size=encoder_cfg["encoder_model_args"]["img_size"],
+                    size=img_size,
                     bands=encoder_cfg["encoder_train_params"]["bands"],
                     type="image",
                     encoder_type=encoder_name,
@@ -481,7 +506,7 @@ def main(args):
 
                 target = adapt_input(
                     tensor=target,
-                    size=encoder_cfg["encoder_model_args"]["img_size"],
+                    size=img_size,
                     type="target",
                     encoder_type=encoder_name,
                 )
@@ -545,16 +570,19 @@ def main(args):
                         image = image.to(device)
                         target = target.to(device)
 
+                        if img_size is None:
+                            img_size = image.shape[-1]
+
                         image = adapt_input(
                             tensor=image,
-                            size=encoder_cfg["encoder_model_args"]["img_size"],
+                            size=img_size,
                             bands=encoder_cfg["encoder_train_params"]["bands"],
                             type="image",
                             encoder_type=encoder_name,
                         )
                         target = adapt_input(
                             tensor=target,
-                            size=encoder_cfg["encoder_model_args"]["img_size"],
+                            size=img_size,
                             type="target",
                             encoder_type=encoder_name,
                         )
