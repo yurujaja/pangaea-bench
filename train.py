@@ -41,9 +41,11 @@ sys.path.append(os.path.join(up(up(os.path.abspath(__file__))), 'models'))
 # from marinext_wrapper import MariNext
 
 # from tasks.models_vit_tensor_CD_2 import *
-from tasks import upernet_vit_base
+
+from tasks import upernet_vit_base, cd_vit
 from models import prithvi_vit_base, spectral_gpt_vit_base, scale_mae_large, croma, remote_clip, ssl4eo_dino_small, ssl4eo_moco_small, ssl4eo_data2vec_small, gfm_swin_base, satlasnet
 from models import choose_dofa, choose_ssl4eo_mae
+
 from models import adapt_gfm_pretrained
 from utils.metrics import Evaluation
 from utils.pos_embed import interpolate_pos_embed
@@ -74,15 +76,19 @@ def load_checkpoint(encoder, ckpt_path, model="prithvi"):
         elif model in ["remote_clip"]:
             checkpoint_model = {"model."+k: v for k, v in checkpoint_model.items()}
     elif model in ["croma"]:
-        if encoder.modality == "optical":
+        if encoder.modality in ("optical"):
             checkpoint_model = checkpoint["s2_encoder"]
             checkpoint_model = {"s2_encoder."+k: v for k, v in checkpoint_model.items()}
-        elif encoder.modality == "SAR":
+        elif encoder.modality in ("SAR"):
             checkpoint_model = checkpoint["s1_encoder"]
             checkpoint_model = {"s1_encoder."+k: v for k, v in checkpoint_model.items()}
-        elif encoder.modality == "both":
-            checkpoint_model = checkpoint["joint_encoder"]
-            checkpoint_model = {"joint_encoder."+k: v for k, v in checkpoint_model.items()}
+        elif encoder.modality == "joint":
+            checkpoint_model = checkpoint
+            checkpoint_model_joint = {"cross_encoder."+k: v for k, v in checkpoint_model["joint_encoder"].items()}
+            checkpoint_model_s1 = {"s1_encoder."+k: v for k, v in checkpoint_model["s1_encoder"].items()}
+            checkpoint_model_s2 = {"s2_encoder."+k: v for k, v in checkpoint_model["s2_encoder"].items()}
+            checkpoint_model = {**checkpoint_model_s2, **checkpoint_model_s1, **checkpoint_model_joint}
+
     elif model in ["spectral_gpt", "ssl4eo_data2vec", "ssl4eo_mae"]:
         checkpoint_model = checkpoint["model"]
     elif model in ["scale_mae"]:
@@ -172,6 +178,7 @@ def get_encoder_model(cfg, load_pretrained=True, frozen_backbone=True):
 def create_task_model(cfg, encoder):
     models = {
         "upernet": upernet_vit_base,
+        "cd_vit": cd_vit, 
     }
     model_name = cfg["task_model_name"]
     if model_name not in models:
@@ -426,9 +433,12 @@ def main(args):
     model.to(device)
 
     # #TEST
-    # input = torch.randn(2, 3, 224, 224).to(device)
-    # output = model(input)
-    # print(input.shape)
+    # x1 = torch.randn(2, 12, 120, 120).to(device)
+    # x2 = torch.randn(2, 2, 120, 120).to(device)
+    # lista = [x1, x2]
+    # output = model(lista) #, x2)
+    # print(model.encoder.modality)
+    # # print(input.shape)
     # print(output.shape)
     # sys.exit("Test finito")
 

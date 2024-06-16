@@ -16,7 +16,7 @@ from huggingface_hub import PyTorchModelHubMixin
 
 
 class CROMA(nn.Module, PyTorchModelHubMixin):
-    def __init__(self, size='base', modality='both', img_size=120, **kwargs):
+    def __init__(self, size='base', modality='joint', img_size=120, **kwargs):
         """
         NOTE: img_size is not the spatial, spectral, or temporal resolution. It is the height and width of the image, in pixels.
         E.g., CROMA was pretrained on 120x120px images, hence img_size is 120 by default
@@ -30,7 +30,7 @@ class CROMA(nn.Module, PyTorchModelHubMixin):
         # check values
         assert size in ['base', 'large'], f'size must be either base or large, not {size}'
         assert img_size % 8 == 0, f'img_size must be a multiple of 8, not {img_size}'
-        assert modality in ['both', 'SAR', 'optical'], f'modality must be either both, SAR, or optical, not {modality}'
+        assert modality in ['joint', 'SAR', 'optical'], f'modality must be either joint, SAR, or optical, not {modality}'
 
         if size == 'base':
             self.encoder_dim = 768
@@ -50,7 +50,7 @@ class CROMA(nn.Module, PyTorchModelHubMixin):
         self.s2_channels = 12  # fixed at 12 multispectral optical channels
         self.attn_bias = get_2dalibi(num_heads=self.num_heads, num_patches=self.num_patches)
 
-        if modality in ['SAR', 'both']:
+        if modality in ['SAR', 'joint']:
             print(f'Initializing SAR encoder')
             self.s1_encoder = ViT(dim=self.encoder_dim, depth=int(self.encoder_depth/2), in_channels=self.s1_channels)
             self.GAP_FFN_s1 = nn.Sequential(
@@ -62,7 +62,7 @@ class CROMA(nn.Module, PyTorchModelHubMixin):
             
             # load weights
 
-        if modality in ['optical', 'both']:
+        if modality in ['optical', 'joint']:
             print(f'Initializing optical encoder')
             self.s2_encoder = ViT(dim=self.encoder_dim, depth=self.encoder_depth, in_channels=self.s2_channels)
             self.GAP_FFN_s2 = nn.Sequential(
@@ -76,7 +76,7 @@ class CROMA(nn.Module, PyTorchModelHubMixin):
             # self.s2_encoder.load_state_dict(torch.load(pretrained_path)['s2_encoder'])
             # self.GAP_FFN_s2.load_state_dict(torch.load(pretrained_path)['s2_GAP_FFN'])
 
-        if modality == 'both':
+        if modality == 'joint':
             print(f'Initializing joint SAR-optical encoder')
             self.cross_encoder = BaseTransformerCrossAttn(dim=self.encoder_dim,
                                                         depth=int(self.encoder_depth/2),
@@ -86,24 +86,24 @@ class CROMA(nn.Module, PyTorchModelHubMixin):
             # load weights
             # self.cross_encoder.load_state_dict(torch.load(pretrained_path)['joint_encoder'])
 
-    def forward(self, x, SAR_images=None): #, optical_images=None):
-        optical_images = x
+    def forward(self, SAR_images=None, optical_images=None):
+        # optical_images = x
         return_dict = {}
-        if self.modality in ['SAR', 'both']:
+        if self.modality in ['SAR', 'joint']:
             assert SAR_images is not None, f'Modality is set to {self.modality}, but SAR_images are None'
             SAR_encodings = self.s1_encoder(imgs=SAR_images, attn_bias=self.attn_bias.to(SAR_images.device))  # (bsz, num_patches, encoder_dim)
             SAR_GAP = self.GAP_FFN_s1(SAR_encodings.mean(dim=1))  # (bsz, encoder_dim)
             return_dict['SAR_encodings'] = SAR_encodings
             return_dict['SAR_GAP'] = SAR_GAP
 
-        if self.modality in ['optical', 'both']:
+        if self.modality in ['optical', 'joint']:
             assert optical_images is not None, f'Modality is set to {self.modality}, but optical_images are None'
             optical_encodings = self.s2_encoder(imgs=optical_images, attn_bias=self.attn_bias.to(optical_images.device))  # (bsz, num_patches, encoder_dim)
             optical_GAP = self.GAP_FFN_s2(optical_encodings.mean(dim=1))  # (bsz, encoder_dim)
             return_dict['optical_encodings'] = optical_encodings
             return_dict['optical_GAP'] = optical_GAP
 
-        if self.modality == 'both':
+        if self.modality == 'joint':
             joint_encodings = self.cross_encoder(x=SAR_encodings, context=optical_encodings, relative_position_bias=self.attn_bias.to(optical_images.device))  # (bsz, num_patches, encoder_dim)
             joint_GAP = joint_encodings.mean(dim=1)  # (bsz, encoder_dim)
             return_dict['joint_encodings'] = joint_encodings

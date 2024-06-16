@@ -7,10 +7,12 @@ Currently supported foundation models:
 - RemoteCLIP 
 - SSL4EO (data2vec, MoCov3, DINO and MAE)
 - DOFA
-- CROMA (just multispectral)
+- GFM
+- CROMA
 
 Currently supported tasks:
 - Upernet for semantic segmentation (also multitemporal)
+- Change Detection (bitemporal)
 
 ### Setup
 Clone the repository:
@@ -85,20 +87,23 @@ python train.py configs/Prithvi_100M_config.yaml --path /your/datapath
 - **Datasets**: Add your dataset code within the `datasets` folder.
 - **Foundation Models**: Integrate new foundation model code under the `models` folder.
   - [X] SSL4EO-S12
-  - [ ] CROMA
+  - [X] CROMA
   - [X] Scale-MAE
   - [ ] SatlasNet
   - [X] Prithvi
   - [X] DOFA
   - [X] SpectralGPT
   - [X] RemoteCLIP
-  - [ ] (ms)GFM
-- **Downstream Tasks**: Insert the code for downstream tasks (i.e. change detection) within the `tasks` folder. This may also necessitate modifications to `train.py` to accommodate new tasks.
+  - [X] GFM (msGFM's weights are not released)
+- **Downstream Tasks**: Insert the code for downstream tasks (i.e. change detection) within the `tasks` folder. This may also necessitate modifications to `train.py` to accommodate new tasks. The tasks to be supported are i) multitemporal change detection and ii) pixel-level regression.
 - **Add the Test**: Create a `test.py`, following a similar structure of `train.py`
 
 #### Existing code
 
 TODO: here are some aspects that should be improved:
+- new tasks:
+    - support multitemporality for change detection (should be easy, if following what we did for upernet)
+    - support pixel level regression (should be easy, changing the loss when using upernet)
 - config file: 
     - we should uniform the task parameters and the encoder parameters (some of them are redundant). 
     - we should remove all the argparse from the training loop but the one about the paths and the training strategies (e.g. GPUs)
@@ -106,7 +111,6 @@ TODO: here are some aspects that should be improved:
     - create the config for `RemoteClip_large` and `CROMA_base` (easy)
     - create the configs to distinguish multitemporal and unitemporal training (easy)
     - add the multitemporal strategy parameter (e.g. "linear" or "ltae") to the config and pass it to the model (easy)
-- support SAR and multimodality data for CROMA (easy)
 - improve the `adapt_input` function (in `train.py`), which is used to adapt the input shape of the data to be processed into the models **to do it through the config (e.g. pass the list of bands through the config)** 
     - At the moment, it supports just the mentioned models (and dataset) -> NEW MODELS TO BE ADDED
     - Moreover, for selecting the correct number of bands, just Sentinel-2 is supported -> TO SHAPE IT ALSO FOR OTHER MODALITIES
