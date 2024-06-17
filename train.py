@@ -49,17 +49,18 @@ from models import choose_dofa, choose_ssl4eo_mae
 from models import adapt_gfm_pretrained
 from utils.metrics import Evaluation
 from utils.pos_embed import interpolate_pos_embed
-import pdb
-
+from utils.make_datasets import make_dataset
 
 def load_config(cfg_path):
     with open(cfg_path, "r") as file:
         config = yaml.safe_load(file)
-        print(config['gfm_encoder']['encoder_name'])
-        print(type(config['gfm_encoder']['encoder_name']))
-        print(config['task']['task_model_args']['encoder_type'])
-        print(type(config['task']['task_model_args']['encoder_type']))
-        return config
+
+        train_config = config["train"]
+        encoder_config = yaml.safe_load(train_config["encoder_config"])
+        dataset_config = yaml.safe_load(train_config["dataset_cofig"])
+        task_config = yaml.safe_load(train_config["task_config"])
+
+    return train_config, encoder_config, dataset_config, task_config
 
 
 def load_checkpoint(encoder, ckpt_path, model="prithvi"):
@@ -193,8 +194,7 @@ def create_task_model(cfg, encoder):
     return model
 
 
-def make_train_dataset(cfgs):
-    pass
+
 
 
 def VSCP(image, target):
@@ -372,12 +372,9 @@ def main(args):
     logging.info(json.dumps(args, indent=2))
 
     # Load Config file
-    config = load_config(args["config"])
-    logging.info("Loaded configuration:")
-    logging.info(json.dumps(config, indent=2))
-
-    encoder_cfg = config["gfm_encoder"]
-    task_cfg = config["task"]
+    train_cfg, encoder_cfg, dataset_cfg, task_cfg = load_config(args["config"])
+    # logging.info("Loaded configuration:")
+    # logging.info(json.dumps(config, indent=2))
 
     encoder_name = encoder_cfg["encoder_name"]
 

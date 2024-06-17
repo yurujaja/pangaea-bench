@@ -71,10 +71,6 @@ class CROMA(nn.Module, PyTorchModelHubMixin):
                     nn.GELU(),  # (BSZ, num_patches, inner_dim)
                     nn.Linear(int(4*self.encoder_dim), self.encoder_dim)  # (BSZ, num_patches, dim)
                 )
-            
-            # load weights
-            # self.s2_encoder.load_state_dict(torch.load(pretrained_path)['s2_encoder'])
-            # self.GAP_FFN_s2.load_state_dict(torch.load(pretrained_path)['s2_GAP_FFN'])
 
         if modality == 'joint':
             print(f'Initializing joint SAR-optical encoder')
@@ -83,8 +79,6 @@ class CROMA(nn.Module, PyTorchModelHubMixin):
                                                         num_heads=self.num_heads,
                                                         )
             
-            # load weights
-            # self.cross_encoder.load_state_dict(torch.load(pretrained_path)['joint_encoder'])
 
     def forward(self, SAR_images=None, optical_images=None):
         # optical_images = x
