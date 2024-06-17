@@ -660,7 +660,7 @@ def beit_small_patch16_224(pretrained=False, in_chans = 13, embed_dim = 384, **k
 #     if pretrained:
 #         checkpoint = torch.load(kwargs["init_ckpt"], map_location="cpu")
 #         model.load_state_dict(checkpoint["model"])
-    return model
+#    return model
 
 # @register_model
 # def beit_large_patch16_224_8k_vocab(pretrained=False, **kwargs):

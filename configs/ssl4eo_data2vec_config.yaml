@@ -7,16 +7,26 @@ gfm_encoder:
     embed_dim: 384
   encoder_train_params:
     bands:
+      - B1
       - B2
       - B3
       - B4
+      - B5
+      - B6
+      - B7
+      - B8
+      - B8a
+      - B9
+      - B10
+      - B11
+      - B12
     mask_ratio: 0.
     random_cropping: true
 task:
   task_model_name: upernet
   task_model_args:
     embed_dim: 384
-    num_frames: 5
+    num_frames: 1
     t_patch_size: 1
     patch_size: 16
     img_size: 224
@@ -25,7 +35,7 @@ task:
   task_train_params:
     mode: train
     epochs: 80
-    input_channels: 3
+    input_channels: 13
     output_channels: 15
     weight_param: 1.03
     label_smoothing: 0.0

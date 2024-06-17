@@ -7,9 +7,19 @@ gfm_encoder:
     embed_dim: 384
   encoder_train_params:
     bands:
+      - B1
       - B2
       - B3
       - B4
+      - B5
+      - B6
+      - B7
+      - B8
+      - B8a
+      - B9
+      - B10
+      - B11
+      - B12
     mask_ratio: 0.
     random_cropping: true
 task:
