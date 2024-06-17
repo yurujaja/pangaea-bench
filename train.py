@@ -51,14 +51,25 @@ from utils.metrics import Evaluation
 from utils.pos_embed import interpolate_pos_embed
 from utils.make_datasets import make_dataset
 
-def load_config(cfg_path):
-    with open(cfg_path, "r") as file:
-        config = yaml.safe_load(file)
 
-        train_config = config["train"]
-        encoder_config = yaml.safe_load(train_config["encoder_config"])
-        dataset_config = yaml.safe_load(train_config["dataset_cofig"])
-        task_config = yaml.safe_load(train_config["task_config"])
+def load_config(args):
+    cfg_path = args["run_config"]
+    with open(cfg_path, "r") as file:
+        train_config = yaml.safe_load(file)
+    
+    def load_specific_config(key):
+        if args.get(key):
+            with open(args[key], "r") as file:
+                return yaml.safe_load(file)
+        elif train_config.get(key):
+            with open(train_config[key], "r") as file:
+                return yaml.safe_load(file)
+        else:
+            raise ValueError(f"No configuration found for {key}")
+
+    encoder_config = load_specific_config("encoder_config")
+    dataset_config = load_specific_config("dataset_config") 
+    task_config = load_specific_config("task_config")
 
     return train_config, encoder_config, dataset_config, task_config
 
@@ -176,50 +187,22 @@ def get_encoder_model(cfg, load_pretrained=True, frozen_backbone=True):
     return encoder_model
 
 
-def create_task_model(cfg, encoder):
+def create_task_model(task_cfg, encoder_cfg, encoder):
     models = {
         "upernet": upernet_vit_base,
         "cd_vit": cd_vit, 
     }
-    model_name = cfg["task_model_name"]
+    model_name = task_cfg["task_model_name"]
+    model_args = task_cfg["task_model_args"]
     if model_name not in models:
         raise ValueError(f"{model_name} is not yet supported.")
-    model_args = cfg["task_model_args"]
-    
-    if model_args["encoder_type"] in ['satlas_pretrain']:
-        model_args["embed_dim"] = encoder.backbone.out_channels[0][1]
+
+    if encoder_cfg["encoder_name"] in ['satlas_pretrain']:
+        encoder_cfg["embed_dim"] = encoder.backbone.out_channels[0][1]
 
     model = models[model_name](encoder=encoder, **model_args)
 
     return model
-
-
-
-
-
-def VSCP(image, target):
-    n_augmented = image.shape[0] // 2
-
-    image_temp = image[: n_augmented * 2, :, :, :].copy()
-    target_temp = target[: n_augmented * 2, :, :].copy()
-
-    image_augmented = []
-    target_augmented = []
-    for i in range(n_augmented):
-        image_temp[i, :, target_temp[i + n_augmented, :, :] != -1] = image_temp[
-            i + n_augmented, :, target_temp[i + n_augmented, :, :] != -1
-        ]
-        image_augmented.append(image_temp[i, :, :].copy())
-
-        target_temp[i, target_temp[i + n_augmented, :, :] != -1] = target_temp[
-            i + n_augmented, target_temp[i + n_augmented, :, :] != -1
-        ]
-        target_augmented.append(target_temp[i, :, :].copy())
-
-    image_augmented = np.stack(image_augmented)
-    target_augmented = np.stack(target_augmented)
-
-    return image_augmented, target_augmented
 
 
 def seed_all(seed):
@@ -244,14 +227,17 @@ def parse_args(input_args=None):
     parser = argparse.ArgumentParser(
         description="Train a downstreamtask with geospatial foundation models."
     )
-    parser.add_argument("config", help="train config file path")
+    parser.add_argument("run_config", help="train config file path")
+    parser.add_argument("--dataset_config", help="train config file path")
+    parser.add_argument("--encoder_config", help="train config file path")
+    parser.add_argument("--task_config", help="train config file path")
     parser.add_argument(
         "--workdir", default="./work-dir", help="the dir to save logs and models"
     )
-    parser.add_argument("--path", default="data/MADOS", help="Path of the images")
     parser.add_argument(
         "--resume_from", type=str, help="load model from previous epoch"
     )
+
 
     if input_args is not None:
         args = parser.parse_args(input_args)
@@ -354,41 +340,48 @@ def main(args):
     g = torch.Generator()
     g.manual_seed(0)
 
-    # Setup logging, make one log on every process with the configuration for debugging.
+
     timestamp = time.strftime("%Y%m%d_%H%M%S", time.localtime())
-    exp_name = f"{os.path.splitext(osp.basename(args['config']))[0]}-{timestamp}"
+    # Load Config file
+    train_cfg, encoder_cfg, dataset_cfg, task_cfg = load_config(args)
+    
+    encoder_name = encoder_cfg["encoder_name"]
+    dataset_name = dataset_cfg["dataset_name"]
+    task_name = task_cfg["task_model_name"]
+
+    exp_name = f"{encoder_name}-{dataset_name}-{task_name}-{timestamp}"
     exp_dir = osp.join(args["workdir"], exp_name)
     os.makedirs(exp_dir, exist_ok=True)
     log_file = osp.join(exp_dir, f"{exp_name}.log")
+    # Checkpoints save path
     os.makedirs(os.path.join(exp_dir, "checkpoints"), exist_ok=True)
+    # Tensorboard
+    writer = SummaryWriter(os.path.join(exp_dir, "tensorboard", timestamp))
+    
+    # Logging
     logging.basicConfig(
         filename=log_file,
         format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
         datefmt="%m/%d/%Y %H:%M:%S",
         level=logging.INFO,
     )
-
-    logging.info("Parsed task training parameters:")
+    logging.info("Parsed running parameters:")
     logging.info(json.dumps(args, indent=2))
+    for name, config in {
+        "training": train_cfg,
+        "encoder": encoder_cfg,
+        "dataset": dataset_cfg,
+        "task": task_cfg,
+    }.items():
+        logging.info(f"Loaded {name} configuration:")
+        logging.info(json.dumps(config, indent=2))   
 
-    # Load Config file
-    train_cfg, encoder_cfg, dataset_cfg, task_cfg = load_config(args["config"])
-    # logging.info("Loaded configuration:")
-    # logging.info(json.dumps(config, indent=2))
-
-    encoder_name = encoder_cfg["encoder_name"]
-
-    # Tensorboard
-    writer = SummaryWriter(os.path.join(exp_dir, "tensorboard", timestamp))
-
-    splits_path = os.path.join(args["path"], "splits")
 
     # Construct Data loader
-    dataset_train = MADOS(args["path"], splits_path, "train")
-    dataset_val = MADOS(args["path"], splits_path, "train")
-
-    dl_cfg = task_cfg["data_loader"]
-
+    dataset_train, dataset_val, dataset_test = make_dataset(
+                                            dataset_cfg["dataset_name"], 
+                                            dataset_cfg["data_path"])
+    dl_cfg = dataset_cfg["data_loader"]
     train_loader = DataLoader(
         dataset_train,
         batch_size=dl_cfg["batch"],
@@ -419,41 +412,34 @@ def main(args):
         device = torch.device("cuda")
     else:
         device = torch.device("cpu")
-
     logging.info(f"Device used: {device}")
 
     # Get the encoder
     encoder = get_encoder_model(encoder_cfg, load_pretrained=True)
     encoder.to(device)
 
-    model = create_task_model(task_cfg, encoder)
+    model = create_task_model(task_cfg, encoder_cfg, encoder)
     model.to(device)
 
-    # #TEST
-    # x1 = torch.randn(2, 12, 120, 120).to(device)
-    # x2 = torch.randn(2, 2, 120, 120).to(device)
-    # lista = [x1, x2]
-    # output = model(lista) #, x2)
-    # print(model.encoder.modality)
-    # # print(input.shape)
-    # print(output.shape)
-    # sys.exit("Test finito")
-
     # Load model from specific epoch to continue the training or start the evaluation
-    if args["resume_from"] is not None:
-        model_file = args["resume_from"] 
+    if args["resume_from"]:
+        resume_file = args["resume_from"]
+    elif train_cfg["resume_from"]:
+        resume_file = train_cfg["resume_from"]
+    else:
+        resume_file = None
 
-        checkpoint = torch.load(model_file, map_location="cpu")
+    if resume_file:
+        checkpoint = torch.load(resume_file, map_location="cpu")
         model.load_state_dict(checkpoint)
-        logging.info("Load model files from: %s" % model_file)
+        logging.info("Load model files from: %s" % resume_file)
 
         del checkpoint  # dereference
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
 
     # Weighted Cross Entropy Loss & adam optimizer
-    task_args = task_cfg["task_train_params"]
-    weight = gen_weights(class_distr, c=task_args["weight_param"])
+    weight = gen_weights(class_distr, c=train_cfg["weight_param"])
 
     criterion = torch.nn.CrossEntropyLoss(
         ignore_index=-1,
@@ -463,30 +449,30 @@ def main(args):
     )
 
     optimizer = torch.optim.Adam(
-        model.parameters(), lr=task_args["lr"], weight_decay=task_args["decay"]
+        model.parameters(), lr=train_cfg["lr"], weight_decay=train_cfg["decay"]
     )
 
     # Learning Rate scheduler
-    if task_args["reduce_lr_on_plateau"] == 1:
+    if train_cfg["reduce_lr_on_plateau"] == 1:
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
             optimizer, mode="min", factor=0.1, patience=10, verbose=True
         )
     else:
         scheduler = torch.optim.lr_scheduler.MultiStepLR(
-            optimizer, task_args["lr_steps"], gamma=0.1, verbose=True
+            optimizer, train_cfg["lr_steps"], gamma=0.1, verbose=True
         )
 
     # Start training
     start_epoch = 1
     if args["resume_from"] is not None:       
         start_epoch = int(osp.splitext(osp.basename(args["resume_from"]))[0]) + 1
-    epochs = task_args["epochs"]
-    eval_every = task_args["eval_every"]
+    epochs = train_cfg["epochs"]
+    eval_every = train_cfg["eval_every"]
 
     img_size = encoder_cfg["encoder_model_args"]["img_size"] if encoder_cfg["encoder_model_args"].get("img_size") else None
 
     # Write model-graph to Tensorboard
-    if task_args["mode"] == "train":
+    if train_cfg["mode"] == "train":
         # Start Training!
         model.train()
 
@@ -506,7 +492,7 @@ def main(args):
                 image = adapt_input(
                     tensor=image,
                     size=img_size,
-                    bands=encoder_cfg["encoder_train_params"]["bands"],
+                    bands=dataset_cfg["bands"],
                     type="image",
                     encoder_type=encoder_name,
                 )
@@ -539,9 +525,9 @@ def main(args):
 
                 training_loss.append((loss.data * target.shape[0]).tolist())
 
-                if task_args["clip_grad"] is not None:
+                if train_cfg["clip_grad"] is not None:
                     torch.nn.utils.clip_grad_norm_(
-                        model.parameters(), task_args["clip_grad"]
+                        model.parameters(), train_cfg["clip_grad"]
                     )
 
                 optimizer.step()
@@ -583,7 +569,7 @@ def main(args):
                         image = adapt_input(
                             tensor=image,
                             size=img_size,
-                            bands=encoder_cfg["encoder_train_params"]["bands"],
+                            bands=dataset_cfg["bands"],
                             type="image",
                             encoder_type=encoder_name,
                         )
@@ -599,7 +585,7 @@ def main(args):
 
                         # Accuracy metrics only on annotated pixels
                         logits = torch.movedim(logits, (0, 1, 2, 3), (0, 3, 1, 2))
-                        logits = logits.reshape((-1, task_args["output_channels"]))
+                        logits = logits.reshape((-1, dataset_cfg["num_classes"]))
                         target = target.reshape(-1)
                         mask = target != -1
                         logits = logits[mask]
@@ -652,7 +638,7 @@ def main(args):
                 writer.add_scalar("F1/val weightF1", acc_val["weightF1"], epoch)
                 writer.add_scalar("IoU/val MacroIoU", acc_val["IoU"], epoch)
 
-                if task_args["reduce_lr_on_plateau"] == 1:
+                if train_cfg["reduce_lr_on_plateau"] == 1:
                     scheduler.step(sum(val_loss) / val_batches)
                 else:
                     scheduler.step()

@@ -5,7 +5,7 @@ from datasets.croptypemapping import CropTypeMappingDataset
 from datasets.sen1floods11 import Sen1Floods11
 
 
-def make_dataset(ds_name, path, split, **kwargs):
+def make_dataset(ds_name, path, **kwargs):
     datasets = {
         "mados": MADOS,
         "crop_type_mapping": CropTypeMappingDataset,
