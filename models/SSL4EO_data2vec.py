@@ -265,6 +265,7 @@ class VisionTransformer(nn.Module):
                  learn_layer_weights=False, layernorm_before_combine=False):
         super().__init__()
         self.num_classes = num_classes
+        self.name = "ssl4eo_data2vec"
         self.num_features = self.embed_dim = embed_dim  # num_features for consistency with other models
 
         self.patch_embed = PatchEmbed(

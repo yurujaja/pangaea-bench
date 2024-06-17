@@ -135,6 +135,7 @@ class MaskedAutoencoderViT(nn.Module):
 
         # --------------------------------------------------------------------------
         # MAE encoder specifics
+        self.name = "prithvi"
         self.patch_embed = PatchEmbed(img_size, patch_size,num_frames, tubelet_size, in_chans, embed_dim)
         num_patches = self.patch_embed.num_patches
 

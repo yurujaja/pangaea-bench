@@ -1,0 +1,8 @@
+encoder_name: remote_clip
+encoder_weights: ./pretrained_models/RemoteCLIP-ViT-B-32.pt
+encoder_model_args:
+  embed_dim: 512
+  img_size: 224
+  in_chans: 3
+  patch_size: 32
+  #check if to add other parameters (so far is useless)

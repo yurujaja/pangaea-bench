@@ -281,6 +281,7 @@ class VisionTransformer(nn.Module):
         # print(locals())
         #
         self.sep_pos_embed = sep_pos_embed
+        self.name = "spectral_gpt"
         # --------------------------------------------------------------------------
         # MAE encoder specifics
         self.patch_embed = PatchEmbed(
@@ -425,20 +426,21 @@ class VisionTransformer(nn.Module):
             "pos_embed_class",
         }
 
-def vit_base_patch8(num_classes = 15, in_chans = 12, **kwargs):
+def vit_spectral_gpt(in_chans = 12, t_patch_size = 3, img_size = 128, patch_size = 8, num_frames = 1,
+                     embed_dim = 768, depth = 12, num_heads = 12, mlp_ratio = 4.0,
+                      **kwargs):
     model = VisionTransformer(
-            in_chans=in_chans, 
-            t_patch_size=3, 
-            img_size = 128, 
-            patch_size=8,
-            num_frames=1,
-            num_classes=num_classes,
-            embed_dim=768,
-            depth=12,
-            num_heads=12,
-            mlp_ratio=4,
-            **kwargs
-            )
+        in_chans=in_chans,
+        t_patch_size=t_patch_size,
+        img_size=img_size,
+        patch_size=patch_size,
+        num_frames=num_frames,
+        embed_dim=embed_dim,
+        depth=depth,
+        num_heads=num_heads,
+        mlp_ratio=mlp_ratio,
+        **kwargs
+    )
             
     return model
 

@@ -444,14 +444,14 @@ class SimpleHead(torch.nn.Module):
 
 
 class Model(torch.nn.Module):
-    def __init__(self, num_channels=3, multi_image=False, backbone=Backbone.SWINB, fpn=False, head=None, num_categories=None, weights=None):
+    def __init__(self, in_chans=3, multi_image=False, backbone=Backbone.SWINB, fpn=False, head=None, num_categories=None, weights=None):
         """
         Initializes a model, based on desired imagery source and model components. This class can be used directly to
         create a randomly initialized model (if weights=None) or can be called from the Weights class to initialize a 
         SatlasPretrain pretrained foundation model.
 
         Args:
-            num_channels (int): Number of input channels that the backbone model should expect.
+            in_chans (int): Number of input channels that the backbone model should expect.
             multi_image (bool): Whether or not the model should expect single-image or multi-image input.
             backbone (Backbone): The architecture of the pretrained backbone. All image sources support SwinTransformer.
             fpn (bool): Whether or not to feed imagery through the pretrained Feature Pyramid Network after the backbone.
@@ -470,7 +470,7 @@ class Model(torch.nn.Module):
         if head and (num_categories is None):
             raise ValueError("Must specify num_categories if head is desired.")
 
-        self.backbone = self._initialize_backbone(num_channels, backbone, multi_image, weights)
+        self.backbone = self._initialize_backbone(in_chans, backbone, multi_image, weights)
 
         if fpn:
             self.fpn = self._initialize_fpn(self.backbone.out_channels, weights)
@@ -482,6 +482,8 @@ class Model(torch.nn.Module):
             self.head = self._initialize_head(head, self.fpn.out_channels, num_categories) if fpn else self._initialize_head(head, self.backbone.out_channels, num_categories)
         else:
             self.head = None
+
+        self.name = "satlasnet"
 
     def _initialize_backbone(self, num_channels, backbone_arch, multi_image, weights):
         # Load backbone model according to specified architecture.

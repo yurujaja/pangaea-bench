@@ -255,7 +255,8 @@ class OFAViT(nn.Module):
                  embed_dim=1024, depth=24, num_heads=16, wv_planes=128, num_classes=45,
                  global_pool=True, return_all_tokens = True, mlp_ratio=4., norm_layer=nn.LayerNorm):
         super().__init__()
-
+        
+        self.name = "dofa"
         self.wv_planes = wv_planes
         self.global_pool = global_pool
         self.return_all_tokens = return_all_tokens
@@ -281,7 +282,7 @@ class OFAViT(nn.Module):
 
     def forward_features(self, x, wave_list):
         # embed patches
-        print(wave_list)
+        # print(wave_list)
         wavelist = torch.tensor(wave_list, device=x.device).float()
         self.waves = wavelist
 
@@ -317,35 +318,40 @@ class OFAViT(nn.Module):
         x = self.forward_head(x)
         return x
 
-
-def vit_small_patch16(embed_dim=384, **kwargs):
+def dofa_vit(img_size = 224, patch_size=16, embed_dim=1024, depth=24, num_heads=16, mlp_ratio=4, global_pool=False):
     model = OFAViT(
-        patch_size=16, embed_dim=384, depth=12, num_heads=6, mlp_ratio=4,
-        norm_layer=partial(nn.LayerNorm, eps=1e-6), return_all_tokens=True, global_pool=False, **kwargs)
+        img_size = img_size, patch_size=patch_size, embed_dim=embed_dim, depth=depth, num_heads=num_heads, mlp_ratio=mlp_ratio,
+        norm_layer=partial(nn.LayerNorm, eps=1e-6), return_all_tokens=True, global_pool=global_pool)
     return model
 
-def vit_base_patch16(embed_dim=768, **kwargs):
-    model = OFAViT(
-        patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4,
-        norm_layer=partial(nn.LayerNorm, eps=1e-6), return_all_tokens=True, global_pool=False, **kwargs)
-    return model
+# def vit_small_patch16(embed_dim=384, **kwargs):
+#     model = OFAViT(
+#         patch_size=16, embed_dim=384, depth=12, num_heads=6, mlp_ratio=4,
+#         norm_layer=partial(nn.LayerNorm, eps=1e-6), return_all_tokens=True, global_pool=False, **kwargs)
+#     return model
+
+# def vit_base_patch16(embed_dim=768, **kwargs):
+#     model = OFAViT(
+#         patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4,
+#         norm_layer=partial(nn.LayerNorm, eps=1e-6), return_all_tokens=True, global_pool=False, **kwargs)
+#     return model
 
 
-def vit_large_patch16(embed_dim=1024, **kwargs):
-    model = OFAViT(
-        patch_size=16, embed_dim=1024, depth=24, num_heads=16, mlp_ratio=4,
-        norm_layer=partial(nn.LayerNorm, eps=1e-6), return_all_tokens=True, global_pool=False, **kwargs)
-    return model
+# def vit_large_patch16(embed_dim=1024, **kwargs):
+#     model = OFAViT(
+#         patch_size=16, embed_dim=1024, depth=24, num_heads=16, mlp_ratio=4,
+#         norm_layer=partial(nn.LayerNorm, eps=1e-6), return_all_tokens=True, global_pool=False, **kwargs)
+#     return model
 
 
-def vit_huge_patch14(embed_dim=1280, **kwargs):
-    model = OFAViT(
-        patch_size=14, embed_dim=1280, depth=32, num_heads=16, mlp_ratio=4,
-        norm_layer=partial(nn.LayerNorm, eps=1e-6), return_all_tokens=True, global_pool=False, **kwargs)
-    return model
+# def vit_huge_patch14(embed_dim=1280, **kwargs):
+#     model = OFAViT(
+#         patch_size=14, embed_dim=1280, depth=32, num_heads=16, mlp_ratio=4,
+#         norm_layer=partial(nn.LayerNorm, eps=1e-6), return_all_tokens=True, global_pool=False, **kwargs)
+#     return model
 
 if __name__ == "__main__":
-    model = vit_small_patch16()
+    model = dofa_vit()
     input = torch.randn(2, 3, 224, 224)
     output  = model.forward_features(input, [3.75, 3.75, 3.75])
     print(output.shape)
