@@ -22,11 +22,11 @@ cd geofm-bench
 ```
 Dependencies:
 ```
-conda create -n <env_name> python=3.8.12  # change <env_name> 
+conda create -n <env_name> python=3.9.0  # change <env_name> 
 conda activate <env_name> 
 conda install -c conda-forge gdal==3.3.2 
 
-pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu113 -f https://download.openmmlab.com/mmcv/dist/cu113/torch1.11/index.html
+pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu118 -f https://download.openmmlab.com/mmcv/dist/cu118/torch2.1/index.html
 
 conda install pytables==3.7.0
 ```
