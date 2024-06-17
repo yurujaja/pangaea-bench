@@ -17,9 +17,6 @@ import os
 import math
 
 from .ltae import LTAE2d
-import pdb
-# from ..models import *
-
 
 class UperNetViT(nn.Module):
     """Vision Transformer with support for global average pooling"""
@@ -27,27 +24,8 @@ class UperNetViT(nn.Module):
     def __init__(
             self,
             num_frames,
-            t_patch_size,
             encoder,
-            img_size=224,
-            patch_size=16,
-            # t_frames=3,
-            num_bands = None,
             num_classes=10,
-            embed_dim=768,
-            # depth=12,
-            # num_heads=12,
-            mlp_ratio=4.0,
-            no_qkv_bias=False,
-            qk_scale=None,
-            drop_rate=0.0,
-            attn_drop_rate=0.0,
-            drop_path_rate=0.5,
-            norm_layer=nn.LayerNorm,
-            dropout=0.5,  # 0.5
-            sep_pos_embed=True,
-            cls_embed=False,
-            encoder_type="prithvi",
             mt_strategy = "ltae",
             wave_list = None,
             **kwargs,
@@ -56,11 +34,11 @@ class UperNetViT(nn.Module):
 
         self.num_classes = num_classes
         self.encoder = encoder
-        self.embed_dim = embed_dim
-        self.encoder_type = encoder_type
+        self.embed_dim = self.encoder.embed_dim
+        self.img_size = self.encoder.img_size
+        self.encoder_type = self.encoder.name
         self.multitemporal = True if (num_frames > 1) else False # and encoder_type != "spectral_gpt") else False
-        self.img_size = img_size
-        self.L = int(img_size/patch_size)**2
+        self.L = int(self.img_size/self.encoder.patch_size)**2
 
         self.cls_seg = nn.Sequential(
             nn.Conv2d(256, self.num_classes, kernel_size=3, padding=1),
@@ -102,10 +80,10 @@ class UperNetViT(nn.Module):
         #for DOFA
         self.wave_list = wave_list
 
-        num_bands = t_patch_size if num_bands == None else num_bands
-        self.t = num_bands // t_patch_size
-        self.fc = nn.Sequential(
-            nn.Linear(self.t, 1))
+        if self.encoder_type == "spectral_gpt":
+            self.t = self.encoder.in_chans // self.encoder.t_patch_size
+            self.fc = nn.Sequential(
+                nn.Linear(self.t, 1))
         
         if self.multitemporal:
             self.mt_strategy = mt_strategy
@@ -160,6 +138,7 @@ class UperNetViT(nn.Module):
 
         elif self.encoder_type in ["gfm_swin"]:
             seg1 = self.encoder.forward_features(x1)
+            
         elif self.encoder_type in ["satlas_pretrain"]:
             raw_feature = self.encoder(x1)[0]
             seg1 = raw_feature
@@ -355,19 +334,11 @@ class FPNHEAD(nn.Module):
         return x
 
 
-def upernet_vit_base(encoder, num_classes = 15, t_patch_size = 1, num_bands = None, num_frames = 1, patch_size = 16, img_size = 224, embed_dim = 768, **kwargs):
+def upernet_vit_base(encoder, num_classes = 15, num_frames = 1, **kwargs):
     
     model = UperNetViT(
-        img_size=img_size,
         encoder = encoder,
-        patch_size=patch_size,
-        embed_dim=embed_dim,
-        # depth=12,
-        # num_heads=12,
-        num_bands = num_bands,
-        mlp_ratio=4,
-        num_frames=num_frames,
-        t_patch_size=t_patch_size,
+        num_frames = num_frames,
         num_classes = num_classes, 
         norm_layer=partial(nn.LayerNorm, eps=1e-6),
         **kwargs,

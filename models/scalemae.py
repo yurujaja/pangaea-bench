@@ -191,13 +191,15 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
     """Vision Transformer with support for global average pooling"""
 
     def __init__(
-        self, cls_token_flag=False, global_pool=False, patch_size=16, in_chans=3, embed_dim=1024, **kwargs
+        self, img_size, cls_token_flag=False, global_pool=False, patch_size=16, in_chans=3, embed_dim=1024, **kwargs
     ):
         super().__init__(embed_dim=embed_dim, **kwargs)
         self.cls_token_flag = cls_token_flag
 
+        self.name = "scale_mae"
+
         self.patch_embed = PatchEmbedUnSafe(
-            img_size=224,
+            img_size=img_size,
             patch_size=patch_size,
             in_chans=in_chans,
             embed_dim=embed_dim,
@@ -255,6 +257,7 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
 
 def vit_large_patch16(**kwargs):
     model = VisionTransformer(
+        img_size = 224,
         patch_size=16,
         embed_dim=1024,
         depth=24,

@@ -78,39 +78,25 @@ class VisionTransformer(nn.Module):
     def __init__(
             self,
             encoder,
-            num_bands=12,
-            t_patch_size=3,
-            img_size=224,
-            patch_size=16,
-            in_chans=3,
             num_classes=10,
-            embed_dim=768,
-            depth=12,
-            num_heads=12,
-            mlp_ratio=4.0,
-            no_qkv_bias=True,
-            qk_scale=None,
-            drop_rate=0.0,
-            attn_drop_rate=0.0,
-            drop_path_rate=0.5,
-            norm_layer=nn.LayerNorm,
-            encoder_type = "spectral_gpt",
-            sep_pos_embed=True,
-            cls_embed=False,
             **kwargs,
     ):
         super().__init__()
 
-        self.sep_pos_embed = sep_pos_embed
-        self.L = int(img_size/patch_size)**2
-        self.t = num_bands // t_patch_size #change to num_bands
-        self.encoder_type = encoder_type
-        self.embed_dim = embed_dim
-        self.img_size = img_size
+        self.L = int(self.img_size/self.encoder.patch_size)**2
+        self.embed_dim = self.encoder.embed_dim
+        self.img_size = self.encoder.img_size
+        self.encoder_type = self.encoder.name
         self.encoder = encoder
+        self.num_classes = num_classes
+
+        if self.encoder_type == "spectral_gpt":
+            self.t = self.encoder.in_chans // self.encoder.t_patch_size
+            self.fc = nn.Sequential(
+                nn.Linear(self.t, 1))
 
         self.cls_seg = nn.Sequential(
-            nn.Conv2d(256, 2, kernel_size=3, padding=1),
+            nn.Conv2d(256, self.num_classes, kernel_size=3, padding=1),
         )
 
         self.sm = nn.LogSoftmax(dim=1)
@@ -465,21 +451,10 @@ class FPNHEAD(nn.Module):
 
         return x
 
-def cd_vit(embed_dim = 768, patch_size = 8, img_size = 128, in_chans=1, num_bands=12, t_patch_size=3, 
-           encoder_type = "spectral_gpt", depth = 12, num_heads = 12, mlp_ratio = 4, encoder = None, **kwargs):
+def cd_vit(encoder, num_classes = 2, **kwargs):
     model = VisionTransformer(
         encoder = encoder,
-        patch_size=patch_size,
-        img_size = img_size,
-        in_chans=in_chans,
-        embed_dim=embed_dim,
-        depth=depth,
-        num_heads=num_heads,
-        mlp_ratio=mlp_ratio,
-        num_bands=num_bands,
-        t_patch_size=t_patch_size,
-        encoder_type = encoder_type,
-        norm_layer=partial(nn.LayerNorm, eps=1e-6),
+        num_classes = num_classes,
         **kwargs,
     )
     return model

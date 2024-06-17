@@ -1,0 +1,10 @@
+encoder_name: croma
+encoder_weights: ./pretrained_models/CROMA_large.pt
+encoder_model_args:
+  img_size: 120
+  in_chans: 13
+  embed_dim: 1024
+  patch_size: 8
+  num_heads: 16
+  depth: 24
+  modality: "optical" # support also "joint" and "SAR"

@@ -16,33 +16,36 @@ from huggingface_hub import PyTorchModelHubMixin
 
 
 class CROMA(nn.Module, PyTorchModelHubMixin):
-    def __init__(self, size='base', modality='joint', img_size=120, **kwargs):
+    def __init__(self, modality='joint', img_size=120, 
+                 encoder_dim = 768, encoder_depth = 12, num_heads = 16, patch_size = 8,
+                 **kwargs):
         """
         NOTE: img_size is not the spatial, spectral, or temporal resolution. It is the height and width of the image, in pixels.
         E.g., CROMA was pretrained on 120x120px images, hence img_size is 120 by default
         """
         super().__init__()
         # check types
-        assert type(size) == str, f'size must be a string, not {type(size)}'
+        # assert type(size) == str, f'size must be a string, not {type(size)}'
         assert type(modality) == str, f'modality must be a string, not {type(modality)}'
         assert type(img_size) == int, f'img_size must be an int, not {type(img_size)}'
 
         # check values
-        assert size in ['base', 'large'], f'size must be either base or large, not {size}'
+        # assert size in ['base', 'large'], f'size must be either base or large, not {size}'
         assert img_size % 8 == 0, f'img_size must be a multiple of 8, not {img_size}'
         assert modality in ['joint', 'SAR', 'optical'], f'modality must be either joint, SAR, or optical, not {modality}'
 
-        if size == 'base':
-            self.encoder_dim = 768
-            self.encoder_depth = 12
-            self.num_heads = 16
-            self.patch_size = 8
-        else:
-            # large by default
-            self.encoder_dim = 1024
-            self.encoder_depth = 24
-            self.num_heads = 16
-            self.patch_size = 8
+        # if size == 'base':
+        self.name = "croma"
+        self.encoder_dim = encoder_dim
+        self.encoder_depth = encoder_depth
+        self.num_heads = num_heads
+        self.patch_size = patch_size
+        # else:
+        #     # large by default
+        #     self.encoder_dim = 1024
+        #     self.encoder_depth = 24
+        #     self.num_heads = 16
+        #     self.patch_size = 8
 
         self.modality = modality
         self.num_patches = int((img_size/8)**2)
@@ -321,6 +324,10 @@ class ViT(nn.Module):
         x = self.transformer(x, relative_position_bias=attn_bias)
         return x
     
+
+def croma_vit(modality='joint', img_size=120, embed_dim=768, depth=12, num_heads=16, patch_size=8):
+    return CROMA(modality=modality, img_size=img_size, encoder_dim=embed_dim, encoder_depth=depth, num_heads=num_heads, patch_size=patch_size)
+
 if __name__ == '__main__':
 
     input1 = torch.rand(2, 12, 120, 120)

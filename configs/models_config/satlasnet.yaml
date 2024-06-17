@@ -1,0 +1,6 @@
+encoder_name: satlas_pretrain
+encoder_weights: ./pretrained_models/sentinel2_swinb_si_rgb.pth
+encoder_model_args:
+  in_chans: 3
+  multi_image: False
+  backbone: Backbone.SWINB

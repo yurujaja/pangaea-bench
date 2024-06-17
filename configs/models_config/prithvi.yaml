@@ -1,0 +1,12 @@
+encoder_name: prithvi
+encoder_weights: ./pretrained_models/Prithvi_100M.pt
+encoder_model_args:
+  img_size: 224
+  in_chans: 6
+  embed_dim: 768
+  patch_size: 16
+  num_heads: 12
+  depth: 12
+  mlp_ratio: 4
+  tubelet_size: 1
+  num_frames: 1 #temporal frames (needed also in the encoder for prithvi)

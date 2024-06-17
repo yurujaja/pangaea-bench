@@ -43,8 +43,8 @@ sys.path.append(os.path.join(up(up(os.path.abspath(__file__))), 'models'))
 # from tasks.models_vit_tensor_CD_2 import *
 
 from tasks import upernet_vit_base, cd_vit
-from models import prithvi_vit_base, spectral_gpt_vit_base, scale_mae_large, croma, remote_clip, ssl4eo_dino_small, ssl4eo_moco_small, ssl4eo_data2vec_small, gfm_swin_base, satlasnet
-from models import choose_dofa, choose_ssl4eo_mae
+from models import prithvi_vit_base, spectral_gpt_vit_base, scale_mae_large, croma, remote_clip, ssl4eo_mae, ssl4eo_dino_small, ssl4eo_moco_small, ssl4eo_data2vec_small, gfm_swin_base, dofa_vit, satlasnet
+# from models import choose_dofa, choose_ssl4eo_mae
 
 from models import adapt_gfm_pretrained
 from utils.metrics import Evaluation
@@ -133,18 +133,18 @@ def load_checkpoint(encoder, ckpt_path, model="prithvi"):
 def get_encoder_model(cfg, load_pretrained=True, frozen_backbone=True):
     # create model
     # encoder_size = cfg["encoder_size"] if not None else "base"
-    embed_dim = str(cfg["encoder_model_args"]["embed_dim"]) if cfg["encoder_model_args"].get("embed_dim") else None
+    # embed_dim = str(cfg["encoder_model_args"]["embed_dim"]) if cfg["encoder_model_args"].get("embed_dim") else None
     encoders = {
         "prithvi": prithvi_vit_base,
         "spectral_gpt": spectral_gpt_vit_base,
         "scale_mae": scale_mae_large,
         "croma": croma,
         "remote_clip": remote_clip,
-        "ssl4eo_mae": choose_ssl4eo_mae(embed_dim),
+        "ssl4eo_mae": ssl4eo_mae,
         "ssl4eo_dino" : ssl4eo_dino_small,
         "ssl4eo_moco" : ssl4eo_moco_small,
         "ssl4eo_data2vec": ssl4eo_data2vec_small,
-        "dofa": choose_dofa(embed_dim),
+        "dofa": dofa_vit,
         "gfm_swin": gfm_swin_base,
         "satlas_pretrain": satlasnet,
     }

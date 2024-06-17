@@ -1,0 +1,13 @@
+encoder_name: spectral_gpt
+encoder_weights: ./pretrained_models/SpectralGPT.pth
+encoder_model_args:
+  in_chans: 12    # number of spectral bands
+  t_patch_size: 3
+  depth: 12
+  embed_dim: 768
+  img_size: 128
+  num_frames: 1    # number of temporal frames 
+  num_classes: 15
+  num_heads: 12
+  patch_size: 8
+  mlp_ratio: 4
