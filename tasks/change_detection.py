@@ -83,7 +83,6 @@ class VisionTransformer(nn.Module):
     ):
         super().__init__()
 
-        self.L = int(self.img_size/self.encoder.patch_size)**2
         self.embed_dim = self.encoder.embed_dim
         self.img_size = self.encoder.img_size
         self.encoder_type = self.encoder.name
@@ -91,6 +90,8 @@ class VisionTransformer(nn.Module):
         self.num_classes = num_classes
 
         if self.encoder_type == "spectral_gpt":
+            self.L = int(self.img_size/self.encoder.patch_size)**2
+            
             self.t = self.encoder.in_chans // self.encoder.t_patch_size
             self.fc = nn.Sequential(
                 nn.Linear(self.t, 1))

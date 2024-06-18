@@ -260,6 +260,8 @@ class OFAViT(nn.Module):
         self.wv_planes = wv_planes
         self.global_pool = global_pool
         self.return_all_tokens = return_all_tokens
+        self.embed_dim = embed_dim 
+        
         if self.global_pool:
             norm_layer = norm_layer
             embed_dim = embed_dim

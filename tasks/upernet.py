@@ -34,11 +34,14 @@ class UperNetViT(nn.Module):
 
         self.num_classes = num_classes
         self.encoder = encoder
+
         self.embed_dim = self.encoder.embed_dim
-        self.img_size = self.encoder.img_size
+        self.img_size = self.encoder.img_size 
+
         self.encoder_type = self.encoder.name
         self.multitemporal = True if (num_frames > 1) else False # and encoder_type != "spectral_gpt") else False
-        self.L = int(self.img_size/self.encoder.patch_size)**2
+        if self.encoder_type in ("prithvi", "spectral_gpt"):
+            self.L = int(self.img_size/self.encoder.patch_size)**2
 
         self.cls_seg = nn.Sequential(
             nn.Conv2d(256, self.num_classes, kernel_size=3, padding=1),
@@ -140,8 +143,7 @@ class UperNetViT(nn.Module):
             seg1 = self.encoder.forward_features(x1)
             
         elif self.encoder_type in ["satlas_pretrain"]:
-            raw_feature = self.encoder(x1)[0]
-            seg1 = raw_feature
+            seg1 = self.encoder(x1)[0]
 
         return seg1
     
