@@ -67,7 +67,11 @@ You can find all the links in their official repository: https://github.com/zhu-
 ### Download Data
 - Please download [MADOS](https://zenodo.org/records/10664073)  into the `./data/MADOS` folder.
 - Please download [Sen1Floods11](https://github.com/cloudtostreet/Sen1Floods11)   into the `./data/Sen1Floods11` folder.
-
+- Please download HLS Burn Scars using:
+```
+wget https://huggingface.co/datasets/ibm-nasa-geospatial/hls_burn_scars/resolve/main/hls_burn_scars.tar.gz?download=true -O ./data/HLSBurnScars/hls_burn_scars.tar.gz
+tar -xzvf hls_burn_scars.tar.gz
+```
 
 ## Pipeline -demo
 To quickly get started, utilize [MADOS dataset](https://zenodo.org/records/10664073) to establish the complete pipeline for semantic segmentation.
