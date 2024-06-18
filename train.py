@@ -29,26 +29,20 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader
 from torch.nn import functional as F
-# from torchvision.transforms.functional import InterpolationMode
 from torchvision.transforms import functional as T
 
 from calflops import calculate_flops
 
 sys.path.append(up(os.path.abspath(__file__)))
-# print(up(os.path.abspath(__file__)))
 sys.path.append(os.path.join(up(up(os.path.abspath(__file__))), 'tasks'))
 sys.path.append(os.path.join(up(up(os.path.abspath(__file__))), 'models'))
-# from marinext_wrapper import MariNext
-
-# from tasks.models_vit_tensor_CD_2 import *
 
 from tasks import upernet_vit_base, cd_vit
-from models import prithvi_vit_base, spectral_gpt_vit_base, scale_mae_large, croma, remote_clip, ssl4eo_mae, ssl4eo_dino_small, ssl4eo_moco_small, ssl4eo_data2vec_small, gfm_swin_base, dofa_vit, satlasnet
-# from models import choose_dofa, choose_ssl4eo_mae
+from models import prithvi_vit_base, spectral_gpt_vit_base, scale_mae_large, croma, remote_clip, ssl4eo_mae, ssl4eo_dino_small, ssl4eo_moco, ssl4eo_data2vec_small, gfm_swin_base, dofa_vit, satlasnet
 
 from models import adapt_gfm_pretrained
 from utils.metrics import Evaluation
-from utils.pos_embed import interpolate_pos_embed
+from models.pos_embed import interpolate_pos_embed
 from utils.make_datasets import make_dataset
 
 
@@ -100,7 +94,6 @@ def load_checkpoint(encoder, ckpt_path, model="prithvi"):
             checkpoint_model_s1 = {"s1_encoder."+k: v for k, v in checkpoint_model["s1_encoder"].items()}
             checkpoint_model_s2 = {"s2_encoder."+k: v for k, v in checkpoint_model["s2_encoder"].items()}
             checkpoint_model = {**checkpoint_model_s2, **checkpoint_model_s1, **checkpoint_model_joint}
-
     elif model in ["spectral_gpt", "ssl4eo_data2vec", "ssl4eo_mae"]:
         checkpoint_model = checkpoint["model"]
     elif model in ["scale_mae"]:
@@ -116,6 +109,7 @@ def load_checkpoint(encoder, ckpt_path, model="prithvi"):
         checkpoint_model = adapt_gfm_pretrained(encoder, checkpoint)
     elif model in ["satlas_pretrain"]:
         logging.info("Loading pretrained model is already done when initializing the model.")
+
     # print(checkpoint_model.keys())
 
     state_dict = encoder.state_dict()
@@ -144,8 +138,6 @@ def load_checkpoint(encoder, ckpt_path, model="prithvi"):
 
 def get_encoder_model(cfg, load_pretrained=True, frozen_backbone=True):
     # create model
-    # encoder_size = cfg["encoder_size"] if not None else "base"
-    # embed_dim = str(cfg["encoder_model_args"]["embed_dim"]) if cfg["encoder_model_args"].get("embed_dim") else None
     encoders = {
         "prithvi": prithvi_vit_base,
         "spectral_gpt": spectral_gpt_vit_base,
@@ -154,7 +146,7 @@ def get_encoder_model(cfg, load_pretrained=True, frozen_backbone=True):
         "remote_clip": remote_clip,
         "ssl4eo_mae": ssl4eo_mae,
         "ssl4eo_dino" : ssl4eo_dino_small,
-        "ssl4eo_moco" : ssl4eo_moco_small,
+        "ssl4eo_moco" : ssl4eo_moco,
         "ssl4eo_data2vec": ssl4eo_data2vec_small,
         "dofa": dofa_vit,
         "gfm_swin": gfm_swin_base,
@@ -171,7 +163,6 @@ def get_encoder_model(cfg, load_pretrained=True, frozen_backbone=True):
         encoder_model = encoders[encoder_name](**encoder_model_args)
     else:
         encoder_model = encoders[encoder_name](**encoder_model_args)
-    # load pretrained weights if there are any
     
     if encoder_weights is not None and load_pretrained:
         if encoder_name in ["satlas_pretrain"]:
@@ -376,36 +367,35 @@ def main(args):
         logging.info(f"Loaded {name} configuration:")
         logging.info(json.dumps(config, indent=2))   
 
+    # # Construct Data loader
+    # dataset_train, dataset_val, dataset_test = make_dataset(
+    #                                         dataset_cfg["dataset_name"], 
+    #                                         dataset_cfg["data_path"])
+    # dl_cfg = dataset_cfg["data_loader"]
+    # train_loader = DataLoader(
+    #     dataset_train,
+    #     batch_size=dl_cfg["batch"],
+    #     shuffle=True,
+    #     num_workers=dl_cfg["num_workers"],
+    #     pin_memory=dl_cfg["pin_memory"],
+    #     prefetch_factor=dl_cfg["prefetch_factor"],
+    #     persistent_workers=dl_cfg["persistent_workers"],
+    #     worker_init_fn=seed_worker,
+    #     generator=g,
+    #     drop_last=True,
+    # )
 
-    # Construct Data loader
-    dataset_train, dataset_val, dataset_test = make_dataset(
-                                            dataset_cfg["dataset_name"], 
-                                            dataset_cfg["data_path"])
-    dl_cfg = dataset_cfg["data_loader"]
-    train_loader = DataLoader(
-        dataset_train,
-        batch_size=dl_cfg["batch"],
-        shuffle=True,
-        num_workers=dl_cfg["num_workers"],
-        pin_memory=dl_cfg["pin_memory"],
-        prefetch_factor=dl_cfg["prefetch_factor"],
-        persistent_workers=dl_cfg["persistent_workers"],
-        worker_init_fn=seed_worker,
-        generator=g,
-        drop_last=True,
-    )
-
-    val_loader = DataLoader(
-        dataset_val,
-        batch_size=dl_cfg["batch"],
-        shuffle=False,
-        num_workers=dl_cfg["num_workers"],
-        pin_memory=dl_cfg["pin_memory"],
-        prefetch_factor=dl_cfg["prefetch_factor"],
-        persistent_workers=dl_cfg["persistent_workers"],
-        worker_init_fn=seed_worker,
-        generator=g,
-    )
+    # val_loader = DataLoader(
+    #     dataset_val,
+    #     batch_size=dl_cfg["batch"],
+    #     shuffle=False,
+    #     num_workers=dl_cfg["num_workers"],
+    #     pin_memory=dl_cfg["pin_memory"],
+    #     prefetch_factor=dl_cfg["prefetch_factor"],
+    #     persistent_workers=dl_cfg["persistent_workers"],
+    #     worker_init_fn=seed_worker,
+    #     generator=g,
+    # )
 
     # Use gpu or cpu
     if torch.cuda.is_available():
@@ -420,6 +410,11 @@ def main(args):
 
     model = create_task_model(task_cfg, encoder_cfg, encoder)
     model.to(device)
+
+    input_ = torch.randn(2, 3, 224, 224).cuda() 
+    output = model(input_)
+    print(output.shape)
+    sys.exit()
 
     # Load model from specific epoch to continue the training or start the evaluation
     if args["resume_from"]:

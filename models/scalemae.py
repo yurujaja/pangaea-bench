@@ -12,8 +12,43 @@ import torch.nn as nn
 from timm.models.vision_transformer import Block, PatchEmbed
 import numpy as np
 from huggingface_hub import PyTorchModelHubMixin
-from pos_embed import get_2d_sincos_pos_embed_from_grid_torch
+# from .pos_embed import get_2d_sincos_pos_embed_from_grid_torch
 
+def get_2d_sincos_pos_embed_from_grid_torch(embed_dim, grid):
+    assert embed_dim % 2 == 0
+
+    # use half of dimensions to encode grid_h
+    emb_h = get_1d_sincos_pos_embed_from_grid_torch(
+        embed_dim // 2, grid[0]
+    )  # (H*W, D/2)
+    emb_w = get_1d_sincos_pos_embed_from_grid_torch(
+        embed_dim // 2, grid[1]
+    )  # (H*W, D/2)
+
+    emb = torch.cat([emb_h, emb_w], dim=1)  # (H*W, D)
+    return emb
+
+
+def get_1d_sincos_pos_embed_from_grid_torch(embed_dim, pos):
+    """
+    embed_dim: output dimension for each position
+    pos: a list of positions to be encoded: size (M,)
+    out: (M, D)
+    """
+    assert embed_dim % 2 == 0
+    old_shape = pos
+    omega = torch.arange(embed_dim // 2, dtype=torch.float32, device=pos.device)
+    omega /= embed_dim / 2.0
+    omega = 1.0 / 10000**omega  # (D/2,)
+
+    pos = pos.reshape(-1)  # (M,)
+    out = torch.einsum("m,d->md", pos, omega)  # (M, D/2), outer product
+
+    emb_sin = torch.sin(out)  # (M, D/2)
+    emb_cos = torch.cos(out)  # (M, D/2)
+
+    emb = torch.cat([emb_sin, emb_cos], dim=1)  # (M, D)
+    return emb
 
 def get_2d_sincos_pos_embed_with_resolution(
     embed_dim, grid_size, res, cls_token=False, device="cpu"
@@ -73,7 +108,8 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
         super().__init__(embed_dim=embed_dim, **kwargs)
         self.cls_token_flag = cls_token_flag
 
-        self.name = "scale_mae"
+        self.img_size = img_size
+        self.patch_size = patch_size
 
         self.patch_embed = PatchEmbedUnSafe(
             img_size=img_size,
@@ -161,10 +197,15 @@ class ScaleMAE_baseline(nn.Module, PyTorchModelHubMixin):
     def __init__(self, global_pool=False, cls_token_flag=True, **kwargs):
         super().__init__()
         self.model = get_ScaleMAE_model(global_pool= global_pool,cls_token = cls_token_flag)
+        self.embed_dim = self.model.embed_dim
+        self.patch_size = self.model.patch_size
+        self.img_size = self.model.img_size
+        self.name = "scale_mae"
 
     def forward(self,x,input_res=10.0):
 
-        input_res = torch.tensor([input_res]).to(x.device)
-        x = self.model(x,input_res=input_res)
+        input_res = torch.tensor([input_res]).to(x.device)#.double()
+        # print(input_res)
+        x = self.model(x,input_res=input_res)#.double()
         
         return x

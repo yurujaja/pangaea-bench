@@ -18,8 +18,27 @@ import torch.nn.init as init
 
 from timm.models.vision_transformer import PatchEmbed, Block
 
-from pos_embed import get_1d_sincos_pos_embed_from_grid_torch
+# from .pos_embed import get_1d_sincos_pos_embed_from_grid_torch
 
+def get_1d_sincos_pos_embed_from_grid_torch(embed_dim, pos):
+    """
+    embed_dim: output dimension for each position
+    pos: a list of positions to be encoded: size (M,)
+    out: (M, D)
+    """
+    assert embed_dim % 2 == 0
+    omega = torch.arange(embed_dim // 2, dtype=torch.float32, device=pos.device)
+    omega /= embed_dim / 2.0
+    omega = 1.0 / 10000**omega  # (D/2,)
+
+    pos = pos.reshape(-1)  # (M,)
+    out = torch.einsum("m,d->md", pos, omega)  # (M, D/2), outer product
+
+    emb_sin = torch.sin(out)  # (M, D/2)
+    emb_cos = torch.cos(out)  # (M, D/2)
+
+    emb = torch.cat([emb_sin, emb_cos], dim=1)  # (M, D)
+    return emb
 
 class TransformerWeightGenerator(nn.Module):
     def __init__(self, input_dim, output_dim, embed_dim, num_heads=4, num_layers=1):
@@ -195,7 +214,7 @@ class Dynamic_MLP_OFA(nn.Module):
     def forward(self, img_feat, wvs):
         inplanes = wvs.size(0)
         # wv_feats: 9,128 -> 9, 3x3x3
-        waves = get_1d_sincos_pos_embed_from_grid_torch(self.wv_planes, wvs * 1000)
+        waves = get_1d_sincos_pos_embed_from_grid_torch(self.wv_planes, wvs * 1000) #.double()
         waves = self.fclayer(waves)
         weight, bias = self._get_weights(waves)  # 3x3x3
 
@@ -239,6 +258,7 @@ class OFAViT(nn.Module):
         else:
             self.norm = norm_layer(embed_dim)
 
+        self.img_size = img_size
         self.patch_embed = Dynamic_MLP_OFA(wv_planes=128, inter_dim=128, kernel_size=16, embed_dim=embed_dim)
         self.num_patches = (img_size // patch_size) ** 2
         self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))

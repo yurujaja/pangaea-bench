@@ -1,5 +1,5 @@
 encoder_name: ssl4eo_mae
-encoder_weights: ./pretrained_models/B13_vits16_mae_0099.pth
+encoder_weights: /geomatics/gpuserver-0/vmarsocci/pretrained_models/B13_vits16_mae_0099.pth
 encoder_model_args:
   img_size: 224
   in_chans: 13

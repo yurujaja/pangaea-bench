@@ -1,5 +1,5 @@
 encoder_name: scale_mae
-encoder_weights: ./pretrained_models/scalemae-vitlarge-800.pth
+encoder_weights: /geomatics/gpuserver-0/vmarsocci/pretrained_models/scalemae-vitlarge-800.pth
 encoder_model_args:
   img_size: 224
   embed_dim: 1024

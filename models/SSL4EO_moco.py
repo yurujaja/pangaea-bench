@@ -23,12 +23,16 @@ __all__ = [
 ]
 
 class VisionTransformerMoCo(VisionTransformer):
-    def __init__(self, stop_grad_conv1=False, **kwargs):
+    def __init__(self, stop_grad_conv1=False, img_size = 224, patch_size = 16, embed_dim = 384, **kwargs):
         super().__init__(**kwargs)
         # Use fixed 2D sin-cos position embedding
         self.build_2d_sincos_position_embedding()
 
-        self.name = "ssl4eo_moco"
+        self.name = "ssl4eo_dino"
+        self.img_size = img_size
+        self.patch_size = patch_size
+        self.embed_dim = embed_dim
+        # print(self.embed_dim)
 
         # weight initialization
         for name, m in self.named_modules():
@@ -87,7 +91,7 @@ class ConvStem(nn.Module):
     """ 
     ConvStem, from Early Convolutions Help Transformers See Better, Tete et al. https://arxiv.org/abs/2106.14881
     """
-    def __init__(self, img_size=224, patch_size=16, in_chans=3, embed_dim=768, norm_layer=None, flatten=True):
+    def __init__(self, img_size=224, patch_size=16, in_chans=3, embed_dim=384, norm_layer=None, flatten=True):
         super().__init__()
 
         assert patch_size == 16, 'ConvStem only supports patch size of 16'
@@ -120,17 +124,17 @@ class ConvStem(nn.Module):
         assert H == self.img_size[0] and W == self.img_size[1], \
             f"Input image size ({H}*{W}) doesn't match model ({self.img_size[0]}*{self.img_size[1]})."
         x = self.proj(x)
-        print(x)
+        # print(x)
         if self.flatten:
             # print(x)
             x = x.flatten(2).transpose(1, 2)  # BCHW -> BNC
-            print(x)
+            # print(x)
         x = self.norm(x)
         return x
 
-def moco_vit(patch_size=16, embed_dim=384, depth=12, num_heads=6, mlp_ratio=4, qkv_bias=True, norm_layer=partial(nn.LayerNorm, eps=1e-6), **kwargs):
+def moco_vit(img_size = 224, patch_size=16, embed_dim=384, depth=12, num_heads=6, mlp_ratio=4, qkv_bias=True, norm_layer=partial(nn.LayerNorm, eps=1e-6), embed_layer = ConvStem, **kwargs):
+    # print(embed_dim)
     model = VisionTransformerMoCo(
-        patch_size=patch_size, embed_dim=embed_dim, depth=depth, num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias,
+        img_size = img_size, patch_size=patch_size, embed_dim=embed_dim, depth=depth, num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias,
         norm_layer=norm_layer, **kwargs)
-    model.default_cfg = _cfg()
     return model

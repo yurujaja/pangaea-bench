@@ -34,18 +34,12 @@ class CROMA(nn.Module, PyTorchModelHubMixin):
         assert img_size % 8 == 0, f'img_size must be a multiple of 8, not {img_size}'
         assert modality in ['joint', 'SAR', 'optical'], f'modality must be either joint, SAR, or optical, not {modality}'
 
-        # if size == 'base':
         self.name = "croma"
+        self.img_size = img_size
         self.embed_dim = embed_dim
         self.encoder_depth = encoder_depth
         self.num_heads = num_heads
         self.patch_size = patch_size
-        # else:
-        #     # large by default
-        #     self.encoder_dim = 1024
-        #     self.encoder_depth = 24
-        #     self.num_heads = 16
-        #     self.patch_size = 8
 
         self.modality = modality
         self.num_patches = int((img_size/8)**2)
@@ -319,5 +313,5 @@ class ViT(nn.Module):
         return x
     
 
-def croma_vit(modality='joint', img_size=120, embed_dim=768, depth=12, num_heads=16, patch_size=8):
+def croma_vit(modality='joint', img_size=120, embed_dim=768, depth=12, num_heads=16, patch_size=8, **kwargs):
     return CROMA(modality=modality, img_size=img_size, embed_dim=embed_dim, encoder_depth=depth, num_heads=num_heads, patch_size=patch_size)

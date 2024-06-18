@@ -1,6 +1,10 @@
 encoder_name: ssl4eo_moco
-encoder_weights: ./pretrained_models/B13_vits16_moco_0099.pth
-encoder_model_args:
-  img_size: 224
-  in_chans: 13
+encoder_weights: /geomatics/gpuserver-0/vmarsocci/pretrained_models/B13_vits16_moco_0099.pth
+encoder_model_args:   
+  img_size : 224
+  patch_size: 16
   embed_dim: 384
+  depth: 12
+  num_heads: 6 
+  mlp_ratio: 4
+  in_chans: 13

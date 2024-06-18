@@ -91,7 +91,7 @@ def get_1d_sincos_pos_embed_from_grid_torch(embed_dim, pos):
     emb_cos = torch.cos(out) # (M, D/2)
 
     emb = torch.cat([emb_sin, emb_cos], dim=1)  # (M, D)
-    return emb.double()
+    return emb #.double()
 
 def interpolate_pos_embed(model, checkpoint_model):
     if 'pos_embed' in checkpoint_model:
