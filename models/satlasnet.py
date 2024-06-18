@@ -1,3 +1,7 @@
+''' 
+Adapted from: https://github.com/allenai/satlas/blob/main/satlas/model/model.py
+'''
+
 import torch
 import torch.nn
 import requests
@@ -559,53 +563,3 @@ class Model(torch.nn.Module):
             return x, loss
         return x
 
-
-if __name__ == "__main__":
-    weights_manager = Weights()
-
-    # Test loading in all available pretrained backbone models, without FPN or Head.
-    # Test feeding in a random tensor as input.
-    for model_id in SatlasPretrain_weights.keys():
-        print("Attempting to load ...", model_id)
-        model_info = SatlasPretrain_weights[model_id]
-        model = weights_manager.get_pretrained_model(model_id)
-        rand_img = torch.rand((8, model_info['num_channels'], 128, 128))
-        output = model(rand_img)
-        print("Successfully initialized the pretrained model with ID:", model_id)
-
-    # Test loading in all available pretrained backbone models, with FPN, without Head.
-    # Test feeding in a random tensor as input.
-    for model_id in SatlasPretrain_weights.keys():
-        print("Attempting to load ...", model_id, " with pretrained FPN.")
-        model_info = SatlasPretrain_weights[model_id]
-        model = weights_manager.get_pretrained_model(model_id, fpn=True)
-        rand_img = torch.rand((8, model_info['num_channels'], 128, 128))
-        output = model(rand_img)
-        print("Successfully initialized the pretrained model with ID:", model_id, " with FPN.")
-
-    # Test loading in all available pretrained backbones, with FPN and with every possible Head.
-    # Test feeding in a random tensor as input. Randomly generated targets are fed into detection/instance heads.
-    for model_id in SatlasPretrain_weights.keys():
-        model_info = SatlasPretrain_weights[model_id]
-        for head in Head:
-            print("Attempting to load ...", model_id, " with pretrained FPN and randomly initialized ", head, " Head.")
-            model = weights_manager.get_pretrained_model(model_id, fpn=True, head=head, num_categories=2)
-            rand_img = torch.rand((1, model_info['num_channels'], 128, 128))
-
-            rand_targets = None
-            if head == Head.DETECT:
-                rand_targets = [{   
-                        'boxes': torch.tensor([[100, 100, 110, 110], [30, 30, 40, 40]], dtype=torch.float32),
-                        'labels': torch.tensor([0,1], dtype=torch.int64)
-                    }]
-            elif head == Head.INSTANCE:
-                rand_targets = [{
-                        'boxes': torch.tensor([[100, 100, 110, 110], [30, 30, 40, 40]], dtype=torch.float32),
-                        'labels': torch.tensor([0,1], dtype=torch.int64),
-                        'masks': torch.zeros_like(rand_img)
-                    }]
-            elif head in [Head.SEGMENT, Head.BINSEGMENT, Head.REGRESS]:
-                rand_targets = torch.zeros_like((rand_img))
-
-            output, loss = model(rand_img, rand_targets)
-            print("Successfully initialized the pretrained model with ID:", model_id, " with FPN and randomly initialized ", head, " Head.") 
