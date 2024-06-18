@@ -12,7 +12,7 @@ import torch.nn as nn
 from timm.models.vision_transformer import Block, PatchEmbed
 import numpy as np
 from huggingface_hub import PyTorchModelHubMixin
-from pos_embed import get_2d_sincos_pos_embed_from_grid_torch
+from .pos_embed import get_2d_sincos_pos_embed_from_grid_torch
 
 
 def get_2d_sincos_pos_embed_with_resolution(

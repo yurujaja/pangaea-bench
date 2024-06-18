@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 ''' 
-Adapted from: 
-Modifications: 
 Authors: Yuru Jia, Valerio Marsocci
 '''
 
@@ -17,7 +15,6 @@ def make_dataset(ds_name, path, **kwargs):
         "mados": MADOS,
         "crop_type_mapping": CropTypeMappingDataset,
         "sen1floods11": Sen1Floods11,
-
     }
     if ds_name not in datasets:
         raise ValueError(f"{ds_name} is not yet supported.")

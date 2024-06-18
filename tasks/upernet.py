@@ -36,7 +36,10 @@ class UperNetViT(nn.Module):
         self.encoder = encoder
 
         self.embed_dim = self.encoder.embed_dim
-        self.img_size = self.encoder.img_size 
+        if self.encoder.name == "gfm_swin":
+            self.embed_dim = int((self.encoder.img_size / self.encoder.patch_size) ** 2)
+
+        self.img_size = self.encoder.img_size
 
         self.encoder_type = self.encoder.name
         self.multitemporal = True if (num_frames > 1) else False # and encoder_type != "spectral_gpt") else False
@@ -174,7 +177,7 @@ class UperNetViT(nn.Module):
             seg1 = seg1[:, :, 1: ,:]
 
 
-        if self.multitemporal and self.encoder_type not in ["satlas_pretrain"]:
+        if self.multitemporal and self.encoder_type not in ["satlas_pretrain", "gfm_swin"]:
             if self.mt_strategy == "linear":
                 seg1 = seg1.permute(0, 2, 3, 1)
                 seg1 = self.t_map(seg1).squeeze()
@@ -184,12 +187,12 @@ class UperNetViT(nn.Module):
                 w = int(math.sqrt(s, ))
                 seg1 = seg1.reshape(N, t, w, w, c).permute(0, 1, 4, 2, 3)
                 seg1 = self.t_map(seg1).reshape(N, c, s).permute(0, 2, 1)
-        
+
         if self.encoder_type not in ["satlas_pretrain"]:
             N, s, _ = seg1.shape
             w = int(math.sqrt(s, ))
             seg1 = seg1.reshape(N, w, w, self.embed_dim).permute(0, 3, 1, 2).contiguous()
-
+        
         m = {}
 
         m[0] = self.conv0(seg1)  # 256,128,128

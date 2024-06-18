@@ -18,7 +18,7 @@ import torch.nn.init as init
 
 from timm.models.vision_transformer import PatchEmbed, Block
 
-from pos_embed import get_1d_sincos_pos_embed_from_grid_torch
+from .pos_embed import get_1d_sincos_pos_embed_from_grid_torch
 
 
 class TransformerWeightGenerator(nn.Module):

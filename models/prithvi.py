@@ -18,7 +18,7 @@ import numpy as np
 
 from einops import rearrange
 
-from pos_embed import get_1d_sincos_pos_embed_from_grid
+from .pos_embed import get_1d_sincos_pos_embed_from_grid
 
 def get_3d_sincos_pos_embed(embed_dim, grid_size, cls_token=False):
     """

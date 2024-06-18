@@ -1,4 +1,4 @@
-encoder_config: configs/models_config/remoteclip.yaml
+encoder_config: configs/models_config/gfm.yaml
 dataset_config: configs/datasets_config/mados.yaml
 task_config: configs/tasks_config/upernet.yaml
 mode: train

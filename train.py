@@ -48,7 +48,7 @@ from models import prithvi_vit_base, spectral_gpt_vit_base, scale_mae_large, cro
 
 from models import adapt_gfm_pretrained
 from utils.metrics import Evaluation
-from utils.pos_embed import interpolate_pos_embed
+from models.pos_embed import interpolate_pos_embed
 from utils.make_datasets import make_dataset
 
 
@@ -503,7 +503,7 @@ def main(args):
                     type="target",
                     encoder_type=encoder_name,
                 )
-                
+                '''
                 if epoch == start_epoch and it == 0:
                     flops, macs, params = calculate_flops(
                         model=model,
@@ -514,7 +514,7 @@ def main(args):
                     logging.info(
                         f"Model FLOPs:{flops}   MACs:{macs}    Params:{params}"
                     )
-                     
+                '''
                 optimizer.zero_grad()
 
                 logits = model(image)
