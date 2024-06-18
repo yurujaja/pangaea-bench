@@ -1,5 +1,5 @@
 encoder_name: prithvi
-encoder_weights: ./pretrained_models/Prithvi_100M.pt
+encoder_weights: /geomatics/gpuserver-0/vmarsocci/pretrained_models/Prithvi_100M.pt
 encoder_model_args:
   img_size: 224
   in_chans: 6

@@ -58,14 +58,9 @@ class PatchEmbed(nn.Module):
             img_size[1] // patch_size[1],
         )
 
-        self.img_size = img_size
-        self.patch_size = patch_size
-        self.embed_dim = embed_dim
-        self.in_chans = in_chans
-
         self.frames = frames
         self.t_patch_size = t_patch_size
-
+        self.img_size = img_size
         self.num_patches = num_patches
 
         self.grid_size = img_size[0] // patch_size[0]
@@ -294,6 +289,11 @@ class VisionTransformer(nn.Module):
         self.input_size = input_size
         self.cls_embed = cls_embed
         self.num_classes = num_classes
+        self.img_size = img_size
+        self.patch_size = patch_size
+        self.embed_dim = embed_dim
+        self.in_chans = in_chans
+        self.t_patch_size = t_patch_size
 
         if self.cls_embed:
             self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))

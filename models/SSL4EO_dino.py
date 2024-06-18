@@ -168,7 +168,11 @@ class VisionTransformer(nn.Module):
                  drop_path_rate=0., norm_layer=nn.LayerNorm, **kwargs):
         super().__init__()
         self.num_features = self.embed_dim = embed_dim
+        
         self.name = "ssl4eo_dino"
+        self.img_size = img_size
+        self.patch_size = patch_size
+        self.embed_dim = embed_dim
 
         self.patch_embed = PatchEmbed(
             img_size=img_size, patch_size=patch_size, in_chans=in_chans, embed_dim=embed_dim)

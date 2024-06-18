@@ -1,5 +1,5 @@
 encoder_name: gfm_swin
-encoder_weights: ./pretrained_models/gfm.pth
+encoder_weights: /geomatics/gpuserver-0/yjia/pretrained_models/gfm.pth
 encoder_model_args:
   img_size: 128
   embed_dim: 128

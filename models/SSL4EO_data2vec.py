@@ -435,6 +435,11 @@ class VisionTransformerForCyclicalTraining(nn.Module):
         )
         num_patches = self.patch_embed.num_patches
 
+        self.img_size = img_size
+        self.patch_size = patch_size
+        self.embed_dim = embed_dim
+        self.name = "ssl4eo_data2vec"
+
         self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
         self.mask_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
         if use_abs_pos_emb:

@@ -84,7 +84,7 @@ class UperNetViT(nn.Module):
         )
 
         #for DOFA
-        self.wave_list = wave_list
+        self.wave_list = [1,1,1] #wave_list
 
         if self.encoder_type == "spectral_gpt":
             self.t = self.encoder.in_chans // self.encoder.t_patch_size

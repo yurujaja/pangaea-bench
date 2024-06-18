@@ -1,5 +1,5 @@
 encoder_name: remote_clip
-encoder_weights: ./pretrained_models/RemoteCLIP-ViT-B-32.pt
+encoder_weights: /geomatics/gpuserver-0/vmarsocci/pretrained_models/RemoteCLIP-ViT-B-32.pt
 encoder_model_args:
   model_name: ViT-B-32
   embed_dim: 512
