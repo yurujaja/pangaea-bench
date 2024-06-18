@@ -128,12 +128,7 @@ TODO: here are some aspects that should be improved:
 - new tasks:
     - support multitemporality for change detection (should be easy, if following what we did for upernet)
     - support pixel level regression (should be easy, changing the loss when using upernet)
-- config file: 
-    - we should remove all the argparse from the training loop but the one about the paths and the training strategies (e.g. GPUs)
-    - we should remove the mean and the std parameters from the config and let the normalization in each dataset loading
-    - create the config for `RemoteClip_large` and `CROMA_base` (easy)
-    - create the configs to distinguish multitemporal and unitemporal training (easy)
-    - add the multitemporal strategy parameter (e.g. "linear" or "ltae") to the config and pass it to the model (easy)
+
 - improve the `adapt_input` function (in `train.py`), which is used to adapt the input shape of the data to be processed into the models **to do it through the config (e.g. pass the list of bands through the config)** 
     - At the moment, it supports just the mentioned models (and dataset) -> NEW MODELS TO BE ADDED
     - Moreover, for selecting the correct number of bands, just Sentinel-2 is supported -> TO SHAPE IT ALSO FOR OTHER MODALITIES
