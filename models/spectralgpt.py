@@ -349,12 +349,7 @@ class VisionTransformer(nn.Module):
         x = self.patch_embed(x)
         N, T, L, C = x.shape  # T: temporal; L: spatial
 
-        
-        # print(x.shape)
-
         x = x.view([N, T * L, C])
-
-        # print(x.shape)
 
         # append cls token
         if self.cls_embed:
@@ -396,13 +391,7 @@ class VisionTransformer(nn.Module):
             q+=1
             if q == 12:
                 seg1 = x
-            # if q == 6:
-            #     seg2 = x
-            # if q == 9:
-            #     seg3 = x
-            # if q == 12:
-            #     seg4 = x
-        return x #, seg1
+        return x
 
     def unpatchify(self, x):
         """
@@ -445,18 +434,3 @@ def vit_spectral_gpt(in_chans = 12, t_patch_size = 3, img_size = 128, patch_size
     )
             
     return model
-
-if __name__ == '__main__':
-
-    input1 = torch.rand(2, 12, 128, 128)
-    # input1 = torch.rand(2, 12, 128, 128)
-
-
-    model = vit_base_patch8()
-    # model = UPerNet(3)
-    # model = vit_base_patch16()
-    output = model(input1) #["out"]
-    print((output.shape))
-    # for n, p in model.named_parameters():
-    #     # if 'block' in n:
-    #         print(n)

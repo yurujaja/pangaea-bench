@@ -582,97 +582,18 @@ class VisionTransformerForCyclicalTraining(nn.Module):
             return self.lm_head(x)
 
 
-# @register_model
-# def beit_base_patch16_224(pretrained=False, **kwargs):
-#     #_ = kwargs.pop("num_classes")
-#     model = VisionTransformerForCyclicalTraining(
-#         patch_size=16,
-#         embed_dim=768,
-#         depth=12,
-#         num_heads=12,
-#         mlp_ratio=4,
-#         qkv_bias=True,
-#         norm_layer=partial(nn.LayerNorm, eps=1e-6),
-#         **kwargs
-#     )
-#     model.default_cfg = _cfg()
-#     if pretrained:
-#         checkpoint = torch.load(kwargs["init_ckpt"], map_location="cpu")
-#         model.load_state_dict(checkpoint["model"])
-#     return model
-
-
 @register_model
-def beit_small_patch16_224(pretrained=False, in_chans = 13, embed_dim = 384, **kwargs):
-    #_ = kwargs.pop("num_classes")
+def beit(in_chans=3, embed_dim=768, patch_size=16, depth=12, num_heads=6, mlp_ratio=4, init_values=0.1, qkv_bias=True, norm_layer=partial(nn.LayerNorm, eps=1e-6), **kwargs):
     model = VisionTransformerForCyclicalTraining(
-        patch_size=16,
+        patch_size=patch_size,
         in_chans=in_chans,
         embed_dim=embed_dim,
-        depth=12,
-        num_heads=6,
-        mlp_ratio=4,
-        init_values=0.1,
-        qkv_bias=True,
-        norm_layer=partial(nn.LayerNorm, eps=1e-6),
+        depth=depth,
+        num_heads=num_heads,
+        mlp_ratio=mlp_ratio,
+        init_values=init_values,
+        qkv_bias=qkv_bias,
+        norm_layer=norm_layer,
         **kwargs
     )
-    model.default_cfg = _cfg()
-    if pretrained:
-        checkpoint = torch.load(kwargs["init_ckpt"], map_location="cpu")
-        model.load_state_dict(checkpoint["model"])
     return model
-
-
-# @register_model
-# def beit_large_patch16_224(pretrained=False, **kwargs):
-#     # _ = kwargs.pop("num_classes")
-#     model = VisionTransformerForCyclicalTraining(
-#         patch_size=16,
-#         embed_dim=1024,
-#         depth=24,
-#         num_heads=16,
-#         mlp_ratio=4,
-#         qkv_bias=True,
-#         norm_layer=partial(nn.LayerNorm, eps=1e-6),
-#         **kwargs
-#     )
-#     model.default_cfg = _cfg()
-#     if pretrained:
-#         checkpoint = torch.load(kwargs["init_ckpt"], map_location="cpu")
-#         model.load_state_dict(checkpoint["model"])
-#     return model
-
-
-# @register_model
-# def beit_huge_patch16_224(pretrained=False, **kwargs):
-#     # _ = kwargs.pop("num_classes")
-#     model = VisionTransformerForCyclicalTraining(
-#         patch_size=16,
-#         embed_dim=1280,
-#         depth=32,
-#         num_heads=16,
-#         mlp_ratio=4,
-#         qkv_bias=True,
-#         norm_layer=partial(nn.LayerNorm, eps=1e-6),
-#         **kwargs
-#     )
-#     model.default_cfg = _cfg()
-#     if pretrained:
-#         checkpoint = torch.load(kwargs["init_ckpt"], map_location="cpu")
-#         model.load_state_dict(checkpoint["model"])
-#    return model
-
-# @register_model
-# def beit_large_patch16_224_8k_vocab(pretrained=False, **kwargs):
-#     _ = kwargs.pop("num_classes")
-#     model = VisionTransformerForMaskedImageModeling(
-#         patch_size=16, embed_dim=1024, depth=24, num_heads=16, mlp_ratio=4, qkv_bias=True,
-#         norm_layer=partial(nn.LayerNorm, eps=1e-6), vocab_size=8192, **kwargs)
-#     model.default_cfg = _cfg()
-#     if pretrained:
-#         checkpoint = torch.load(
-#             kwargs["init_ckpt"], map_location="cpu"
-#         )
-#         model.load_state_dict(checkpoint["model"])
-#     return model

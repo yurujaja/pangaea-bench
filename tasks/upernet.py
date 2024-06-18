@@ -112,8 +112,11 @@ class UperNetViT(nn.Module):
         if self.encoder_type in ["prithvi", "ssl4eo_mae"]:
             seg1, _, _ = self.encoder.forward_encoder(x1, mask_ratio= 0.0)
 
-        elif self.encoder_type in ["scale_mae", "ssl4eo_dino", "ssl4eo_moco"]:
+        elif self.encoder_type in ["ssl4eo_dino", "ssl4eo_moco"]:
             seg1 = self.encoder(x1)
+
+        elif self.encoder_type in ["scale_mae"]:
+            seg1 = self.encoder(x1, input_res=10.0)
 
         elif self.encoder_type in ["dofa"]:
             seg1 = self.encoder.forward_features(x1, wave_list=self.wave_list)

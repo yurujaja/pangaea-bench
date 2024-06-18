@@ -6,15 +6,8 @@ Authors: Yuru Jia, Valerio Marsocci
 '''
 
 import numpy as np
-
 import torch
 
-# --------------------------------------------------------
-# 2D sine-cosine position embedding
-# References:
-# Transformer: https://github.com/tensorflow/models/blob/master/official/nlp/transformer/model_utils.py
-# MoCo v3: https://github.com/facebookresearch/moco-v3
-# --------------------------------------------------------
 def get_2d_sincos_pos_embed(embed_dim, grid_size, cls_token=False):
     """
     grid_size: int of the grid height and width
@@ -41,6 +34,21 @@ def get_2d_sincos_pos_embed_from_grid(embed_dim, grid):
     emb_w = get_1d_sincos_pos_embed_from_grid(embed_dim // 2, grid[1])  # (H*W, D/2)
 
     emb = np.concatenate([emb_h, emb_w], axis=1) # (H*W, D)
+    return emb
+
+
+def get_2d_sincos_pos_embed_from_grid_torch(embed_dim, grid):
+    assert embed_dim % 2 == 0
+
+    # use half of dimensions to encode grid_h
+    emb_h = get_1d_sincos_pos_embed_from_grid_torch(
+        embed_dim // 2, grid[0]
+    )  # (H*W, D/2)
+    emb_w = get_1d_sincos_pos_embed_from_grid_torch(
+        embed_dim // 2, grid[1]
+    )  # (H*W, D/2)
+
+    emb = torch.cat([emb_h, emb_w], dim=1)  # (H*W, D)
     return emb
 
 
@@ -85,11 +93,6 @@ def get_1d_sincos_pos_embed_from_grid_torch(embed_dim, pos):
     emb = torch.cat([emb_sin, emb_cos], dim=1)  # (M, D)
     return emb.double()
 
-# --------------------------------------------------------
-# Interpolate position embeddings for high-resolution
-# References:
-# DeiT: https://github.com/facebookresearch/deit
-# --------------------------------------------------------
 def interpolate_pos_embed(model, checkpoint_model):
     if 'pos_embed' in checkpoint_model:
         pos_embed_checkpoint = checkpoint_model['pos_embed']

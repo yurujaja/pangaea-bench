@@ -1,18 +1,17 @@
-''' 
-Adapted from: https://github.com/allenai/satlas/blob/main/satlas/model/model.py
+'''
+Adapted from: https://github.com/allenai/satlas
+Modifications: modifications for compatibility with the benchmark
+Authors: Yuru Jia, Valerio Marsocci
 '''
 
 import torch
 import torch.nn
-import requests
 import collections
-from io import BytesIO
-import math
-import numpy as np
+
 import torch.nn.functional as F
 import torchvision
 from enum import Enum, auto
-import pdb
+
 
 def adjust_state_dict_prefix(state_dict, needed, prefix=None, prefix_allowed_count=None):
     """

@@ -11,46 +11,14 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from timm.models.vision_transformer import Block, DropPath, Mlp
+from timm.models.vision_transformer import Block
 from timm.models.layers import to_2tuple
 
 import numpy as np
 
 from einops import rearrange
 
-import os
-import math
-
-
-def get_1d_sincos_pos_embed_from_grid(embed_dim, pos):
-    """
-    embed_dim: output dimension for each position
-    pos: a list of positions to be encoded: size (M,)
-    out: (M, D)
-    """
-    assert embed_dim % 2 == 0
-    omega = np.arange(embed_dim // 2, dtype=np.float32)
-    omega /= embed_dim / 2.
-    omega = 1. / 10000**omega  # (D/2,)
-
-    pos = pos.reshape(-1)  # (M,)
-    out = np.einsum('m,d->md', pos, omega)  # (M, D/2), outer product
-
-    emb_sin = np.sin(out) # (M, D/2)
-    emb_cos = np.cos(out) # (M, D/2)
-
-    emb = np.concatenate([emb_sin, emb_cos], axis=1)  # (M, D)
-    return emb
-
-def get_2d_sincos_pos_embed_from_grid(embed_dim, grid):
-    assert embed_dim % 2 == 0
-
-    # use half of dimensions to encode grid_h
-    emb_h = get_1d_sincos_pos_embed_from_grid(embed_dim // 2, grid[0])  # (H*W, D/2)
-    emb_w = get_1d_sincos_pos_embed_from_grid(embed_dim // 2, grid[1])  # (H*W, D/2)
-
-    emb = np.concatenate([emb_h, emb_w], axis=1) # (H*W, D)
-    return emb
+from pos_embed import get_1d_sincos_pos_embed_from_grid
 
 def get_3d_sincos_pos_embed(embed_dim, grid_size, cls_token=False):
     """
@@ -324,32 +292,39 @@ class MaskedAutoencoderViT(nn.Module):
         loss = self.forward_loss(imgs, pred, mask)
         return loss, pred, mask
 
-def vit_base_patch16_prithvi(num_classes = 15, num_frames = 1, **kwargs):
+# def vit_base_patch16_prithvi(num_classes = 15, num_frames = 1, **kwargs):
     
+#     model = MaskedAutoencoderViT(
+#         decoder_depth = 8, 
+#         decoder_embed_dim = 512, 
+#         decoder_num_heads = 16, 
+#         depth = 12, 
+#         embed_dim =  768, 
+#         img_size = 224,
+#         in_chans= 6,
+#         num_frames= num_frames,
+#         num_heads=12,
+#         patch_size= 16,
+#         tubelet_size= 1,
+#         **kwargs)
+
+#     return model
+
+
+def vit_prithvi(num_frames=1, decoder_depth=8, decoder_embed_dim=512, decoder_num_heads=16, depth=12, 
+                embed_dim=768, img_size=224, in_chans=6, num_heads=12, patch_size=16, tubelet_size=1, **kwargs):
     model = MaskedAutoencoderViT(
-        decoder_depth = 8, 
-        decoder_embed_dim = 512, 
-        decoder_num_heads = 16, 
-        depth = 12, 
-        embed_dim =  768, 
-        img_size = 224,
-        in_chans= 6,
-        num_frames= num_frames,
-        num_heads=12,
-        patch_size= 16,
-        tubelet_size= 1,
-        **kwargs)
-
+        decoder_depth=decoder_depth,
+        decoder_embed_dim=decoder_embed_dim,
+        decoder_num_heads=decoder_num_heads,
+        depth=depth,
+        embed_dim=embed_dim,
+        img_size=img_size,
+        in_chans=in_chans,
+        num_frames=num_frames,
+        num_heads=num_heads,
+        patch_size=patch_size,
+        tubelet_size=tubelet_size,
+        **kwargs
+    )
     return model
-
-
-
-if __name__ == '__main__':
-
-    input1 = torch.rand(2, 6, 5, 224, 224)
-
-    model = vit_base_patch16_prithvi(num_frames=5)
-
-    output = model.forward_encoder(input1, mask_ratio=.0)
-    print(len(output))
-    print(output[0].shape)

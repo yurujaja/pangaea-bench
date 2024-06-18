@@ -1,13 +1,9 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
-# All rights reserved.
-
-# This source code is licensed under the license found in the
-# LICENSE file in the root directory of this source tree.
-# --------------------------------------------------------
-# References:
-# timm: https://github.com/rwightman/pytorch-image-models/tree/master/timm
-# DeiT: https://github.com/facebookresearch/deit
-# --------------------------------------------------------
+# -*- coding: utf-8 -*-
+''' 
+Adapted from: https://github.com/zhu-xlab/DOFA
+Modifications: minimal modifications
+Authors: Yuru Jia, Valerio Marsocci
+'''
 
 from functools import partial
 from operator import mul
@@ -20,36 +16,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.nn.init as init
 
-import pdb
-import math
-from functools import reduce
-import json
-
 from timm.models.vision_transformer import PatchEmbed, Block
 
-random_seed = 1234
-torch.manual_seed(random_seed)
+from pos_embed import get_1d_sincos_pos_embed_from_grid_torch
 
-
-def get_1d_sincos_pos_embed_from_grid_torch(embed_dim, pos):
-    """
-    embed_dim: output dimension for each position
-    pos: a list of positions to be encoded: size (M,)
-    out: (M, D)
-    """
-    assert embed_dim % 2 == 0
-    omega = torch.arange(embed_dim // 2, dtype=torch.float32, device=pos.device)
-    omega /= embed_dim / 2.0
-    omega = 1.0 / 10000**omega  # (D/2,)
-
-    pos = pos.reshape(-1)  # (M,)
-    out = torch.einsum("m,d->md", pos, omega)  # (M, D/2), outer product
-
-    emb_sin = torch.sin(out)  # (M, D/2)
-    emb_cos = torch.cos(out)  # (M, D/2)
-
-    emb = torch.cat([emb_sin, emb_cos], dim=1)  # (M, D)
-    return emb
 
 class TransformerWeightGenerator(nn.Module):
     def __init__(self, input_dim, output_dim, embed_dim, num_heads=4, num_layers=1):
@@ -325,35 +295,3 @@ def dofa_vit(img_size = 224, patch_size=16, embed_dim=1024, depth=24, num_heads=
         img_size = img_size, patch_size=patch_size, embed_dim=embed_dim, depth=depth, num_heads=num_heads, mlp_ratio=mlp_ratio,
         norm_layer=partial(nn.LayerNorm, eps=1e-6), return_all_tokens=True, global_pool=global_pool)
     return model
-
-# def vit_small_patch16(embed_dim=384, **kwargs):
-#     model = OFAViT(
-#         patch_size=16, embed_dim=384, depth=12, num_heads=6, mlp_ratio=4,
-#         norm_layer=partial(nn.LayerNorm, eps=1e-6), return_all_tokens=True, global_pool=False, **kwargs)
-#     return model
-
-# def vit_base_patch16(embed_dim=768, **kwargs):
-#     model = OFAViT(
-#         patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4,
-#         norm_layer=partial(nn.LayerNorm, eps=1e-6), return_all_tokens=True, global_pool=False, **kwargs)
-#     return model
-
-
-# def vit_large_patch16(embed_dim=1024, **kwargs):
-#     model = OFAViT(
-#         patch_size=16, embed_dim=1024, depth=24, num_heads=16, mlp_ratio=4,
-#         norm_layer=partial(nn.LayerNorm, eps=1e-6), return_all_tokens=True, global_pool=False, **kwargs)
-#     return model
-
-
-# def vit_huge_patch14(embed_dim=1280, **kwargs):
-#     model = OFAViT(
-#         patch_size=14, embed_dim=1280, depth=32, num_heads=16, mlp_ratio=4,
-#         norm_layer=partial(nn.LayerNorm, eps=1e-6), return_all_tokens=True, global_pool=False, **kwargs)
-#     return model
-
-if __name__ == "__main__":
-    model = dofa_vit()
-    input = torch.randn(2, 3, 224, 224)
-    output  = model.forward_features(input, [3.75, 3.75, 3.75])
-    print(output.shape)

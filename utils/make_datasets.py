@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+''' 
+Adapted from: 
+Modifications: 
+Authors: Yuru Jia, Valerio Marsocci
+'''
+
 import os
 
 from datasets.mados import MADOS
