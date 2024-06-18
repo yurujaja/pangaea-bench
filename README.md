@@ -62,7 +62,16 @@ wget https://huggingface.co/XShadow/DOFA/blob/main/DOFA_ViT_base_e100.pth
 wget https://huggingface.co/XShadow/DOFA/blob/main/DOFA_ViT_large_e100.pth
 
 # SSL4EO
-You can find all the links in their official repository: https://github.com/zhu-xlab/SSL4EO-S12/tree/main
+You can find all the links in their official repository https://github.com/zhu-xlab/SSL4EO-S12/tree/main
+
+# GFM
+You can find the links in their official repository 
+https://github.com/boranhan/Geospatial_Foundation_Models?tab=readme-ov-file#geopile-and-gfm-pretrained-model
+
+# SatlasPretrain (currently only support Sentinel2_SwinB_SI_RGB)
+You can find the links in their official repository 
+https://github.com/allenai/satlaspretrain_models/
+
 ```
 ### Download Data
 - Please download [MADOS](https://zenodo.org/records/10664073)  into the `./data/MADOS` folder.
@@ -88,7 +97,6 @@ python train.py configs/run.yaml \
 #### Note:
 - **Configurations**: The current configurations include parameters related to foundation model encoders and downstream task models. Future updates will aim to enhance configuration files to support additional tasks. To support multitemporal, please modify the `num_frames` parameter in the config. Consider that in all the configs, it appears in the `task` parameters. For Prithvi it appears also in the `encoder` parameter.
 - **Logging**: By default, logs and checkpoints are stored in the `work_dir`.
-- **RemoteClip**: to support RemoteClip you have to add `pool_type: "none"` in the `vision_cfg` part of the correspondent configs that you find in the installed package (i.e. `open_clip/tree/main/src/open_clip/model_configs/ViT-B-32.json` and `open_clip/tree/main/src/open_clip/model_configs/ViT-L-14.json`). This enables the encoder to retrieve all the tokens in output of the transformer encoder (and not just the first one), so that they can be used for the downstream task (semantic segmentation with UperNet)
 - **The Mados dataset** in use is a simple example that only iterates over the first few data items. To do so, we added the following line 126 in `datasets/mados.py`. Also, the validation dataloder is set to be the same as the train dataloader (line 323 in `train.py`).
     ```
     self.tiles = self.tiles[:2]
