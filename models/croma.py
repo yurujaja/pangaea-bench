@@ -321,17 +321,3 @@ class ViT(nn.Module):
 
 def croma_vit(modality='joint', img_size=120, embed_dim=768, depth=12, num_heads=16, patch_size=8):
     return CROMA(modality=modality, img_size=img_size, embed_dim=embed_dim, encoder_depth=depth, num_heads=num_heads, patch_size=patch_size)
-
-if __name__ == '__main__':
-
-    input1 = torch.rand(2, 12, 120, 120)
-    input2 = torch.rand(2, 2, 120, 120)
-
-    # model = CROMA(modality="optical")
-    model = CROMA()
-
-    output = model(optical_images=input1, SAR_images=input2)
-    print(len(output))
-    print((output.keys()))
-    print(output["optical_encodings"].shape)
-    print(output["joint_encodings"].shape)

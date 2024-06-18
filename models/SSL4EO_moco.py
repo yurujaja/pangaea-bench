@@ -128,33 +128,9 @@ class ConvStem(nn.Module):
         x = self.norm(x)
         return x
 
-## original moco_v3 has 12 num_heads
-def moco_vit_small(embed_dim = 384, **kwargs):
+def moco_vit(patch_size=16, embed_dim=384, depth=12, num_heads=6, mlp_ratio=4, qkv_bias=True, norm_layer=partial(nn.LayerNorm, eps=1e-6), **kwargs):
     model = VisionTransformerMoCo(
-        patch_size=16, embed_dim=384, depth=12, num_heads=6, mlp_ratio=4, qkv_bias=True,
-        norm_layer=partial(nn.LayerNorm, eps=1e-6), **kwargs)
+        patch_size=patch_size, embed_dim=embed_dim, depth=depth, num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias,
+        norm_layer=norm_layer, **kwargs)
     model.default_cfg = _cfg()
     return model
-
-# def vit_base(**kwargs):
-#     model = VisionTransformerMoCo(
-#         patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True,
-#         norm_layer=partial(nn.LayerNorm, eps=1e-6), **kwargs)
-#     model.default_cfg = _cfg()
-#     return model
-
-# def vit_conv_small(**kwargs):
-#     # minus one ViT block
-#     model = VisionTransformerMoCo(
-#         patch_size=16, embed_dim=384, depth=11, num_heads=12, mlp_ratio=4, qkv_bias=True,
-#         norm_layer=partial(nn.LayerNorm, eps=1e-6), embed_layer=ConvStem, **kwargs)
-#     model.default_cfg = _cfg()
-#     return model
-
-# def vit_conv_base(**kwargs):
-#     # minus one ViT block
-#     model = VisionTransformerMoCo(
-#         patch_size=16, embed_dim=768, depth=11, num_heads=12, mlp_ratio=4, qkv_bias=True,
-#         norm_layer=partial(nn.LayerNorm, eps=1e-6), embed_layer=ConvStem, **kwargs)
-#     model.default_cfg = _cfg()
-#     return model

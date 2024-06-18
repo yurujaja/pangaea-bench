@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+''' 
+Adapted from: https://github.com/allenai/satlas
+Modifications: modifications for compatibility with the benchmark
+Authors: Yuru Jia, Valerio Marsocci
+'''
+
 import torch
 import torch.nn
 import requests

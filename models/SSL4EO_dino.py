@@ -263,30 +263,11 @@ class VisionTransformer(nn.Module):
                 output.append(self.norm(x))
         return output
 
-
-def vit_tiny(patch_size=16, in_chans =3, **kwargs):
+def vit(patch_size=16, in_chans=3, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4,
+             qkv_bias=True, drop_rate=0., attn_drop_rate=0., drop_path_rate=0.,
+             norm_layer=partial(nn.LayerNorm, eps=1e-6), **kwargs):
     model = VisionTransformer(
-        patch_size=patch_size, in_chans = in_chans, embed_dim=192, depth=12, num_heads=3, mlp_ratio=4,
-        qkv_bias=True, norm_layer=partial(nn.LayerNorm, eps=1e-6), **kwargs)
+        patch_size=patch_size, in_chans=in_chans, embed_dim=embed_dim, depth=depth, num_heads=num_heads,
+        mlp_ratio=mlp_ratio, qkv_bias=qkv_bias, drop_rate=drop_rate, attn_drop_rate=attn_drop_rate,
+        drop_path_rate=drop_path_rate, norm_layer=norm_layer, **kwargs)
     return model
-
-
-def vit_small(patch_size=16, in_chans =3, embed_dim = 384, **kwargs):
-    model = VisionTransformer(
-        patch_size=patch_size, in_chans = in_chans, embed_dim=384, depth=12, num_heads=6, mlp_ratio=4,
-        qkv_bias=True, norm_layer=partial(nn.LayerNorm, eps=1e-6), **kwargs)
-    return model
-
-
-def vit_base(patch_size=16, in_chans =3,  **kwargs):
-    model = VisionTransformer(
-        patch_size=patch_size, in_chans = in_chans, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4,
-        qkv_bias=True, norm_layer=partial(nn.LayerNorm, eps=1e-6), **kwargs)
-    return model
-
-if __name__ == '__main__':
-    input1 = torch.rand(2, 12, 128, 128)
-
-    model = vit_small(in_chans = 12)
-    output = model(input1)
-    print((output.shape))
