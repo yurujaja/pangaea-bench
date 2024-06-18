@@ -115,6 +115,8 @@ class SwinBackbone(torch.nn.Module):
                 [16, 512],
                 [32, 1024],
             ]
+            self.embed_dim = 128
+
         elif arch == 'swint':
             self.backbone = torchvision.models.swin_v2_t()
             self.out_channels = [
@@ -123,6 +125,8 @@ class SwinBackbone(torch.nn.Module):
                 [16, 384],
                 [32, 768],
             ]
+
+            self.embed_dim = 96
         else:
             raise ValueError("Backbone architecture not supported.")
 
@@ -444,7 +448,7 @@ class SimpleHead(torch.nn.Module):
 
 
 class Model(torch.nn.Module):
-    def __init__(self, in_chans=3, multi_image=False, backbone=Backbone.SWINB, fpn=False, head=None, num_categories=None, weights=None):
+    def __init__(self, in_chans=3, multi_image=False, img_size = 224, backbone=Backbone.SWINB, fpn=False, head=None, num_categories=None, weights=None):
         """
         Initializes a model, based on desired imagery source and model components. This class can be used directly to
         create a randomly initialized model (if weights=None) or can be called from the Weights class to initialize a 
@@ -471,6 +475,8 @@ class Model(torch.nn.Module):
             raise ValueError("Must specify num_categories if head is desired.")
 
         self.backbone = self._initialize_backbone(in_chans, backbone, multi_image, weights)
+        self.embed_dim = self.backbone.embed_dim
+        self.img_size = img_size
 
         if fpn:
             self.fpn = self._initialize_fpn(self.backbone.out_channels, weights)
@@ -483,7 +489,7 @@ class Model(torch.nn.Module):
         else:
             self.head = None
 
-        self.name = "satlasnet"
+        self.name = "satlas_pretrain"
 
     def _initialize_backbone(self, num_channels, backbone_arch, multi_image, weights):
         # Load backbone model according to specified architecture.

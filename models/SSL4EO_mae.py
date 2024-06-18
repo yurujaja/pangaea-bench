@@ -104,6 +104,7 @@ class MaskedAutoencoderViT(nn.Module):
         # MAE encoder specifics
         self.name = "ssl4eo_mae"
         self.patch_embed = PatchEmbed(img_size, patch_size, in_chans, embed_dim)
+        self.embed_dim = embed_dim
         num_patches = self.patch_embed.num_patches
 
         self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))

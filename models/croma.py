@@ -17,7 +17,7 @@ from huggingface_hub import PyTorchModelHubMixin
 
 class CROMA(nn.Module, PyTorchModelHubMixin):
     def __init__(self, modality='joint', img_size=120, 
-                 encoder_dim = 768, encoder_depth = 12, num_heads = 16, patch_size = 8,
+                 embed_dim = 768, encoder_depth = 12, num_heads = 16, patch_size = 8,
                  **kwargs):
         """
         NOTE: img_size is not the spatial, spectral, or temporal resolution. It is the height and width of the image, in pixels.
@@ -36,7 +36,7 @@ class CROMA(nn.Module, PyTorchModelHubMixin):
 
         # if size == 'base':
         self.name = "croma"
-        self.encoder_dim = encoder_dim
+        self.embed_dim = embed_dim
         self.encoder_depth = encoder_depth
         self.num_heads = num_heads
         self.patch_size = patch_size
@@ -55,29 +55,29 @@ class CROMA(nn.Module, PyTorchModelHubMixin):
 
         if modality in ['SAR', 'joint']:
             print(f'Initializing SAR encoder')
-            self.s1_encoder = ViT(dim=self.encoder_dim, depth=int(self.encoder_depth/2), in_channels=self.s1_channels)
+            self.s1_encoder = ViT(dim=self.embed_dim, depth=int(self.encoder_depth/2), in_channels=self.s1_channels)
             self.GAP_FFN_s1 = nn.Sequential(
-                    nn.LayerNorm(self.encoder_dim),
-                    nn.Linear(self.encoder_dim, int(4*self.encoder_dim)),  # (BSZ, num_patches, inner_dim)
+                    nn.LayerNorm(self.embed_dim),
+                    nn.Linear(self.embed_dim, int(4*self.embed_dim)),  # (BSZ, num_patches, inner_dim)
                     nn.GELU(),  # (BSZ, num_patches, inner_dim)
-                    nn.Linear(int(4*self.encoder_dim), self.encoder_dim)  # (BSZ, num_patches, dim)
+                    nn.Linear(int(4*self.embed_dim), self.embed_dim)  # (BSZ, num_patches, dim)
                 )
             
             # load weights
 
         if modality in ['optical', 'joint']:
             print(f'Initializing optical encoder')
-            self.s2_encoder = ViT(dim=self.encoder_dim, depth=self.encoder_depth, in_channels=self.s2_channels)
+            self.s2_encoder = ViT(dim=self.embed_dim, depth=self.encoder_depth, in_channels=self.s2_channels)
             self.GAP_FFN_s2 = nn.Sequential(
-                    nn.LayerNorm(self.encoder_dim),
-                    nn.Linear(self.encoder_dim, int(4*self.encoder_dim)),  # (BSZ, num_patches, inner_dim)
+                    nn.LayerNorm(self.embed_dim),
+                    nn.Linear(self.embed_dim, int(4*self.embed_dim)),  # (BSZ, num_patches, inner_dim)
                     nn.GELU(),  # (BSZ, num_patches, inner_dim)
-                    nn.Linear(int(4*self.encoder_dim), self.encoder_dim)  # (BSZ, num_patches, dim)
+                    nn.Linear(int(4*self.embed_dim), self.embed_dim)  # (BSZ, num_patches, dim)
                 )
 
         if modality == 'joint':
             print(f'Initializing joint SAR-optical encoder')
-            self.cross_encoder = BaseTransformerCrossAttn(dim=self.encoder_dim,
+            self.cross_encoder = BaseTransformerCrossAttn(dim=self.embed_dim,
                                                         depth=int(self.encoder_depth/2),
                                                         num_heads=self.num_heads,
                                                         )
@@ -320,7 +320,7 @@ class ViT(nn.Module):
     
 
 def croma_vit(modality='joint', img_size=120, embed_dim=768, depth=12, num_heads=16, patch_size=8):
-    return CROMA(modality=modality, img_size=img_size, encoder_dim=embed_dim, encoder_depth=depth, num_heads=num_heads, patch_size=patch_size)
+    return CROMA(modality=modality, img_size=img_size, embed_dim=embed_dim, encoder_depth=depth, num_heads=num_heads, patch_size=patch_size)
 
 if __name__ == '__main__':
 

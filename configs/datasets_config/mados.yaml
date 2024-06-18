@@ -1,5 +1,5 @@
 dataset_name: mados
-data_path: ./data/MADOS
+data_path: /geomatics/gpuserver-0/vmarsocci/MADOS
 num_classes: 15
 multi_temporal: false
 multi_modal: false
@@ -7,9 +7,6 @@ bands:
   - B2
   - B3
   - B4
-  - B5
-  - B6
-  - B7
 data_mean:
   - 775.2290211032589
   - 1080.992780391705
