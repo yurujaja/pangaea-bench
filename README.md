@@ -9,12 +9,13 @@ Currently supported foundation models:
 - DOFA
 - GFM
 - CROMA
+- SatlasNet (SwinB-backbone)
 
 Currently supported tasks:
 - Upernet for semantic segmentation (also multitemporal)
 - Change Detection (bitemporal)
 
-### Setup
+## Setup
 Clone the repository:
 ```
 git clone https://github.com/yurujaja/geofm-bench.git
@@ -63,12 +64,27 @@ wget https://huggingface.co/XShadow/DOFA/blob/main/DOFA_ViT_large_e100.pth
 # SSL4EO
 You can find all the links in their official repository: https://github.com/zhu-xlab/SSL4EO-S12/tree/main
 ```
+### Download Data
+- Please download [MADOS](https://zenodo.org/records/10664073)  into the `./data/MADOS` folder.
+- Please download [Sen1Floods11](https://github.com/cloudtostreet/Sen1Floods11)   into the `./data/Sen1Floods11` folder.
 
-### Pipeline -demo
-To quickly get started, utilize [MADOS dataset](https://zenodo.org/records/10664073) to establish the complete pipeline for semantic segmentation:
+
+## Pipeline -demo
+To quickly get started, utilize [MADOS dataset](https://zenodo.org/records/10664073) to establish the complete pipeline for semantic segmentation.
+
+**Option1**: Configure all your pipeline params in `configs/run.yaml`, set `encoder_config`, `dataset_config`, and  `task_config`. Then, start the training process by running:
 ```
-python train.py configs/Prithvi_100M_config.yaml --path /your/datapath
+python train.py configs/run.yaml
 ```
+
+**Option2**: Specify your configuration directly through command-line arguments as follows:
+```
+python train.py configs/run.yaml \
+    --encoder_config configs/models_config/prithvi.yaml \
+    --dataset_config configs/datasets_config/mados.yaml \
+    --task_config configs/tasks_config/upernet.yaml
+```
+
 #### Note:
 - **Configurations**: The current configurations include parameters related to foundation model encoders and downstream task models. Future updates will aim to enhance configuration files to support additional tasks. To support multitemporal, please modify the `num_frames` parameter in the config. Consider that in all the configs, it appears in the `task` parameters. For Prithvi it appears also in the `encoder` parameter.
 - **Logging**: By default, logs and checkpoints are stored in the `work_dir`.
@@ -85,11 +101,11 @@ python train.py configs/Prithvi_100M_config.yaml --path /your/datapath
 
 #### New code
 - **Datasets**: Add your dataset code within the `datasets` folder.
-- **Foundation Models**: Integrate new foundation model code under the `models` folder.
+- **Foundation Models**: Integrate new foundation model code under the `models` folder. (done)
   - [X] SSL4EO-S12
   - [X] CROMA
   - [X] Scale-MAE
-  - [ ] SatlasNet
+  - [X] SatlasNet
   - [X] Prithvi
   - [X] DOFA
   - [X] SpectralGPT
@@ -105,7 +121,6 @@ TODO: here are some aspects that should be improved:
     - support multitemporality for change detection (should be easy, if following what we did for upernet)
     - support pixel level regression (should be easy, changing the loss when using upernet)
 - config file: 
-    - we should uniform the task parameters and the encoder parameters (some of them are redundant). 
     - we should remove all the argparse from the training loop but the one about the paths and the training strategies (e.g. GPUs)
     - we should remove the mean and the std parameters from the config and let the normalization in each dataset loading
     - create the config for `RemoteClip_large` and `CROMA_base` (easy)
