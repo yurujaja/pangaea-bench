@@ -268,11 +268,7 @@ class MADOS(Dataset): # Extend PyTorch's Dataset class
 def gen_weights(class_distribution, c = 1.02):
     return 1/torch.log(c + class_distribution)
 
-'''
 if __name__ == "__main__":
-    path = "/geomatics/gpuserver-0/vmarsocci/MADOS"
-    splits_path = os.path.join(path,'splits')
-    test_data = MADOS(path = path, splits = splits_path) #, download = True)
-    print(next(iter(test_data)))
-	
- '''
+    mados_path = "data/mados"
+    ds = MADOS(mados_path)
+    print(next(iter(ds)))
