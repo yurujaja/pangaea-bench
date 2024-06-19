@@ -151,7 +151,7 @@ class MADOS(torch.utils.data.Dataset):
                 for crop in splits:
                     crop_name = os.path.basename(tile)+'_'+crop.split('.tif')[0]
                     
-                    if crop_name in self.ROIs_split:
+                    if crop_name in self.ROIs_split[:2]:
     
                         # Load Input Images
                         # Get the bands for the specific crop 

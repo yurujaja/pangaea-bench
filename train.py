@@ -263,70 +263,52 @@ def parse_args(input_args=None):
 def adapt_input(
     tensor,
     size,
-    bands=["a", "b"],
-    type="image",
+    source_bands,
+    target_bands,
     encoder_type="spectral_gpt",
     device=torch.device("cuda"),
 ):
-    # shape = tensor.shape
-    sentinel2 = {
-        "B1": 0,
-        "B2": 1,
-        "B3": 2,
-        "B4": 3,
-        "B5": 4,
-        "B6": 5,
-        "B7": 6,
-        "B8": 7,
-        "B8a": 8,
-        "B9": 9,
-        "B10": 10,
-        "B11": 11,
-        "B12": 12,
-    }
-    if type == "target":
-        return T.resize(
-            img=tensor, size=(size, size), interpolation=T.InterpolationMode.NEAREST
-        )
-    elif type == "image":
-        if len(tensor.shape) == 4:
-            Bs, C, H, W = tensor.shape
-            n_tensor = T.resize(
-                img=tensor,
+    if len(tensor.shape) == 4:
+        Bs, C, H, W = tensor.shape
+        n_tensor = T.resize(
+            img=tensor,
+            size=(size, size),
+            interpolation=T.InterpolationMode.BILINEAR,
+        ).float()
+        if encoder_type in ("prithvi"):
+            n_tensor = n_tensor.unsqueeze(dim=2)
+            Te = 1
+    elif len(tensor.shape) == 5:
+        Bs, C, Te, H, W = tensor.shape
+        n_tensor = torch.empty((Bs, C, Te, size, size)).to(device).float()
+
+        for i in range(Te):
+            n_tensor[:, :, i, :, :] = T.resize(
+                img=tensor[:, :, i, :, :],
                 size=(size, size),
                 interpolation=T.InterpolationMode.BILINEAR,
-            ).float()
-            if encoder_type in ("prithvi"):
-                n_tensor = n_tensor.unsqueeze(dim=2)
-                Te = 1
-        elif len(tensor.shape) == 5:
-            Bs, C, Te, H, W = tensor.shape
-            n_tensor = torch.empty((Bs, C, Te, size, size)).to(device).float()
+            )
+        if encoder_type in ("spectral_gpt"):
+            n_tensor = n_tensor.squeeze()
 
-            for i in range(Te):
-                n_tensor[:, :, i, :, :] = T.resize(
-                    img=tensor[:, :, i, :, :],
-                    size=(size, size),
-                    interpolation=T.InterpolationMode.BILINEAR,
-                )
-            if encoder_type in ("spectral_gpt"):
-                n_tensor = n_tensor.squeeze()
+    # Adapt from an arbitrary list of source bands to an arbitrary list of target bands
+    # by moving the matching parts to the right place, and filling out the rest with zeros.
+    if len(n_tensor.shape) == 4:
+        zero_tensor = torch.zeros((Bs, 1, size, size)).to(device)
+    elif len(n_tensor.shape) == 5:
+        zero_tensor = torch.zeros((Bs, 1, Te, size, size)).to(
+            device
+        )
 
-        if len(bands) < C:
-            indexes = [sentinel2[x] for x in bands]
-            n_tensor = n_tensor.index_select(1, torch.LongTensor(indexes).to(device))
-            #in rgb case, we should reorder them TO DO
-        if len(bands) > C:
-            # # ze = len(bands) - C
-            if len(n_tensor.shape) == 4:
-                zero_tensor = torch.zeros((Bs, (len(bands) - C), size, size)).to(device)
-            elif len(n_tensor.shape) == 5:
-                zero_tensor = torch.zeros((Bs, (len(bands) - C), Te, size, size)).to(
-                    device
-                )
-            n_tensor = torch.concat((n_tensor, zero_tensor), dim=1)
+    source_band_indexes = [source_bands.index(t) if t in source_bands else None for t in target_bands]    
+    out_tensors = [n_tensor[:, [i], ...] if i is not None else zero_tensor for i in source_band_indexes]
 
-        return n_tensor
+    return torch.concat(out_tensors, dim=1).to(device)
+
+def adapt_target(tensor, size):
+    return T.resize(
+        img=tensor, size=(size, size), interpolation=T.InterpolationMode.NEAREST
+    )
 
 
 def main(args):
@@ -471,6 +453,7 @@ def main(args):
         model.train()
 
         for epoch in range(start_epoch, epochs + 1):
+            print(f"Epoch {epoch}/{epochs}")
             training_loss = []
             training_batches = 0
 
@@ -486,18 +469,16 @@ def main(args):
                 image = adapt_input(
                     tensor=image,
                     size=img_size,
-                    bands=dataset_cfg["bands"],
-                    type="image",
+                    source_bands=dataset_cfg["bands"],
+                    target_bands=encoder_cfg["input_bands"],
                     encoder_type=encoder_name,
                 )
 
-                target = adapt_input(
+                target = adapt_target(
                     tensor=target,
                     size=img_size,
-                    type="target",
-                    encoder_type=encoder_name,
                 )
-                
+                '''
                 if epoch == start_epoch and it == 0:
                     flops, macs, params = calculate_flops(
                         model=model,
@@ -508,7 +489,7 @@ def main(args):
                     logging.info(
                         f"Model FLOPs:{flops}   MACs:{macs}    Params:{params}"
                     )
-                
+                '''
                 optimizer.zero_grad()
 
                 logits = model(image)
@@ -563,15 +544,13 @@ def main(args):
                         image = adapt_input(
                             tensor=image,
                             size=img_size,
-                            bands=dataset_cfg["bands"],
-                            type="image",
+                            source_bands=dataset_cfg["bands"],
+                            target_bands=encoder_cfg["input_bands"],
                             encoder_type=encoder_name,
                         )
-                        target = adapt_input(
+                        target = adapt_target(
                             tensor=target,
-                            size=img_size,
-                            type="target",
-                            encoder_type=encoder_name,
+                            size=img_size
                         )
 
                         logits = model(image)

@@ -1,6 +1,7 @@
 encoder_name: ssl4eo_moco
 encoder_weights: ./pretrained_models/B13_vits16_moco_0099.pth
-download_url: https://drive.google.com/uc?id=1MAe3dCW4hPasSaBMZAVkJVX80LONkrLY&export=download&confirm=yes
+download_url: https://drive.google.com/uc?id=1LREGuI6w7Gq6Xm0jFQdxxtp8QkmLvJWk&export=download&confirm=yes
+
 encoder_model_args:   
   img_size : 224
   patch_size: 16
@@ -9,3 +10,18 @@ encoder_model_args:
   num_heads: 6 
   mlp_ratio: 4
   in_chans: 13
+
+input_bands:
+  - B1
+  - B2
+  - B3
+  - B4
+  - B5
+  - B6
+  - B7
+  - B8
+  - B8a
+  - B9
+  - B10
+  - B11
+  - B12
