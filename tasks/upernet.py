@@ -180,16 +180,20 @@ class UperNetViT(nn.Module):
             seg1 = seg1[:, :, 1: ,:]
 
 
-        if self.multitemporal and self.encoder_type not in ["satlas_pretrain"]:
+        if self.multitemporal:
             if self.mt_strategy == "linear":
                 seg1 = seg1.permute(0, 2, 3, 1)
                 seg1 = self.t_map(seg1).squeeze()
             elif self.mt_strategy == "ltae":
                 #TO DO clean the code
-                N, t, s, c = seg1.shape 
-                w = int(math.sqrt(s, ))
-                seg1 = seg1.reshape(N, t, w, w, c).permute(0, 1, 4, 2, 3)
-                seg1 = self.t_map(seg1).reshape(N, c, s).permute(0, 2, 1)
+                if self.encoder_type not in ["satlas_pretrain"]:
+                    N, t, s, c = seg1.shape 
+                    w = int(math.sqrt(s, ))
+                    seg1 = seg1.reshape(N, t, w, w, c).permute(0, 1, 4, 2, 3)
+                    seg1 = self.t_map(seg1).reshape(N, c, s).permute(0, 2, 1)
+                else:
+                    seg1 = self.t_map(seg1)
+                
 
         if self.encoder_type not in ["satlas_pretrain"]:
             N, s, _ = seg1.shape

@@ -222,9 +222,10 @@ class VisionTransformer(nn.Module):
         xx2 = self.encoder_single_image(x2)
 
         x = xx1 - xx2  # B, 256, 768
-        N, s, _ = x.shape
-        w = int(math.sqrt(s, ))
-        x = x.reshape(N, w, w, self.embed_dim).permute(0, 3, 1, 2).contiguous()
+        if self.encoder_type not in ["satlas_pretrain"]:
+            N, s, _ = seg1.shape
+            w = int(math.sqrt(s, ))
+            seg1 = seg1.reshape(N, w, w, self.embed_dim).permute(0, 3, 1, 2).contiguous()
 
         m = {}
 

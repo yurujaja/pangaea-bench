@@ -742,8 +742,8 @@ class Weights:
             weights = torch.load(weights_file, map_location=torch.device('cpu'))
         else:
             weights = torch.load(weights_file)
-        import pdb
-        pdb.set_trace()
+        # import pdb
+        # pdb.set_trace()
         # Initialize a pretrained model using the Model() class.
         model = Model(model_info['num_channels'], model_info['multi_image'], model_info['backbone'], fpn=fpn, head=head, 
                         num_categories=num_categories, weights=weights, **kwargs)
