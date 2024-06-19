@@ -16,6 +16,8 @@ from .dofa import dofa_vit
 from .gfm_swin import SwinTransformer as GFM_SwinTransformer
 from .gfm_swin import adapt_gfm_pretrained
 from .satlasnet import Model as SATLASNet
+from .satlasnet import Weights as SATLASNetWeights
+
 from . import utils
 
 spectral_gpt_vit_base = vit_spectral_gpt

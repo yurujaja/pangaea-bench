@@ -40,6 +40,7 @@ sys.path.append(os.path.join(up(up(os.path.abspath(__file__))), 'models'))
 from tasks import upernet_vit_base, cd_vit
 import models
 from models import prithvi_vit_base, spectral_gpt_vit_base, scale_mae_large, croma, remote_clip, ssl4eo_mae, ssl4eo_dino_small, ssl4eo_moco, ssl4eo_data2vec_small, gfm_swin_base, dofa_vit, satlasnet
+from models import SATLASNetWeights
 
 from models import adapt_gfm_pretrained
 from utils.metrics import Evaluation
@@ -163,8 +164,10 @@ def get_encoder_model(cfg, load_pretrained=True, frozen_backbone=True):
     encoder_model_args = cfg["encoder_model_args"]
     
     if encoder_name in ["satlas_pretrain"]:
-        encoder_model_args["weights"] = torch.load(encoder_weights, map_location="cpu") if encoder_weights is not None else None
-        encoder_model = encoders[encoder_name](**encoder_model_args)
+        satlas_weights_manager = SATLASNetWeights()
+        encoder_model = satlas_weights_manager.get_pretrained_model(**encoder_model_args)
+        # encoder_model_args["weights"] = torch.load(encoder_weights, map_location="cpu") if encoder_weights is not None else None
+        # encoder_model = encoders[encoder_name](**encoder_model_args)
     else:
         encoder_model = encoders[encoder_name](**encoder_model_args)
     
@@ -396,6 +399,12 @@ def main(args):
 
     model = create_task_model(task_cfg, encoder_cfg, encoder)
     model.to(device)
+
+    # input1 = torch.randn((2, 12, 128, 128)).to(device)
+    # # input2 = torch.randn((2, 3, 128, 128)).to(device)
+    # output = model(input1) #, input2)
+    # print(output.shape)
+    # sys.exit("FINE TEST")
 
     # Load model from specific epoch to continue the training or start the evaluation
     if args["resume_from"]:

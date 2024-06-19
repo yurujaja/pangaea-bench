@@ -85,15 +85,20 @@ class VisionTransformer(nn.Module):
             self,
             encoder,
             num_classes=10,
+            wave_list = None,
             **kwargs,
     ):
         super().__init__()
 
+        self.encoder = encoder
         self.embed_dim = self.encoder.embed_dim
         self.img_size = self.encoder.img_size
         self.encoder_type = self.encoder.name
-        self.encoder = encoder
         self.num_classes = num_classes
+        self.wave_list = [1,1,1] #wave_list
+
+        if self.encoder.name == "gfm_swin":
+            self.embed_dim = int((self.encoder.img_size / self.encoder.patch_size) ** 2)
 
         if self.encoder_type == "spectral_gpt":
             self.L = int(self.img_size/self.encoder.patch_size)**2
@@ -205,6 +210,9 @@ class VisionTransformer(nn.Module):
 
         elif self.encoder_type in ["gfm_swin"]:
             seg1 = self.encoder.forward_features(x1)
+            
+        elif self.encoder_type in ["satlas_pretrain"]:
+            seg1 = self.encoder(x1)[0]
 
         return seg1
 
@@ -214,9 +222,10 @@ class VisionTransformer(nn.Module):
         xx2 = self.encoder_single_image(x2)
 
         x = xx1 - xx2  # B, 256, 768
-        N, s, _ = x.shape
-        w = int(math.sqrt(s, ))
-        x = x.reshape(N, w, w, self.embed_dim).permute(0, 3, 1, 2).contiguous()
+        if self.encoder_type not in ["satlas_pretrain"]:
+            N, s, _ = seg1.shape
+            w = int(math.sqrt(s, ))
+            seg1 = seg1.reshape(N, w, w, self.embed_dim).permute(0, 3, 1, 2).contiguous()
 
         m = {}
 

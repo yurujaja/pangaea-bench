@@ -1,7 +1,8 @@
 encoder_name: satlas_pretrain
-encoder_weights: /geomatics/gpuserver-0/yjia/pretrained_models/sentinel2_swinb_si_rgb.pth
+encoder_weights: null
 encoder_model_args:
-  in_chans: 3
-  multi_image: False
-  backbone: Backbone.SWINB
-  img_size: 224
+  model_identifier: Sentinel2_SwinB_MI_RGB #Sentinel2_SwinB_SI_RGB
+  fpn: False
+  head: null
+  num_categories: null
+  img_size: 128

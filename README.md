@@ -9,7 +9,7 @@ Currently supported foundation models:
 - DOFA
 - GFM
 - CROMA
-- SatlasNet (SwinB-backbone)
+- SatlasNet
 
 Currently supported tasks:
 - Upernet for semantic segmentation (also multitemporal)
@@ -63,7 +63,7 @@ You can find all the links in their official repository https://github.com/zhu-x
 You can find the links in their official repository 
 https://github.com/boranhan/Geospatial_Foundation_Models?tab=readme-ov-file#geopile-and-gfm-pretrained-model
 
-# SatlasPretrain (currently only support Sentinel2_SwinB_SI_RGB)
+# SatlasPretrain
 You can find the links in their official repository 
 https://github.com/allenai/satlaspretrain_models/
 
@@ -97,24 +97,13 @@ python train.py configs/run.yaml \
     self.tiles = self.tiles[:2]
     ```
 - **Design Choices**: to make the comparison fairer we have implemented (so far) the two following solutions: 
-    - So far, the multitemporal mechanism is a simple linear layer (L-TAE is suggested to be implemented)
+    - L-TAE is the choice for combining the multitemporal information not in a vanilla way (a linear layer is used in this case). Please consider that Prithvi and SatlasNet have their own multitemporal encoding choices, so in those cases L-TAE (and linear) are not used
     - We inserted a FLOPs/MACs computation. In fact, different models can have different sizes and hyperparameters, so comparing the performances without considering the needed computation would be a limit. For example, Prithvi pretrained model has 1/4 of GFLOPs w.r.t. SpectralGPT pretrained model (e.g. SpectralGPT uses a patch size of 8 w.r.t. Prithvi that uses 16). We can also consider adding inference times when we will develop the test.py
     
 ###  How to Contribute
 
 #### New code
 - **Datasets**: Add your dataset code within the `datasets` folder.
-- **Foundation Models**: Integrate new foundation model code under the `models` folder. (done)
-  - [X] SSL4EO-S12
-  - [X] CROMA
-  - [X] Scale-MAE
-  - [X] SatlasNet
-  - [X] Prithvi
-  - [X] DOFA
-  - [X] SpectralGPT
-  - [X] RemoteCLIP
-  - [X] GFM (msGFM's weights are not released)
-- **Downstream Tasks**: Insert the code for downstream tasks (i.e. change detection) within the `tasks` folder. This may also necessitate modifications to `train.py` to accommodate new tasks. The tasks to be supported are i) multitemporal change detection and ii) pixel-level regression.
 - **Add the Test**: Create a `test.py`, following a similar structure of `train.py`
 
 #### Existing code
@@ -123,6 +112,19 @@ TODO: here are some aspects that should be improved:
 - new tasks:
     - support multitemporality for change detection (should be easy, if following what we did for upernet)
     - support pixel level regression (should be easy, changing the loss when using upernet)
+
+- fix some model bugs:
+    - **WARNINGS**
+    - `dofa`: I. check the match of checkpoints II. remove the hard coded `wave_list` in `upernet.py`
+    - `scale_mae`: remove hard coding for `input_res` (spatial resolution of input)
+    - `croma`: just support 12 channels for optical (`in_chans` parameters is not used. We have to figure out if we should change or leave it like that)
+    - `ssl4eo_mae`, `gfm`: check the match of the checkpoints (i.e. missing keys and unexpected keys)
+    - for multitemporal, `prithvi` config's `num_frames` parameter needs to be updated. This is redundant with the task config
+    - **CODING STYLE**
+    - in `ssl4eo_moco` and `ssl4eo_dino` there are almost the same function for the ViT, we can move in a common file
+    - `dofa` and `scale_mae` are not using positional embedding functions from pos_embed.py because of dtype issues when importing these functions (Double vs Float)
+
+- the training loop (`train.py`) should be improved to support also change detection (should be easy)
 
 - improve the `adapt_input` function (in `train.py`), which is used to adapt the input shape of the data to be processed into the models **to do it through the config (e.g. pass the list of bands through the config)** 
     - At the moment, it supports just the mentioned models (and dataset) -> NEW MODELS TO BE ADDED

@@ -149,22 +149,26 @@ class UperNetViT(nn.Module):
             seg1 = self.encoder.forward_features(x1)
             
         elif self.encoder_type in ["satlas_pretrain"]:
+            print(x1.shape)
             seg1 = self.encoder(x1)[0]
 
         return seg1
     
     def encoding(self, x1):
         if self.multitemporal:
-            if self.encoder_type not in ("prithvi"):
-                enc = []
-                for i in range(x1.shape[1]):
-                    enc.append(self.encoder_single_image(x1[:,i,:,:]))
-                return torch.stack(enc, dim = 1)
-            else:
+            if self.encoder_type in ["satlas_pretrain"]:
+                x1 = self.encoder_single_image(x1)
+                return x1
+            elif self.encoder_type in ["prithvi"]:
                 x1 = self.encoder_single_image(x1)
                 N, B, C = x1.shape
                 x1 = x1[:, 1: ,:]
                 return x1.view([N, self.num_frames, self.L, C])
+            else:
+                enc = []
+                for i in range(x1.shape[1]):
+                    enc.append(self.encoder_single_image(x1[:,i,:,:]))
+                return torch.stack(enc, dim = 1)
         else:
             return self.encoder_single_image(x1)
 
@@ -177,16 +181,20 @@ class UperNetViT(nn.Module):
             seg1 = seg1[:, :, 1: ,:]
 
 
-        if self.multitemporal and self.encoder_type not in ["satlas_pretrain", "gfm_swin"]:
+        if self.multitemporal and self.encoder_type not in ["satlas_pretrain"]:
             if self.mt_strategy == "linear":
                 seg1 = seg1.permute(0, 2, 3, 1)
                 seg1 = self.t_map(seg1).squeeze()
             elif self.mt_strategy == "ltae":
                 #TO DO clean the code
+                # if self.encoder_type not in ["satlas_pretrain"]:
                 N, t, s, c = seg1.shape 
                 w = int(math.sqrt(s, ))
                 seg1 = seg1.reshape(N, t, w, w, c).permute(0, 1, 4, 2, 3)
                 seg1 = self.t_map(seg1).reshape(N, c, s).permute(0, 2, 1)
+                # else:
+                #     seg1 = self.t_map(seg1)
+                
 
         if self.encoder_type not in ["satlas_pretrain"]:
             N, s, _ = seg1.shape
