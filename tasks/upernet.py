@@ -156,9 +156,12 @@ class UperNetViT(nn.Module):
     def encoding(self, x1):
         if self.multitemporal:
             if self.encoder_type not in ("prithvi"):
+                # print(x1.shape)
                 enc = []
                 for i in range(x1.shape[1]):
+                    # print(x1[:,i,:,:].shape)
                     enc.append(self.encoder_single_image(x1[:,i,:,:]))
+                    # print(enc[i].shape)
                 return torch.stack(enc, dim = 1)
             else:
                 x1 = self.encoder_single_image(x1)
