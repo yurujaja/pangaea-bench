@@ -1,6 +1,6 @@
 encoder_config: configs/models_config/ssl4eo_moco.yaml
 dataset_config: configs/datasets_config/mados.yaml
-task_config: configs/tasks_config/upernet.yaml
+task_config: configs/tasks_config/change_detection.yaml
 mode: train
 epochs: 80
 weight_param: 1.03

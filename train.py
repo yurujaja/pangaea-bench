@@ -411,6 +411,12 @@ def main(args):
     model = create_task_model(task_cfg, encoder_cfg, encoder)
     model.to(device)
 
+    # input1 = torch.randn((2, 13, 224, 224)).to(device)
+    # input2 = torch.randn((2, 13, 224, 224)).to(device)
+    # output = model(input1, input2)
+    # print(output.shape)
+    # sys.exit("FINE TEST")
+
     # Load model from specific epoch to continue the training or start the evaluation
     if args["resume_from"]:
         resume_file = args["resume_from"]
