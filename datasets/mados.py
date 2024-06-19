@@ -141,7 +141,7 @@ class MADOS(torch.utils.data.Dataset):
         self.y = []           # Loaded Output masks
             
         self.tiles = glob(os.path.join(path,'*'))
-        self.tiles = self.tiles[:2]
+        self.tiles = self.tiles
 
         for tile in tqdm.tqdm(self.tiles, desc = 'Load '+mode+' set to memory'):
 
