@@ -31,7 +31,7 @@ from torch.utils.data import DataLoader
 from torch.nn import functional as F
 from torchvision.transforms import functional as T
 
-from calflops import calculate_flops
+# from calflops import calculate_flops # NOTE: it seems like this is not available on conda, maybe swith to https://github.com/sovrasov/flops-counter.pytorch/
 
 sys.path.append(up(os.path.abspath(__file__)))
 sys.path.append(os.path.join(up(up(os.path.abspath(__file__))), 'tasks'))
