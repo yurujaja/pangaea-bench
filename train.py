@@ -411,7 +411,6 @@ def main(args):
     model = create_task_model(task_cfg, encoder_cfg, encoder)
     model.to(device)
 
-
     # Load model from specific epoch to continue the training or start the evaluation
     if args["resume_from"]:
         resume_file = args["resume_from"]
@@ -494,7 +493,7 @@ def main(args):
                     type="target",
                     encoder_type=encoder_name,
                 )
-                '''
+                
                 if epoch == start_epoch and it == 0:
                     flops, macs, params = calculate_flops(
                         model=model,
@@ -505,7 +504,7 @@ def main(args):
                     logging.info(
                         f"Model FLOPs:{flops}   MACs:{macs}    Params:{params}"
                     )
-                '''
+                
                 optimizer.zero_grad()
 
                 logits = model(image)
