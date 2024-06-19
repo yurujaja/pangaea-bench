@@ -19,10 +19,6 @@ import rasterio
 from rasterio.enums import Resampling
 from torch.utils.data import Dataset
 
-random.seed(0)
-np.random.seed(0)
-torch.manual_seed(0)
-
 # Pixel-Level class distribution (total sum equals 1.0)
 class_distr = torch.Tensor([0.00336, 0.00241, 0.00336, 0.00142, 0.00775, 0.18452, 
  0.34775, 0.20638, 0.00062, 0.1169, 0.09188, 0.01309, 0.00917, 0.00176, 0.00963])
@@ -215,10 +211,6 @@ class MADOS(Dataset): # Extend PyTorch's Dataset class
         # print(target.shape)
         target = target[:,:,np.newaxis]
         # print(target.shape)
-        
-        if self.mode=='train':
-            image, target = self.join_transform(image, target)
-
 
         image = ((image.astype(np.float32).transpose(2, 0, 1).copy() - bands_mean.reshape(-1,1,1))/ bands_std.reshape(-1,1,1)).squeeze()
         target = target.squeeze()
@@ -227,31 +219,8 @@ class MADOS(Dataset): # Extend PyTorch's Dataset class
         
         return image.copy(), target.copy()
 
-    def join_transform(self, image, target):
-        # Random Flip image
-        f = [1, 0, -1, 2, 2][np.random.randint(0, 5)]  # [1, 0, -1, 2, 2]
-        if f != 2:
-            image = self.filp_array(image, f)
-            target = self.filp_array(target,f)
-             
-        # Random Rotate (Only 0, 90, 180, 270)
-        if np.random.random() < 0.8:
-            k = np.random.randint(0, 4)  # [0, 1, 2, 3]
-            image = np.rot90(image, k, (1, 0))  # clockwise
-            target = np.rot90(target, k, (1, 0))
-       
-        return image, target
-    
-    def filp_array(self, array, flipCode):
-        if flipCode != -1:
-            array = np.flip(array, flipCode)
-        elif flipCode == -1:
-            array = np.flipud(array)
-            array = np.fliplr(array)
-        return array
-
     @staticmethod
-    def download_dataset(output_path:pathlib.Path, silent=False, mados_url = "https://zenodo.org/records/10664073/files/MADOS.zip?download=1"):
+    def download_dataset(output_path:pathlib.Path, silent=False, mados_url="https://zenodo.org/records/10664073/files/MADOS.zip?download=1"):
         try:
             os.makedirs(output_path, exist_ok=False)
         except FileExistsError:
