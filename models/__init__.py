@@ -8,14 +8,16 @@ from .prithvi import MaskedAutoencoderViT
 from .scalemae import ScaleMAE_baseline
 from .croma import croma_vit
 from .remoteclip import RemoteCLIP
-from .SSL4EO_mae import mae_vit
-from .SSL4EO_dino import vit
-from .SSL4EO_moco import moco_vit
-from .SSL4EO_data2vec import beit 
-from .DOFA import dofa_vit
+from .ssl4eo_mae import mae_vit
+from .ssl4eo_dino import vit
+from .ssl4eo_moco import moco_vit
+from .ssl4eo_data2vec import beit 
+from .dofa import dofa_vit
 from .gfm_swin import SwinTransformer as GFM_SwinTransformer
 from .gfm_swin import adapt_gfm_pretrained
 from .satlasnet import Model as SATLASNet
+from .satlasnet import Weights as SATLASNetWeights
+
 
 spectral_gpt_vit_base = vit_spectral_gpt
 prithvi_vit_base = MaskedAutoencoderViT

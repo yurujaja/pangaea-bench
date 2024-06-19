@@ -177,7 +177,7 @@ class UperNetViT(nn.Module):
             seg1 = seg1[:, :, 1: ,:]
 
 
-        if self.multitemporal and self.encoder_type not in ["satlas_pretrain", "gfm_swin"]:
+        if self.multitemporal and self.encoder_type not in ["satlas_pretrain"]:
             if self.mt_strategy == "linear":
                 seg1 = seg1.permute(0, 2, 3, 1)
                 seg1 = self.t_map(seg1).squeeze()
