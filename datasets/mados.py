@@ -4,6 +4,7 @@ Adapted from: https://github.com/gkakogeorgiou/mados
 '''
 
 import os
+import pathlib
 import random
 from tqdm import tqdm
 from glob import glob
@@ -117,7 +118,13 @@ def get_band(path):
     return int(path.split('_')[-2])
 
 class MADOS(Dataset): # Extend PyTorch's Dataset class
-    def __init__(self, path, splits, mode = 'train', input_size = 240):
+    def __init__(self, path, splits=None, mode = 'train'):
+
+        self.download_dataset(pathlib.Path(path), silent=True)
+
+        #Default splits dir
+        if not splits:
+            splits = pathlib.Path(path) / "splits"
         
         if mode=='train':
             self.ROIs_split = np.genfromtxt(os.path.join(splits, 'train_X.txt'),dtype='str')
@@ -191,8 +198,7 @@ class MADOS(Dataset): # Extend PyTorch's Dataset class
         self.mode = mode
         self.length = len(self.y)
         self.path = path
-        self.input_size = input_size
-        
+
     def __len__(self):
         return self.length
     
