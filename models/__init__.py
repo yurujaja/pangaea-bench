@@ -16,6 +16,7 @@ from .dofa import dofa_vit
 from .gfm_swin import SwinTransformer as GFM_SwinTransformer
 from .gfm_swin import adapt_gfm_pretrained
 from .satlasnet import Model as SATLASNet
+from . import utils
 
 spectral_gpt_vit_base = vit_spectral_gpt
 prithvi_vit_base = MaskedAutoencoderViT

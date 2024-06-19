@@ -38,6 +38,7 @@ sys.path.append(os.path.join(up(up(os.path.abspath(__file__))), 'tasks'))
 sys.path.append(os.path.join(up(up(os.path.abspath(__file__))), 'models'))
 
 from tasks import upernet_vit_base, cd_vit
+import models
 from models import prithvi_vit_base, spectral_gpt_vit_base, scale_mae_large, croma, remote_clip, ssl4eo_mae, ssl4eo_dino_small, ssl4eo_moco, ssl4eo_data2vec_small, gfm_swin_base, dofa_vit, satlasnet
 
 from models import adapt_gfm_pretrained
@@ -152,6 +153,9 @@ def get_encoder_model(cfg, load_pretrained=True, frozen_backbone=True):
         "gfm_swin": gfm_swin_base,
         "satlas_pretrain": satlasnet,
     }
+
+    models.utils.download_model(cfg)
+
     encoder_name = cfg["encoder_name"]
     if encoder_name not in encoders:
         raise ValueError(f"{encoder_name} is not yet supported.")
