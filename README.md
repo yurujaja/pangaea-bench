@@ -102,7 +102,7 @@ python train.py configs/run.yaml \
     self.tiles = self.tiles[:2]
     ```
 - **Design Choices**: to make the comparison fairer we have implemented (so far) the two following solutions: 
-    - So far, the multitemporal mechanism is a simple linear layer (L-TAE is suggested to be implemented)
+    - L-TAE is the choice for combining the multitemporal information not in a vanilla way (a linear layer is used in this case)
     - We inserted a FLOPs/MACs computation. In fact, different models can have different sizes and hyperparameters, so comparing the performances without considering the needed computation would be a limit. For example, Prithvi pretrained model has 1/4 of GFLOPs w.r.t. SpectralGPT pretrained model (e.g. SpectralGPT uses a patch size of 8 w.r.t. Prithvi that uses 16). We can also consider adding inference times when we will develop the test.py
     
 ###  How to Contribute
