@@ -11,6 +11,10 @@ from osgeo import gdal
 import torch
 import numpy as np
 
+import urllib.request
+import urllib.error
+import zipfile
+
 import rasterio
 from rasterio.enums import Resampling
 from torch.utils.data import Dataset
@@ -92,6 +96,23 @@ def cat_map(x):
     return mados_cat_mapping[x]
 
 cat_mapping_vec = np.vectorize(cat_map)
+
+# Utility progress bar handler for urlretrieve
+# Should go in a utils folder if we use it elsewhere
+class DownloadProgressBar:
+    def __init__(self):
+        self.pbar = None
+    
+    def __call__(self, block_num, block_size, total_size):
+        if self.pbar is None:
+            self.pbar = tqdm(desc="Downloading...", total=total_size, unit="b", unit_scale=True, unit_divisor=1024)
+
+        downloaded = block_num * block_size
+        if downloaded < total_size:
+            self.pbar.update(downloaded - self.pbar.n)
+        else:
+            self.pbar.close()
+            self.pbar = None
 
 ###############################################################
 # MADOS DATASET                                               #
@@ -229,11 +250,49 @@ class MADOS(Dataset): # Extend PyTorch's Dataset class
             array = np.fliplr(array)
         return array
 
+    @staticmethod
+    def download_dataset(output_path:pathlib.Path, silent=False, mados_url = "https://zenodo.org/records/10664073/files/MADOS.zip?download=1"):
+        try:
+            os.makedirs(output_path, exist_ok=False)
+        except FileExistsError:
+            if not silent:
+                print("MADOS Dataset folder exists, skipping downloading dataset.")
+            return
+
+        temp_file_name = f"temp_{hex(int(time.time()))}_MADOS.zip"
+        pbar = DownloadProgressBar()
+
+        try:
+            urllib.request.urlretrieve(mados_url, output_path / temp_file_name, pbar)
+        except urllib.error.HTTPError as e:
+            print('Error while downloading dataset: The server couldn\'t fulfill the request.')
+            print('Error code: ', e.code)
+            return
+        except urllib.error.URLError as e:
+            print('Error while downloading dataset: Failed to reach a server.')
+            print('Reason: ', e.reason)
+            return
+
+        with zipfile.ZipFile(output_path / temp_file_name, 'r') as zip_ref:
+            print(f"Extracting to {output_path} ...")
+            # Remove top-level dir in ZIP file for nicer data dir structure
+            members = []
+            for zipinfo in zip_ref.infolist():
+                new_path = os.path.join(*(zipinfo.filename.split(os.path.sep)[1:]))
+                zipinfo.filename = str(new_path)
+                members.append(zipinfo)
+
+            zip_ref.extractall(output_path, members)
+            print("done.")
+
+        os.remove(output_path / temp_file_name)
+
 ###############################################################
 # Weighting Function for Semantic Segmentation                #
 ###############################################################
 def gen_weights(class_distribution, c = 1.02):
     return 1/torch.log(c + class_distribution)
+
 '''
 if __name__ == "__main__":
     path = "/geomatics/gpuserver-0/vmarsocci/MADOS"
