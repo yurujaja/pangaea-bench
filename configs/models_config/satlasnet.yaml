@@ -1,7 +1,7 @@
 encoder_name: satlas_pretrain
 encoder_weights: null
 encoder_model_args:
-  model_identifier: Sentinel2_SwinB_SI_RGB
+  model_identifier: Sentinel2_SwinB_MI_RGB #Sentinel2_SwinB_SI_RGB
   fpn: False
   head: null
   num_categories: null

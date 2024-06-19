@@ -414,7 +414,7 @@ def main(args):
     model = create_task_model(task_cfg, encoder_cfg, encoder)
     model.to(device)
 
-    # input1 = torch.randn((2, 5, 3, 128, 128)).to(device)
+    # input1 = torch.randn((2, 12, 128, 128)).to(device)
     # # input2 = torch.randn((2, 3, 128, 128)).to(device)
     # output = model(input1) #, input2)
     # print(output.shape)

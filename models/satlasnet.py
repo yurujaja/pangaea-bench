@@ -329,6 +329,9 @@ class AggregationBackbone(torch.nn.Module):
         # Prepare underlying backbone.
         self.backbone = backbone
 
+        self.embed_dim = self.backbone.embed_dim
+
+
         # Features from images within each group are aggregated separately.
         # Then the output is the concatenation across groups.
         # e.g. [[0], [1, 2]] to compare first image against the others
@@ -742,8 +745,6 @@ class Weights:
             weights = torch.load(weights_file, map_location=torch.device('cpu'))
         else:
             weights = torch.load(weights_file)
-        # import pdb
-        # pdb.set_trace()
         # Initialize a pretrained model using the Model() class.
         model = Model(model_info['num_channels'], model_info['multi_image'], model_info['backbone'], fpn=fpn, head=head, 
                         num_categories=num_categories, weights=weights, **kwargs)
