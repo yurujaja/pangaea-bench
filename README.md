@@ -18,18 +18,13 @@ Currently supported tasks:
 ## Setup
 Clone the repository:
 ```
-git clone https://github.com/yurujaja/geofm-bench.git
+git clone git@github.com:yurujaja/geofm-bench.git
 cd geofm-bench
 ```
 Dependencies:
 ```
-conda create -n <env_name> python=3.9.0  # change <env_name> 
-conda activate <env_name> 
-conda install -c conda-forge gdal==3.3.2 
-
-pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu118 -f https://download.openmmlab.com/mmcv/dist/cu118/torch2.1/index.html
-
-conda install pytables==3.7.0
+conda env create -f environment.yml
+conda activate geofm-bench
 ```
 ### Download pre-trained weights
 Please download pretrained weights into the `pretrained` folder.

@@ -1,0 +1,24 @@
+name: geofm-bench
+channels:
+  - pytorch
+  - conda-forge
+dependencies:
+  - python=3.10
+  - gdal
+  - geopandas
+  - numpy
+  - pillow
+  - pytorch
+  - rasterio
+  - scikit-learn
+  - tensorboard
+  - torchaudio
+  - torchvision
+  - tqdm
+  - timm
+  - einops
+  - open-clip-torch
+  - rioxarray
+  - pytorch-cuda=11.8
+  - gdown
+prefix: /geoinfo_vol1/dkerekes/miniforge3/envs/geofm-bench
