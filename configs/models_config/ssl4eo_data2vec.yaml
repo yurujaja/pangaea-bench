@@ -1,5 +1,5 @@
 encoder_name: ssl4eo_data2vec
-encoder_weights: /geomatics/gpuserver-0/vmarsocci/pretrained_models/B13_vits16_data2vec_0099_ckpt.pth
+encoder_weights: ./pretrained_models/B13_vits16_data2vec_0099_ckpt.pth
 encoder_model_args:
   img_size: 224
   in_chans: 13
