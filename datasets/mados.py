@@ -17,7 +17,7 @@ import torch.utils.data
 import random
 import rasterio
 import numpy as np
-import gdal
+from osgeo import gdal
 
 # Pixel-Level class distribution (total sum equals 1.0)
 class_distr = torch.Tensor([0.00336, 0.00241, 0.00336, 0.00142, 0.00775, 0.18452, 
@@ -117,9 +117,10 @@ def get_band(path):
     return int(path.split('_')[-2])
 
 class MADOS(torch.utils.data.Dataset):
-    def __init__(self, path, splits=None, mode = 'train'):
+    def __init__(self, path, splits=None, mode='train', download=True):
 
-        self.download_dataset(pathlib.Path(path), silent=True)
+        if download:
+            self.download_dataset(pathlib.Path(path), silent=True)
 
         #Default splits dir
         if not splits:
@@ -142,7 +143,7 @@ class MADOS(torch.utils.data.Dataset):
         self.tiles = glob(os.path.join(path,'*'))
         self.tiles = self.tiles[:2]
 
-        for tile in tqdm(self.tiles, desc = 'Load '+mode+' set to memory'):
+        for tile in tqdm.tqdm(self.tiles, desc = 'Load '+mode+' set to memory'):
 
                 # Get the number of different crops for the specific tile
                 splits = [f.split('_cl_')[-1] for f in glob(os.path.join(tile, '10', '*_cl_*'))]
