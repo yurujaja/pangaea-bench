@@ -4,21 +4,20 @@ Adapted from: https://github.com/gkakogeorgiou/mados
 '''
 
 import os
+import time
 import pathlib
-import random
-from tqdm import tqdm
-from glob import glob
-from osgeo import gdal
-import torch
-import numpy as np
-
 import urllib.request
 import urllib.error
 import zipfile
+import tqdm
+from glob import glob
 
+import torch
+import torch.utils.data
+import random
 import rasterio
-from rasterio.enums import Resampling
-from torch.utils.data import Dataset
+import numpy as np
+import gdal
 
 # Pixel-Level class distribution (total sum equals 1.0)
 class_distr = torch.Tensor([0.00336, 0.00241, 0.00336, 0.00142, 0.00775, 0.18452, 
@@ -102,7 +101,7 @@ class DownloadProgressBar:
     
     def __call__(self, block_num, block_size, total_size):
         if self.pbar is None:
-            self.pbar = tqdm(desc="Downloading...", total=total_size, unit="b", unit_scale=True, unit_divisor=1024)
+            self.pbar = tqdm.tqdm(desc="Downloading...", total=total_size, unit="b", unit_scale=True, unit_divisor=1024)
 
         downloaded = block_num * block_size
         if downloaded < total_size:
@@ -117,7 +116,7 @@ class DownloadProgressBar:
 def get_band(path):
     return int(path.split('_')[-2])
 
-class MADOS(Dataset): # Extend PyTorch's Dataset class
+class MADOS(torch.utils.data.Dataset):
     def __init__(self, path, splits=None, mode = 'train'):
 
         self.download_dataset(pathlib.Path(path), silent=True)
@@ -171,7 +170,7 @@ class MADOS(Dataset): # Extend PyTorch's Dataset class
                                                                     int(src.height * upscale_factor),
                                                                     int(src.width * upscale_factor)
                                                                 ),
-                                                                resampling=Resampling.nearest
+                                                                resampling=rasterio.enums.Resampling.nearest
                                                               ).copy()
                                                   )
                         
