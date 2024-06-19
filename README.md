@@ -119,15 +119,15 @@ TODO: here are some aspects that should be improved:
     - support pixel level regression (should be easy, changing the loss when using upernet)
 
 - fix some model bugs:
-    **ERRORS**
+    - **ERRORS**
     -  `satlasnet` at the moment works just for unitemporal semantic segmentation. This should be extended to the other tasks
-    **WARNINGS**
+    - **WARNINGS**
     - `dofa`: I. check the match of checkpoints II. remove the hard coded `wave_list` in `upernet.py`
     - `scale_mae`: remove hard coding for `input_res` (spatial resolution of input)
     - `croma`: just support 12 channels for optical (`in_chans` parameters is not used. We have to figure out if we should change or leave it like that)
     - `ssl4eo_mae`, `gfm`: check the match of the checkpoints (i.e. missing keys and unexpected keys)
     - for multitemporal, `prithvi` config's `num_frames` parameter needs to be updated. This is redundant with the task config
-    **CODING STYLE**
+    - **CODING STYLE**
     - in `ssl4eo_moco` and `ssl4eo_dino` there are almost the same function for the ViT, we can move in a common file
     - `dofa` and `scale_mae` are not using positional embedding functions from pos_embed.py because of dtype issues when importing these functions (Double vs Float)
 
