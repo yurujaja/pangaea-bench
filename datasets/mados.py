@@ -94,7 +94,7 @@ def cat_map(x):
 cat_mapping_vec = np.vectorize(cat_map)
 
 # Utility progress bar handler for urlretrieve
-# Should go in a utils folder if we use it elsewhere
+# Should go in a dataset utils if we use it elsewhere
 class DownloadProgressBar:
     def __init__(self):
         self.pbar = None
@@ -176,8 +176,7 @@ class MADOS(torch.utils.data.Dataset):
                                                   )
                         
                         stacked_image = np.stack(current_image)
-                        self.X.append(stacked_image)
-                        
+                        self.X.append(stacked_image)            
 
                         # Load Classsification Mask
                         cl_path = os.path.join(tile,'10',os.path.basename(tile)+'_L2R_cl_'+crop)
