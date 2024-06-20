@@ -18,7 +18,7 @@ Currently supported tasks:
 ## Setup
 Clone the repository:
 ```
-git clone https://github.com/yurujaja/geofm-bench.git
+git clone git@github.com:yurujaja/geofm-bench.git
 cd geofm-bench
 ```
 Dependencies:
@@ -76,11 +76,11 @@ https://github.com/allenai/satlaspretrain_models/
 ### Download Data
 - Please download [MADOS](https://zenodo.org/records/10664073)  into the `./data/MADOS` folder.
 - Please download [Sen1Floods11](https://github.com/cloudtostreet/Sen1Floods11)   into the `./data/Sen1Floods11` folder.
-- Please download HLS Burn Scars using:
-```
-wget https://huggingface.co/datasets/ibm-nasa-geospatial/hls_burn_scars/resolve/main/hls_burn_scars.tar.gz?download=true -O ./data/HLSBurnScars/hls_burn_scars.tar.gz
-tar -xzvf hls_burn_scars.tar.gz
-```
+- Please download [HLS Burn Scars](https://huggingface.co/datasets/ibm-nasa-geospatial/hls_burn_scars) using:
+    ```
+    wget https://huggingface.co/datasets/ibm-nasa-geospatial/hls_burn_scars/resolve/main/hls_burn_scars.tar.gz?download=true -O ./data/HLSBurnScars/hls_burn_scars.tar.gz
+    tar -xzvf hls_burn_scars.tar.gz
+    ```
 
 ## Pipeline -demo
 To quickly get started, utilize [MADOS dataset](https://zenodo.org/records/10664073) to establish the complete pipeline for semantic segmentation.
@@ -101,9 +101,9 @@ python train.py configs/run.yaml \
 #### Note:
 - **Configurations**: The current configurations include parameters related to foundation model encoders and downstream task models. Future updates will aim to enhance configuration files to support additional tasks. To support multitemporal, please modify the `num_frames` parameter in the config. Consider that in all the configs, it appears in the `task` parameters. For Prithvi it appears also in the `encoder` parameter.
 - **Logging**: By default, logs and checkpoints are stored in the `work_dir`.
-- **The Mados dataset** in use is a simple example that only iterates over the first few data items. To do so, we added the following line 126 in `datasets/mados.py`. Also, the validation dataloder is set to be the same as the train dataloader (line 323 in `train.py`).
+- **The Mados dataset** in use is a simple example that only iterates over the first few data items. To do so, we added the following line 153 in `datasets/mados.py`. Also, the validation dataloder is set to be the same as the train dataloader (line 323 in `train.py`).
     ```
-    self.tiles = self.tiles[:2]
+    if crop_name in self.ROIs_split[:2]:
     ```
 - **Design Choices**: to make the comparison fairer we have implemented (so far) the two following solutions: 
     - L-TAE is the choice for combining the multitemporal information not in a vanilla way (a linear layer is used in this case). Please consider that Prithvi and SatlasNet have their own multitemporal encoding choices, so in those cases L-TAE (and linear) are not used
@@ -119,7 +119,8 @@ python train.py configs/run.yaml \
 
 TODO: here are some aspects that should be improved:
 - new tasks:
-    - support multitemporality for change detection (should be easy, if following what we did for upernet)
+
+    - support multimodality for croma and dofa (should be easy)
     - support pixel level regression (should be easy, changing the loss when using upernet)
 
 - fix some model bugs:
@@ -135,9 +136,8 @@ TODO: here are some aspects that should be improved:
 
 - the training loop (`train.py`) should be improved to support also change detection (should be easy)
 
-- improve the `adapt_input` function (in `train.py`), which is used to adapt the input shape of the data to be processed into the models **to do it through the config (e.g. pass the list of bands through the config)** 
-    - At the moment, it supports just the mentioned models (and dataset) -> NEW MODELS TO BE ADDED
+- improve the `adapt_input` function (in `train.py`), which is used to adapt the input shape of the data to be processed into the models 
+    - At the moment, it supports just the mentioned models (and dataset) -> NEW MODELS/ Datasets TO BE ADDED
     - Moreover, for selecting the correct number of bands, just Sentinel-2 is supported -> TO SHAPE IT ALSO FOR OTHER MODALITIES
-    - When a model needs more bands than the data have we are adding zero channels at the end of the available bands. We should change it to padding the missing channels. -> TO FIX THIS ERROR
-    - When just RGB are used, we should reorder them -> TO FIX THIS ERROR
+
 

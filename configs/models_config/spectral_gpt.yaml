@@ -1,5 +1,6 @@
 encoder_name: spectral_gpt
 encoder_weights: /geomatics/gpuserver-0/vmarsocci/pretrained_models/SpectralGPT.pth
+
 encoder_model_args:
   in_chans: 12    # number of spectral bands
   t_patch_size: 3
@@ -11,3 +12,17 @@ encoder_model_args:
   num_heads: 12
   patch_size: 8
   mlp_ratio: 4
+
+input_bands:
+  - B1
+  - B2
+  - B3
+  - B4
+  - B5
+  - B6
+  - B7
+  - B8
+  - B8a
+  - B9
+  - B11
+  - B12

@@ -1,5 +1,6 @@
 encoder_name: remote_clip
 encoder_weights: /geomatics/gpuserver-0/vmarsocci/pretrained_models/RemoteCLIP-ViT-B-32.pt
+
 encoder_model_args:
   model_name: ViT-B-32
   embed_dim: 512
@@ -7,3 +8,8 @@ encoder_model_args:
   in_chans: 3
   patch_size: 32
   #check if to add other parameters (so far is useless)
+
+input_bands:
+  - B4
+  - B3
+  - B2

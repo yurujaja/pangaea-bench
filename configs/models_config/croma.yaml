@@ -1,5 +1,6 @@
 encoder_name: croma
 encoder_weights: /geomatics/gpuserver-0/vmarsocci/pretrained_models/CROMA_large.pt
+
 encoder_model_args:
   img_size: 120
   in_chans: 12
@@ -9,3 +10,17 @@ encoder_model_args:
   num_heads: 16
   depth: 24
   modality: "optical" # support also "joint" and "SAR"
+
+input_bands:
+  - B1
+  - B2
+  - B3
+  - B4
+  - B5
+  - B6
+  - B7
+  - B8
+  - B8a
+  - B9
+  - B11
+  - B12

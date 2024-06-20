@@ -14,6 +14,7 @@ import numpy as np
 from huggingface_hub import PyTorchModelHubMixin
 # from pos_embed import get_2d_sincos_pos_embed_from_grid_torch
 
+
 def get_2d_sincos_pos_embed_from_grid_torch(embed_dim, grid):
     assert embed_dim % 2 == 0
 
@@ -49,6 +50,7 @@ def get_1d_sincos_pos_embed_from_grid_torch(embed_dim, pos):
 
     emb = torch.cat([emb_sin, emb_cos], dim=1)  # (M, D)
     return emb
+
 
 def get_2d_sincos_pos_embed_with_resolution(
     embed_dim, grid_size, res, cls_token=False, device="cpu"
@@ -86,6 +88,7 @@ def get_2d_sincos_pos_embed_with_resolution(
             dim=1,
         )
     return pos_embed
+
 
 class PatchEmbedUnSafe(PatchEmbed):
     """Image to Patch Embedding"""
@@ -180,6 +183,7 @@ def vit(img_size=224, patch_size=16, embed_dim=1024, depth=24, num_heads=16, mlp
         **kwargs
     )
     return model
+
 
 def get_ScaleMAE_model(global_pool=True, cls_token=True):
 

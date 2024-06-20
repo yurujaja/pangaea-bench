@@ -4,20 +4,20 @@ Adapted from: https://github.com/gkakogeorgiou/mados
 '''
 
 import os
-import random
-from tqdm import tqdm
+import time
+import pathlib
+import urllib.request
+import urllib.error
+import zipfile
+import tqdm
 from glob import glob
-from osgeo import gdal
+
 import torch
-import numpy as np
-
+import torch.utils.data
+import random
 import rasterio
-from rasterio.enums import Resampling
-from torch.utils.data import Dataset
-
-random.seed(0)
-np.random.seed(0)
-torch.manual_seed(0)
+import numpy as np
+from osgeo import gdal
 
 # Pixel-Level class distribution (total sum equals 1.0)
 class_distr = torch.Tensor([0.00336, 0.00241, 0.00336, 0.00142, 0.00775, 0.18452, 
@@ -93,14 +93,38 @@ def cat_map(x):
 
 cat_mapping_vec = np.vectorize(cat_map)
 
+# Utility progress bar handler for urlretrieve
+# Should go in a dataset utils if we use it elsewhere
+class DownloadProgressBar:
+    def __init__(self):
+        self.pbar = None
+    
+    def __call__(self, block_num, block_size, total_size):
+        if self.pbar is None:
+            self.pbar = tqdm.tqdm(desc="Downloading...", total=total_size, unit="b", unit_scale=True, unit_divisor=1024)
+
+        downloaded = block_num * block_size
+        if downloaded < total_size:
+            self.pbar.update(downloaded - self.pbar.n)
+        else:
+            self.pbar.close()
+            self.pbar = None
+
 ###############################################################
 # MADOS DATASET                                               #
 ###############################################################
 def get_band(path):
     return int(path.split('_')[-2])
 
-class MADOS(Dataset): # Extend PyTorch's Dataset class
-    def __init__(self, path, splits, mode = 'train', input_size = 240):
+class MADOS(torch.utils.data.Dataset):
+    def __init__(self, path, splits=None, mode='train', download=True):
+
+        if download:
+            self.download_dataset(pathlib.Path(path), silent=True)
+
+        #Default splits dir
+        if not splits:
+            splits = pathlib.Path(path) / "splits"
         
         if mode=='train':
             self.ROIs_split = np.genfromtxt(os.path.join(splits, 'train_X.txt'),dtype='str')
@@ -117,9 +141,8 @@ class MADOS(Dataset): # Extend PyTorch's Dataset class
         self.y = []           # Loaded Output masks
             
         self.tiles = glob(os.path.join(path,'*'))
-        self.tiles = self.tiles[:2]
 
-        for tile in tqdm(self.tiles, desc = 'Load '+mode+' set to memory'):
+        for tile in tqdm.tqdm(self.tiles, desc = 'Load '+mode+' set to memory'):
 
                 # Get the number of different crops for the specific tile
                 splits = [f.split('_cl_')[-1] for f in glob(os.path.join(tile, '10', '*_cl_*'))]
@@ -127,7 +150,7 @@ class MADOS(Dataset): # Extend PyTorch's Dataset class
                 for crop in splits:
                     crop_name = os.path.basename(tile)+'_'+crop.split('.tif')[0]
                     
-                    if crop_name in self.ROIs_split:
+                    if crop_name in self.ROIs_split[:2]:
     
                         # Load Input Images
                         # Get the bands for the specific crop 
@@ -147,13 +170,13 @@ class MADOS(Dataset): # Extend PyTorch's Dataset class
                                                                     int(src.height * upscale_factor),
                                                                     int(src.width * upscale_factor)
                                                                 ),
-                                                                resampling=Resampling.nearest
+                                                                resampling=rasterio.enums.Resampling.nearest
                                                               ).copy()
                                                   )
                         
                         stacked_image = np.stack(current_image)
-                        self.X.append(stacked_image)
-                        
+
+                        self.X.append(stacked_image)            
 
                         # Load Classsification Mask
                         cl_path = os.path.join(tile,'10',os.path.basename(tile)+'_L2R_cl_'+crop)
@@ -163,7 +186,6 @@ class MADOS(Dataset): # Extend PyTorch's Dataset class
                         ds=None                   # Close file
                         self.y.append(temp)
             
-        # print(self.X)
         self.X = np.stack(self.X)
         self.y = np.stack(self.y)
         
@@ -174,8 +196,7 @@ class MADOS(Dataset): # Extend PyTorch's Dataset class
         self.mode = mode
         self.length = len(self.y)
         self.path = path
-        self.input_size = input_size
-        
+
     def __len__(self):
         return self.length
     
@@ -194,10 +215,6 @@ class MADOS(Dataset): # Extend PyTorch's Dataset class
         # print(target.shape)
         target = target[:,:,np.newaxis]
         # print(target.shape)
-        
-        if self.mode=='train':
-            image, target = self.join_transform(image, target)
-
 
         image = ((image.astype(np.float32).transpose(2, 0, 1).copy() - bands_mean.reshape(-1,1,1))/ bands_std.reshape(-1,1,1)).squeeze()
         target = target.squeeze()
@@ -206,39 +223,50 @@ class MADOS(Dataset): # Extend PyTorch's Dataset class
         
         return image.copy(), target.copy()
 
-    def join_transform(self, image, target):
-        # Random Flip image
-        f = [1, 0, -1, 2, 2][np.random.randint(0, 5)]  # [1, 0, -1, 2, 2]
-        if f != 2:
-            image = self.filp_array(image, f)
-            target = self.filp_array(target,f)
-             
-        # Random Rotate (Only 0, 90, 180, 270)
-        if np.random.random() < 0.8:
-            k = np.random.randint(0, 4)  # [0, 1, 2, 3]
-            image = np.rot90(image, k, (1, 0))  # clockwise
-            target = np.rot90(target, k, (1, 0))
-       
-        return image, target
-    
-    def filp_array(self, array, flipCode):
-        if flipCode != -1:
-            array = np.flip(array, flipCode)
-        elif flipCode == -1:
-            array = np.flipud(array)
-            array = np.fliplr(array)
-        return array
+    @staticmethod
+    def download_dataset(output_path:pathlib.Path, silent=False, mados_url="https://zenodo.org/records/10664073/files/MADOS.zip?download=1"):
+        try:
+            os.makedirs(output_path, exist_ok=False)
+        except FileExistsError:
+            if not silent:
+                print("MADOS Dataset folder exists, skipping downloading dataset.")
+            return
+
+        temp_file_name = f"temp_{hex(int(time.time()))}_MADOS.zip"
+        pbar = DownloadProgressBar()
+
+        try:
+            urllib.request.urlretrieve(mados_url, output_path / temp_file_name, pbar)
+        except urllib.error.HTTPError as e:
+            print('Error while downloading dataset: The server couldn\'t fulfill the request.')
+            print('Error code: ', e.code)
+            return
+        except urllib.error.URLError as e:
+            print('Error while downloading dataset: Failed to reach a server.')
+            print('Reason: ', e.reason)
+            return
+
+        with zipfile.ZipFile(output_path / temp_file_name, 'r') as zip_ref:
+            print(f"Extracting to {output_path} ...")
+            # Remove top-level dir in ZIP file for nicer data dir structure
+            members = []
+            for zipinfo in zip_ref.infolist():
+                new_path = os.path.join(*(zipinfo.filename.split(os.path.sep)[1:]))
+                zipinfo.filename = str(new_path)
+                members.append(zipinfo)
+
+            zip_ref.extractall(output_path, members)
+            print("done.")
+
+        os.remove(output_path / temp_file_name)
 
 ###############################################################
 # Weighting Function for Semantic Segmentation                #
 ###############################################################
 def gen_weights(class_distribution, c = 1.02):
     return 1/torch.log(c + class_distribution)
-'''
+
 if __name__ == "__main__":
-    path = "/geomatics/gpuserver-0/vmarsocci/MADOS"
-    splits_path = os.path.join(path,'splits')
-    test_data = MADOS(path = path, splits = splits_path) #, download = True)
-    print(next(iter(test_data)))
-	
- '''
+    mados_path = "data/mados"
+    ds = MADOS(mados_path)
+    print(next(iter(ds)))

@@ -1,5 +1,7 @@
 encoder_name: prithvi
 encoder_weights: /geomatics/gpuserver-0/vmarsocci/pretrained_models/Prithvi_100M.pt
+download_url: null
+
 encoder_model_args:
   img_size: 224
   in_chans: 6
@@ -10,3 +12,11 @@ encoder_model_args:
   mlp_ratio: 4
   tubelet_size: 1
   num_frames: 1 #temporal frames (needed also in the encoder for prithvi)
+
+input_bands:
+  - B2
+  - B3
+  - B4
+  - B5
+  - B6
+  - B7

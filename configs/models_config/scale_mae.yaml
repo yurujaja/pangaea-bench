@@ -1,8 +1,14 @@
 encoder_name: scale_mae
 encoder_weights: /geomatics/gpuserver-0/vmarsocci/pretrained_models/scalemae-vitlarge-800.pth
+
 encoder_model_args:
   img_size: 224
   embed_dim: 1024
   in_chans: 3
   patch_size: 16
   global_pool: True
+
+input_bands:
+  - B4
+  - B3
+  - B2

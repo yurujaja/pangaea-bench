@@ -23,10 +23,9 @@ def make_dataset(ds_name, path, **kwargs):
         raise ValueError(f"{ds_name} is not yet supported.")
     
     if ds_name == "mados":
-        splits_path = os.path.join(path, "splits")
-        dataset_train = MADOS(path, splits_path, "train")
-        dataset_val = MADOS(path, splits_path, "val")
-        dataset_test = MADOS(path, splits_path, "val")
+        dataset_train = MADOS(path, mode="train")
+        dataset_val = MADOS(path, mode="val")
+        dataset_test = MADOS(path, mode="test")
     elif ds_name == "crop_type_mapping":
         dataset = CropTypeMappingDataset(data_dir=path, split_scheme='southsudan', calculate_bands=False, normalize=True)
         dataset_train = dataset.get_subset('train')

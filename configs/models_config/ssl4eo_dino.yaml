@@ -1,6 +1,23 @@
 encoder_name: ssl4eo_dino
-encoder_weights: /geomatics/gpuserver-0/vmarsocci/pretrained_models/B13_vits16_dino_0099.pth
+encoder_weights: ./pretrained_models/B13_vits16_dino_0099.pth
+download_url: https://drive.google.com/uc?id=1CseO5vvMReGlAulm5o4ZgbjUgj8VlAH7&export=download&confirm=yes
+
 encoder_model_args:
   img_size: 224
   in_chans: 13
   embed_dim: 384
+
+input_bands:
+  - B1
+  - B2
+  - B3
+  - B4
+  - B5
+  - B6
+  - B7
+  - B8
+  - B8a
+  - B9
+  - B10
+  - B11
+  - B12

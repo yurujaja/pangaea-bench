@@ -14,6 +14,7 @@ from operator import mul
 from timm.models.vision_transformer import VisionTransformer #, _cfg
 from timm.models.layers.helpers import to_2tuple
 
+
 def drop_path(x, drop_prob: float = 0., training: bool = False):
     if drop_prob == 0. or not training:
         return x

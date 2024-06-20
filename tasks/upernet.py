@@ -149,7 +149,6 @@ class UperNetViT(nn.Module):
             seg1 = self.encoder.forward_features(x1)
             
         elif self.encoder_type in ["satlas_pretrain"]:
-            print(x1.shape)
             seg1 = self.encoder(x1)[0]
 
         return seg1
