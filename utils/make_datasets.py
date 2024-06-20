@@ -8,6 +8,7 @@ import os
 from datasets.mados import MADOS
 from datasets.croptypemapping import CropTypeMappingDataset
 from datasets.sen1floods11 import Sen1Floods11
+from datasets.hlsburnscars import BurnScarsDataset
 
 
 def make_dataset(ds_name, path, **kwargs):
@@ -15,6 +16,8 @@ def make_dataset(ds_name, path, **kwargs):
         "mados": MADOS,
         "crop_type_mapping": CropTypeMappingDataset,
         "sen1floods11": Sen1Floods11,
+        "hlsburnscars": BurnScarsDataset,
+        
     }
     if ds_name not in datasets:
         raise ValueError(f"{ds_name} is not yet supported.")
@@ -33,5 +36,8 @@ def make_dataset(ds_name, path, **kwargs):
         dataset_train = Sen1Floods11(data_root=path, split="train")
         dataset_val = Sen1Floods11(data_root=path, split="val")
         dataset_test = Sen1Floods11(data_root=path, split="test")
+    elif ds_name == "hlsburnscars":
+        dataset_train = BurnScarsDataset(data_root=path, split="train")
+        dataset_val = BurnScarsDataset(data_root=path, split="val")
     
     return dataset_train, dataset_val, dataset_test
