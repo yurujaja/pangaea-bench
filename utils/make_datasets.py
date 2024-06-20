@@ -37,7 +37,7 @@ def make_dataset(ds_name, path, **kwargs):
         dataset_val = Sen1Floods11(data_root=path, split="val")
         dataset_test = Sen1Floods11(data_root=path, split="test")
     elif ds_name == "hlsburnscars":
-        dataset_train = BurnScarsDataset(data_root=path, split="train")
-        dataset_val = BurnScarsDataset(data_root=path, split="val")
-    
+        dataset_train = BurnScarsDataset(data_root=path, split="training", bands = ["B2", "B3", "B4", "B8a","B11", "B12"])
+        dataset_val = BurnScarsDataset(data_root=path, split="validation", bands = ["B2", "B3", "B4", "B8a","B11", "B12"])
+        dataset_test = BurnScarsDataset(data_root=path, split="validation", bands = ["B2", "B3", "B4", "B8a","B11", "B12"])
     return dataset_train, dataset_val, dataset_test

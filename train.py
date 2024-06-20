@@ -496,12 +496,14 @@ def main(args):
                     encoder_type=encoder_name,
                 )
 
+                # print(image.shape)
+
                 target = adapt_input(
                     tensor=target,
                     size=img_size,
                     type="target",
                     encoder_type=encoder_name,
-                )
+                ).squeeze(dim=1).long()
                 
                 if epoch == start_epoch and it == 0:
                     flops, macs, params = calculate_flops(
@@ -516,7 +518,9 @@ def main(args):
                 
                 optimizer.zero_grad()
 
-                logits = model(image)
+                logits = model(image)#.squeeze(dim=1)
+                # print(logits.shape, target.shape)
+                # print(logits.dtype, target.dtype)
                 loss = criterion(logits, target)
                 loss.backward()
 
@@ -577,7 +581,7 @@ def main(args):
                             size=img_size,
                             type="target",
                             encoder_type=encoder_name,
-                        )
+                        ).squeeze(dim=1).long()
 
                         logits = model(image)
                         loss = criterion(logits, target)

@@ -1,6 +1,6 @@
-dataset_name: burnscars
-data_path: ./data/hls_burn_scars
-num_classes: 15
+dataset_name: hlsburnscars
+data_path: /geomatics/gpuserver-0/vmarsocci/hlsburnscars
+num_classes: 3
 multi_temporal: false
 multi_modal: false
 bands:
