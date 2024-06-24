@@ -117,7 +117,9 @@ def get_band(path):
     return int(path.split('_')[-2])
 
 class MADOS(torch.utils.data.Dataset):
-    def __init__(self, path, splits=None, mode='train', download=True):
+    def __init__(self, path, splits=None, mode='train', download=True, cache_clips=True):
+
+        cache_folder = "image_cache"
 
         if download:
             self.download_dataset(pathlib.Path(path), silent=True)
@@ -137,12 +139,13 @@ class MADOS(torch.utils.data.Dataset):
             
         else:
             raise
-        self.X = []           # Loaded Images
-        self.y = []           # Loaded Output masks
+        # self.X = []           # Loaded Images
+        # self.y = []           # Loaded Output masks
+        self.cache_paths = []
             
         self.tiles = glob(os.path.join(path,'*'))
 
-        for tile in tqdm.tqdm(self.tiles, desc = 'Load '+mode+' set to memory'):
+        for tile in tqdm.tqdm(self.tiles, desc = 'Cache '+mode+' set to disk'):
 
                 # Get the number of different crops for the specific tile
                 splits = [f.split('_cl_')[-1] for f in glob(os.path.join(tile, '10', '*_cl_*'))]
@@ -156,45 +159,62 @@ class MADOS(torch.utils.data.Dataset):
                         # Get the bands for the specific crop 
                         all_bands = glob(os.path.join(tile, '*', '*L2R_rhorc*_'+crop))
                         all_bands = sorted(all_bands, key=get_band)
-            
-                        ################################
-                        # Upsample the bands #
-                        ################################
-                        current_image = []
-                        for c, band in enumerate(all_bands, 1):
-                            upscale_factor = int(os.path.basename(os.path.dirname(band)))//10
-            
-                            with rasterio.open(band, mode ='r') as src:
-                                current_image.append(src.read(1,
-                                                                out_shape=(
-                                                                    int(src.height * upscale_factor),
-                                                                    int(src.width * upscale_factor)
-                                                                ),
-                                                                resampling=rasterio.enums.Resampling.nearest
-                                                              ).copy()
-                                                  )
-                        
-                        stacked_image = np.stack(current_image)
 
-                        self.X.append(stacked_image)            
+                        corp_id = crop_name
+                        cache_path = pathlib.Path(path) / cache_folder / corp_id
+                        self.cache_paths.append(cache_path)
 
-                        # Load Classsification Mask
-                        cl_path = os.path.join(tile,'10',os.path.basename(tile)+'_L2R_cl_'+crop)
-                        ds = gdal.Open(cl_path)
-                        temp = np.copy(ds.ReadAsArray().astype(np.int64))
-                        
-                        ds=None                   # Close file
-                        self.y.append(temp)
-            
-        self.X = np.stack(self.X)
-        self.y = np.stack(self.y)
+                        if not os.path.exists(cache_path) or not os.path.exists(cache_path/'x.npy') or not os.path.exists(cache_path/'y.npy'):
+                            # Clean up previous cache attempts if the dir is inconsistent
+                            os.makedirs(cache_path, exist_ok=True)
+                            if os.path.exists(cache_path/'x.npy'):
+                                os.remove(cache_path/'x.npy')
+                            if os.path.exists(cache_path/'y.npy'):
+                                os.remove(cache_path/'y.npy')
+
+                            ################################
+                            # Upsample the bands #
+                            ################################
+                            current_image = []
+                            for c, band in enumerate(all_bands, 1):
+                                upscale_factor = int(os.path.basename(os.path.dirname(band)))//10
+                
+                                with rasterio.open(band, mode ='r') as src:
+                                    current_image.append(src.read(1,
+                                                                    out_shape=(
+                                                                        int(src.height * upscale_factor),
+                                                                        int(src.width * upscale_factor)
+                                                                    ),
+                                                                    resampling=rasterio.enums.Resampling.nearest
+                                                                )
+                                                    )
+                            
+                            stacked_image = np.stack(current_image)
+
+                            # self.X.append(stacked_image)
+                            np.save(cache_path/'x.npy', stacked_image , allow_pickle=False)
+
+                            # Load Classsification Mask
+                            cl_path = os.path.join(tile,'10',os.path.basename(tile)+'_L2R_cl_'+crop)
+                            ds = gdal.Open(cl_path)
+                            temp = ds.ReadAsArray().astype(np.int64)
+                            ds=None                   # Close file
+                            
+                            # Categories from 1 to 0
+                            temp = temp - 1
+
+                            # self.y.append(temp)
+                            np.save(cache_path/'y.npy', temp, allow_pickle=False)
+
+        # self.X = np.stack(self.X)
+        # self.y = np.stack(self.y)
         
-        # Categories from 1 to 0
-        self.y = self.y - 1
+        # # Categories from 1 to 0
+        # self.y = self.y - 1
 
-        self.impute_nan = np.tile(bands_mean, (self.X.shape[-1],self.X.shape[-2],1))
+        self.impute_nan = None 
         self.mode = mode
-        self.length = len(self.y)
+        self.length = len(self.cache_paths)
         self.path = path
 
     def __len__(self):
@@ -204,8 +224,13 @@ class MADOS(torch.utils.data.Dataset):
         return self.ROIs_split
     
     def __getitem__(self, index):
-        image = self.X[index]
-        target = self.y[index]
+        cache_path = self.cache_paths[index]
+        image = np.load(cache_path/'x.npy', allow_pickle=False)
+        target = np.load(cache_path/'y.npy', allow_pickle=False)
+        # image = self.X[index]
+        # target = self.y[index]
+        if self.impute_nan is None:
+            self.impute_nan = np.tile(bands_mean, (image.shape[-1],image.shape[-2],1))
 
         image = np.moveaxis(image, [0, 1, 2], [2, 0, 1]).astype('float32')       # CxWxH to WxHxC
         
@@ -221,7 +246,7 @@ class MADOS(torch.utils.data.Dataset):
 
         output = {
             'image': {
-                's2': image.copy(),
+                's2': image,
             },
             'target': target.copy(),
             'metadata': {}
