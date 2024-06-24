@@ -653,7 +653,18 @@ class CropTypeMappingDataset(SustainBenchDataset):
         x = self.get_input(idx)
         y = self.get_label(idx)
         metadata = self.get_metadata(idx)
-        return x, y, metadata
+
+        output = {
+            'image': {
+                's2': x,
+            },
+            'target': y,
+            'metadata': metadata
+        }
+        
+        return output
+        
+
 
     def pad(self, tensor):
         '''

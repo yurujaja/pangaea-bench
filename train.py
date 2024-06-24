@@ -265,51 +265,91 @@ def parse_args(input_args=None):
 
 
 def adapt_input(
-    tensor,
+    input,
     size,
-    source_bands,
-    target_bands,
+    source_modal,
+    target_modal,
     encoder_type="spectral_gpt",
     device=torch.device("cuda"),
 ):
-    if len(tensor.shape) == 4:
-        Bs, C, H, W = tensor.shape
-        n_tensor = T.resize(
-            img=tensor,
-            size=(size, size),
-            interpolation=T.InterpolationMode.BILINEAR,
-        ).float()
-        if encoder_type in ("prithvi"):
-            n_tensor = n_tensor.unsqueeze(dim=2)
-            Te = 1
-    elif len(tensor.shape) == 5:
-        Bs, C, Te, H, W = tensor.shape
-        n_tensor = torch.empty((Bs, C, Te, size, size)).to(device).float()
-
-        for i in range(Te):
-            n_tensor[:, :, i, :, :] = T.resize(
-                img=tensor[:, :, i, :, :],
+    
+    def adapt_input_tensor(
+        tensor,
+        size,
+        source_bands,
+        target_bands,
+        encoder_type="spectral_gpt",
+        device=torch.device("cuda"),
+    ):   
+              
+        if len(tensor.shape) == 4:
+            Bs, C, H, W = tensor.shape
+            n_tensor = T.resize(
+                img=tensor,
                 size=(size, size),
                 interpolation=T.InterpolationMode.BILINEAR,
+            ).float()
+            if encoder_type in ("prithvi"):
+                n_tensor = n_tensor.unsqueeze(dim=2)
+                Te = 1
+        elif len(tensor.shape) == 5:
+            Bs, C, Te, H, W = tensor.shape
+            n_tensor = torch.empty((Bs, C, Te, size, size)).to(device).float()
+
+            for i in range(Te):
+                n_tensor[:, :, i, :, :] = T.resize(
+                    img=tensor[:, :, i, :, :],
+                    size=(size, size),
+                    interpolation=T.InterpolationMode.BILINEAR,
+                )
+            if encoder_type in ("spectral_gpt"):
+                n_tensor = n_tensor.squeeze()
+
+        # Adapt from an arbitrary list of source bands to an arbitrary list of target bands
+        # by moving the matching parts to the right place, and filling out the rest with zeros.
+        if len(n_tensor.shape) == 4:
+            zero_tensor = torch.zeros((Bs, 1, size, size)).to(device)
+        elif len(n_tensor.shape) == 5:
+            zero_tensor = torch.zeros((Bs, 1, Te, size, size)).to(
+                device
             )
-        if encoder_type in ("spectral_gpt"):
-            n_tensor = n_tensor.squeeze()
 
-    # Adapt from an arbitrary list of source bands to an arbitrary list of target bands
-    # by moving the matching parts to the right place, and filling out the rest with zeros.
-    if len(n_tensor.shape) == 4:
-        zero_tensor = torch.zeros((Bs, 1, size, size)).to(device)
-    elif len(n_tensor.shape) == 5:
-        zero_tensor = torch.zeros((Bs, 1, Te, size, size)).to(
-            device
-        )
+        source_band_indexes = [source_bands.index(t) if t in source_bands else None for t in target_bands]    
+        out_tensors = [n_tensor[:, [i], ...] if i is not None else zero_tensor for i in source_band_indexes]
+            
+        return torch.concat(out_tensors, dim=1).to(device)
+    
+    # TODO: to support croma and dofa multi-modality
 
-    source_band_indexes = [source_bands.index(t) if t in source_bands else None for t in target_bands]    
-    out_tensors = [n_tensor[:, [i], ...] if i is not None else zero_tensor for i in source_band_indexes]
+    tensor = input['s2'].to(device)
+    source_bands = source_modal['s2']
+    target_bands = target_modal['s2']
+    return adapt_input_tensor(tensor, size, source_bands, target_bands, encoder_type, device)
 
-    return torch.concat(out_tensors, dim=1).to(device)
+    '''
+    if encoder_type not in ["dofa", "croma"]:
+        tensor = input['s2'].to(device)
+        source_bands = source_modal['s2']
+        target_bands = target_modal['s2']
 
-def adapt_target(tensor, size):
+        return adapt_input_tensor(tensor, size, source_bands, target_bands, encoder_type, device)
+    else:
+        output = []
+        for modal in ["s1", "s2"]:
+            # TODO: to support croma and dofa multi-modality
+            if modal not in input:
+                continue
+            tensor = input[modal].to(device)
+            source_bands = source_modal[modal]
+            target_bands = target_modal[modal]
+            input[modal] = adapt_input_tensor(tensor, size, source_bands, target_bands, encoder_type, device)
+            output.append(input[modal])
+        return output
+    '''
+
+
+def adapt_target(tensor, size, device=torch.device("cuda")):
+    tensor = tensor.to(device)
     return T.resize(
         img=tensor, size=(size, size), interpolation=T.InterpolationMode.NEAREST
     ).squeeze(dim=1).long()
@@ -455,7 +495,7 @@ def main(args):
     epochs = train_cfg["epochs"]
     eval_every = train_cfg["eval_every"]
 
-    img_size = encoder_cfg["encoder_model_args"]["img_size"] if encoder_cfg["encoder_model_args"].get("img_size") else None
+    img_size = encoder_cfg["encoder_model_args"]["img_size"] if encoder_cfg["encoder_model_args"].get("img_size") else dataset_cfg["img_size"]
 
     # Write model-graph to Tensorboard
     if train_cfg["mode"] == "train":
@@ -468,27 +508,26 @@ def main(args):
             training_batches = 0
 
             i_board = 0
-            for it, (image, target) in enumerate(tqdm(train_loader, desc="training")):
+            for it, data in enumerate(tqdm(train_loader, desc="training")):
                 it = len(train_loader) * (epoch - 1) + it  # global training iteration
-                image = image.to(device)
-                target = target.to(device)
-
-                if img_size is None:
-                    img_size = image.shape[-1]
+                image = data['image']
+                target = data['target']
 
                 image = adapt_input(
-                    tensor=image,
+                    input=image,
                     size=img_size,
-                    source_bands=dataset_cfg["bands"],
-                    target_bands=encoder_cfg["input_bands"],
+                    source_modal=dataset_cfg["bands"],
+                    target_modal=encoder_cfg["input_bands"],
                     encoder_type=encoder_name,
+                    device=device,
                 )
 
                 target = adapt_target(
                     tensor=target,
                     size=img_size,
-                )
-                
+                    device=device
+                )   
+                '''
                 if epoch == start_epoch and it == 0:
                     flops, macs, params = calculate_flops(
                         model=model,
@@ -499,7 +538,7 @@ def main(args):
                     logging.info(
                         f"Model FLOPs:{flops}   MACs:{macs}    Params:{params}"
                     )
-                
+                '''
                 optimizer.zero_grad()
 
                 logits = model(image)#.squeeze(dim=1)
@@ -546,24 +585,23 @@ def main(args):
                 seed_all(0)
 
                 with torch.no_grad():
-                    for image, target in tqdm(val_loader, desc="validating"):
-                        image = image.to(device)
-                        target = target.to(device)
-
-                        if img_size is None:
-                            img_size = image.shape[-1]
+                    for data in tqdm(val_loader, desc="validating"):
+                        image = data['image']
+                        target = data['target']
 
                         image = adapt_input(
-                            tensor=image,
+                            input=image,
                             size=img_size,
-                            source_bands=dataset_cfg["bands"],
-                            target_bands=encoder_cfg["input_bands"],
+                            source_modal=dataset_cfg["bands"],
+                            target_modal=encoder_cfg["input_bands"],
                             encoder_type=encoder_name,
+                            device=device,
                         )
 
                         target = adapt_target(
                             tensor=target,
-                            size=img_size
+                            size=img_size,
+                            device=device
                         )
 
                         logits = model(image)

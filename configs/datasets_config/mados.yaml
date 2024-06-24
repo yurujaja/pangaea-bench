@@ -1,20 +1,22 @@
 dataset_name: mados
 data_path: ./data/mados
 num_classes: 15
+img_size: 240
 multi_temporal: false
 multi_modal: false
 bands:
-  - B1
-  - B2
-  - B3
-  - B4
-  - B5
-  - B6
-  - B7
-  - B8
-  - B8a
-  - B11
-  - B12
+  s2:
+    - B1
+    - B2
+    - B3
+    - B4
+    - B5
+    - B6
+    - B7
+    - B8
+    - B8a
+    - B11
+    - B12
 data_mean:
   - 775.2290211032589
   - 1080.992780391705

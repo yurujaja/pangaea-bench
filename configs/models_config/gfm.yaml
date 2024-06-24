@@ -12,6 +12,7 @@ encoder_model_args:
   drop_path_rate: 0.1
 
 input_bands:
-  - B4
-  - B3
-  - B2
+  s2:
+    - B4
+    - B3
+    - B2

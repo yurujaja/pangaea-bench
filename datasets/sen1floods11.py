@@ -118,10 +118,15 @@ class Sen1Floods11(Dataset):
         image = self._load_file(self.image_files[index]).astype(np.float32) * 0.0001
         if self.bands:
             image = image[self.bands, ...]
+
         output = {
-            "image": image,
-            "timestamp": self._get_date(index).astype(np.float32),
-            "mask": self._load_file(self.segmentation_mask_files[index]).astype(np.int64),
+            'image': {
+                's2':image,
+            },
+            'target': self._load_file(self.segmentation_mask_files[index]).astype(np.int64),
+            'metadata': {
+                "timestamp": self._get_date(index).astype(np.float32),
+            }
         }
         return output
 

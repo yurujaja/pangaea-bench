@@ -1,15 +1,17 @@
 dataset_name: hlsburnscars
-data_path: /geomatics/gpuserver-0/vmarsocci/hlsburnscars
+data_path: ./data/hlsburnscars
 num_classes: 3
+img_size: 224
 multi_temporal: false
 multi_modal: false
 bands:
-  - B2
-  - B3
-  - B4
-  - B8a
-  - B11
-  - B12
+  s2:
+    - B2
+    - B3
+    - B4
+    - B8a
+    - B11
+    - B12
 data_mean:
   - 0.033349706741586264,
   - 0.05701185520536176,

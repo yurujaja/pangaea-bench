@@ -9,6 +9,7 @@ encoder_model_args:
   global_pool: True
 
 input_bands:
-  - B4
-  - B3
-  - B2
+  s2:
+    - B4
+    - B3
+    - B2

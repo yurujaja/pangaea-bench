@@ -8,16 +8,17 @@ encoder_model_args:
   embed_dim: 384
 
 input_bands:
-  - B1
-  - B2
-  - B3
-  - B4
-  - B5
-  - B6
-  - B7
-  - B8
-  - B8a
-  - B9
-  - B10
-  - B11
-  - B12
+  s2:
+    - B1
+    - B2
+    - B3
+    - B4
+    - B5
+    - B6
+    - B7
+    - B8
+    - B8a
+    - B9
+    - B10
+    - B11
+    - B12

@@ -16,9 +16,9 @@ def make_dataset(ds_name, path, **kwargs):
         "mados": MADOS,
         "crop_type_mapping": CropTypeMappingDataset,
         "sen1floods11": Sen1Floods11,
-        "hlsburnscars": BurnScarsDataset,
-        
+        "hlsburnscars": BurnScarsDataset       
     }
+
     if ds_name not in datasets:
         raise ValueError(f"{ds_name} is not yet supported.")
     
@@ -36,7 +36,7 @@ def make_dataset(ds_name, path, **kwargs):
         dataset_val = Sen1Floods11(data_root=path, split="val")
         dataset_test = Sen1Floods11(data_root=path, split="test")
     elif ds_name == "hlsburnscars":
-        dataset_train = BurnScarsDataset(data_root=path, split="training", bands = ["B2", "B3", "B4", "B8a","B11", "B12"])
-        dataset_val = BurnScarsDataset(data_root=path, split="validation", bands = ["B2", "B3", "B4", "B8a","B11", "B12"])
-        dataset_test = BurnScarsDataset(data_root=path, split="validation", bands = ["B2", "B3", "B4", "B8a","B11", "B12"])
+        dataset_train = BurnScarsDataset(data_root=path, split="training")
+        dataset_val = BurnScarsDataset(data_root=path, split="validation")
+        dataset_test = dataset_val
     return dataset_train, dataset_val, dataset_test

@@ -1,15 +1,17 @@
 dataset_name: sen1floods11
 data_path: ./data/Sen1Floods11
 num_classes: 11
+img_size: 512
 multi_temporal: false
 multi_modal: true
 bands:
-  - B2
-  - B3
-  - B4
-  - B5
-  - B6
-  - B7
+  s2:
+    - B2
+    - B3
+    - B4
+    - B5
+    - B6
+    - B7
 data_mean:
   - 775.2290211032589
   - 1080.992780391705

@@ -29,10 +29,10 @@ class BurnScarsDataset(Dataset):
         'B12': 6   # SWIR 2
     }
 
-    def __init__(self, data_root, split, bands, crop=(224, 224), transform=None):
+    def __init__(self, data_root, split, crop=(224, 224), transform=None):
         self.root_dir = os.path.join(data_root, split)
         self.image_files = self._load_image_files()
-        self.bands = bands
+        self.bands = ["B2", "B3", "B4", "B8a","B11", "B12"]
         self.crop = crop
         self.transform = transform
 
@@ -60,7 +60,16 @@ class BurnScarsDataset(Dataset):
 
         normalized_image = self.preprocess_image(image)
 
-        return (normalized_image, torch.tensor(mask, dtype=torch.float32).unsqueeze(0))  # Change to (C, H, W) format for mask
+        output = {
+            'image': {
+                's2': normalized_image,
+            },
+            'target': torch.tensor(mask, dtype=torch.float32),  
+            'metadata': {}
+        }
+        
+        return output
+
 
     def load_raster(self, path):
         with rasterio.open(path) as src:

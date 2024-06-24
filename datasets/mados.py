@@ -219,10 +219,16 @@ class MADOS(torch.utils.data.Dataset):
         image = ((image.astype(np.float32).transpose(2, 0, 1).copy() - bands_mean.reshape(-1,1,1))/ bands_std.reshape(-1,1,1)).squeeze()
         target = target.squeeze()
 
-        # print("dataloader", image.shape)
+        output = {
+            'image': {
+                's2': image.copy(),
+            },
+            'target': target.copy(),
+            'metadata': {}
+        }
         
-        return image.copy(), target.copy()
-
+        return output
+    
     @staticmethod
     def download_dataset(output_path:pathlib.Path, silent=False, mados_url="https://zenodo.org/records/10664073/files/MADOS.zip?download=1"):
         try:

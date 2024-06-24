@@ -14,9 +14,11 @@ encoder_model_args:
   num_frames: 1 #temporal frames (needed also in the encoder for prithvi)
 
 input_bands:
-  - B2
-  - B3
-  - B4
-  - B5
-  - B6
-  - B7
+  s2:
+    - B2
+    - B3
+    - B4
+    - B5
+    - B6
+    - B7
+

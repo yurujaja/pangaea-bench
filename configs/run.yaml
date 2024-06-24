@@ -1,5 +1,5 @@
-encoder_config: configs/models_config/ssl4eo_mae.yaml
-dataset_config: configs/datasets_config/mados.yaml
+encoder_config: configs/models_config/croma.yaml
+dataset_config: configs/datasets_config/burn_scars.yaml
 task_config: configs/tasks_config/upernet.yaml
 mode: train
 epochs: 80
