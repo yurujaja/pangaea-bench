@@ -11,8 +11,8 @@ import torch.nn as nn
 from functools import partial
 
 from timm.models.registry import register_model
-from timm.models.layers import trunc_normal_ as __call_trunc_normal_
-from timm.models.layers import drop_path, to_2tuple, trunc_normal_
+from timm.layers import trunc_normal_ as __call_trunc_normal_
+from timm.layers import drop_path, to_2tuple, trunc_normal_
 import torch.nn.functional as F
 
 
