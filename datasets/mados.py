@@ -139,8 +139,6 @@ class MADOS(torch.utils.data.Dataset):
             
         else:
             raise
-        # self.X = []           # Loaded Images
-        # self.y = []           # Loaded Output masks
         self.cache_paths = []
             
         self.tiles = glob(os.path.join(path,'*'))
@@ -191,7 +189,6 @@ class MADOS(torch.utils.data.Dataset):
                             
                             stacked_image = np.stack(current_image)
 
-                            # self.X.append(stacked_image)
                             np.save(cache_path/'x.npy', stacked_image , allow_pickle=False)
 
                             # Load Classsification Mask
@@ -205,12 +202,6 @@ class MADOS(torch.utils.data.Dataset):
 
                             # self.y.append(temp)
                             np.save(cache_path/'y.npy', temp, allow_pickle=False)
-
-        # self.X = np.stack(self.X)
-        # self.y = np.stack(self.y)
-        
-        # # Categories from 1 to 0
-        # self.y = self.y - 1
 
         self.impute_nan = None 
         self.mode = mode
@@ -227,8 +218,6 @@ class MADOS(torch.utils.data.Dataset):
         cache_path = self.cache_paths[index]
         image = np.load(cache_path/'x.npy', allow_pickle=False)
         target = np.load(cache_path/'y.npy', allow_pickle=False)
-        # image = self.X[index]
-        # target = self.y[index]
         if self.impute_nan is None:
             self.impute_nan = np.tile(bands_mean, (image.shape[-1],image.shape[-2],1))
 
@@ -237,9 +226,7 @@ class MADOS(torch.utils.data.Dataset):
         nan_mask = np.isnan(image)
         image[nan_mask] = self.impute_nan[nan_mask]
         
-        # print(target.shape)
         target = target[:,:,np.newaxis]
-        # print(target.shape)
 
         image = ((image.astype(np.float32).transpose(2, 0, 1).copy() - bands_mean.reshape(-1,1,1))/ bands_std.reshape(-1,1,1)).squeeze()
         target = target.squeeze()
