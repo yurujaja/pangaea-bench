@@ -31,6 +31,22 @@ pip install -r requirements.txt --extra-index-url https://download.pytorch.org/w
 
 conda install pytables==3.7.0
 ```
+Alternative conda-only dependencies (on the mados branch):
+
+Optional: install Mamba (https://github.com/conda-forge/miniforge/releases/) for faster resolution times
+```
+wget https://github.com/conda-forge/miniforge/releases/download/24.3.0-0/Mambaforge-24.3.0-0-Linux-x86_64.sh
+./Mambaforge-24.3.0-0-Linux-x86_64.sh
+
+mamba create -f environment.yaml
+mamba activate geofm-bench3
+```
+Without mamba (might take a while):
+```
+conda create -f environment.yaml
+conda activate geofm-bench3
+```
+
 ### Download pre-trained weights
 Please download pretrained weights into the `pretrained` folder.
 ```
