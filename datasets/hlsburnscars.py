@@ -62,7 +62,7 @@ class BurnScarsDataset(Dataset):
 
         output = {
             'image': {
-                's2': normalized_image,
+                'optical': normalized_image,
             },
             'target': torch.tensor(mask, dtype=torch.float32),  
             'metadata': {}

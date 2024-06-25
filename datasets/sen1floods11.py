@@ -121,7 +121,7 @@ class Sen1Floods11(Dataset):
 
         output = {
             'image': {
-                's2':image,
+                'optical':image,
             },
             'target': self._load_file(self.segmentation_mask_files[index]).astype(np.int64),
             'metadata': {

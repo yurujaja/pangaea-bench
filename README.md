@@ -21,6 +21,7 @@ Clone the repository:
 git clone git@github.com:yurujaja/geofm-bench.git
 cd geofm-bench
 ```
+
 Dependencies:
 ```
 conda create -f environment.yaml
@@ -37,16 +38,16 @@ mamba activate geofm-bench3
 ```
 
 ### Download pre-trained weights
-Please download pretrained weights into the `pretrained` folder.
+Please download pretrained weights into the `pretrained_models` folder.
 ```
 mkdir pretrained
 # Prithvi
-wget https://huggingface.co/ibm-nasa-geospatial/Prithvi-100M/resolve/main/Prithvi_100M.pt?download=true -O pretrained/Prithvi_100M.pt
+wget https://huggingface.co/ibm-nasa-geospatial/Prithvi-100M/resolve/main/Prithvi_100M.pt?download=true -O pretrained_models/Prithvi_100M.pt
 
 # SpectralGPT+ 
-wget https://zenodo.org/records/8412455/files/SpectralGPT+.pth -O pretrained/SpectralGPT+.pth
+wget https://zenodo.org/records/8412455/files/SpectralGPT+.pth -O pretrained_models/SpectralGPT+.pth
 # or SpectralGTP
-wget https://zenodo.org/records/8412455/files/SpectralGPT.pth -O pretrained/SpectralGPT.pth
+wget https://zenodo.org/records/8412455/files/SpectralGPT.pth -O pretrained_models/SpectralGPT.pth
 
 # Scale-MAE
 wget https://github.com/bair-climate-initiative/scale-mae/releases/download/base-800/scalemae-vitlarge-800.pth
@@ -105,7 +106,7 @@ python train.py configs/run.yaml \
 #### Note:
 - **Configurations**: The current configurations include parameters related to foundation model encoders and downstream task models. Future updates will aim to enhance configuration files to support additional tasks. To support multitemporal, please modify the `num_frames` parameter in the config. Consider that in all the configs, it appears in the `task` parameters. For Prithvi it appears also in the `encoder` parameter.
 - **Logging**: By default, logs and checkpoints are stored in the `work_dir`.
-- **The Mados dataset** in use is a simple example that only iterates over the first few data items. To do so, we added the following line 153 in `datasets/mados.py`. Also, the validation dataloder is set to be the same as the train dataloader (line 323 in `train.py`).
+- **The Mados dataset** in use is a simple example that only iterates over the first few data items. To do so, we added the following line 156 in `datasets/mados.py`. 
     ```
     if crop_name in self.ROIs_split[:2]:
     ```
@@ -116,7 +117,18 @@ python train.py configs/run.yaml \
 ###  How to Contribute
 
 #### New code
-- **Datasets**: Add your dataset code within the `datasets` folder.
+- **Datasets**: Add your dataset code within the `datasets` folder. In the `__getitem__` function-, the output should have a dict structure like below:
+    ```
+    output = {
+            'image': {
+                'optical':optical_image,
+                'sar': sar_image
+            },
+            'target': target,
+            'metadata': {}
+        }
+    return output
+    ```
 - **Add the Test**: Create a `test.py`, following a similar structure of `train.py`
 
 #### Existing code
