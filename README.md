@@ -40,7 +40,9 @@ mamba activate geofm-bench3
 ### Download pre-trained weights
 Please download pretrained weights into the `pretrained_models` folder.
 ```
-mkdir pretrained
+mkdir pretrained_models
+cd pretrained_models
+
 # Prithvi
 wget https://huggingface.co/ibm-nasa-geospatial/Prithvi-100M/resolve/main/Prithvi_100M.pt?download=true -O pretrained_models/Prithvi_100M.pt
 

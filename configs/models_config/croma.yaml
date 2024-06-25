@@ -1,5 +1,6 @@
 encoder_name: croma
-encoder_weights: /geomatics/gpuserver-0/vmarsocci/pretrained_models/CROMA_large.pt
+encoder_weights: ./pretrained_models/CROMA_large.pt
+download_url: https://huggingface.co/antofuller/CROMA/blob/main/CROMA_large.pt
 
 encoder_model_args:
   img_size: 120
