@@ -656,7 +656,7 @@ class CropTypeMappingDataset(SustainBenchDataset):
 
         output = {
             'image': {
-                's2': x,
+                'optical': x,
             },
             'target': y,
             'metadata': metadata

@@ -246,7 +246,7 @@ class MADOS(torch.utils.data.Dataset):
 
         output = {
             'image': {
-                's2': image,
+                'optical': image,
             },
             'target': target.copy(),
             'metadata': {}
