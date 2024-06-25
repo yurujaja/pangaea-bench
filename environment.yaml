@@ -6,9 +6,9 @@ dependencies:
   - python=3.10
   - gdal
   - geopandas
-  - numpy
+  - numpy>=2.0
   - pillow
-  - pytorch
+  - pytorch>=2.1
   - rasterio
   - scikit-learn
   - tensorboard
