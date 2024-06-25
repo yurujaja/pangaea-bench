@@ -321,3 +321,25 @@ class PASTIS(Dataset):
 
     def __len__(self):
         return len(self.meta_patch) * self.nb_split * self.nb_split
+
+
+if __name__ == "__main__":
+    from torchvision import transforms
+
+    path = "/share/DEEPLEARNING/datasets/PASTIS-HD"
+    modalities = ["s2", "aerial"]
+    transform = transforms.transform.Identity()
+    dataset = PASTIS(path, modalities, transform, folds=[1, 2, 3], nb_split=1)
+    dataloader = DataLoader(dataset, batch_size=2, collate_fn=collate_fn)
+
+    for i, data in enumerate(dataloader):
+        print(data["label"].shape)
+        print(data["s2"].shape)
+        print(data["s1-asc"].shape)
+        print(data["s1-des"].shape)
+        print(data["s1"].shape)
+        print(data["s2_dates"].shape)
+        print(data["s1-asc_dates"].shape)
+        print(data["s1-des_dates"].shape)
+        print(data["s1_dates"].shape)
+        break
