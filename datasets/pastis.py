@@ -1,156 +1,60 @@
-import json
+from torch.utils.data import Dataset
+import pandas as pd
+import numpy as np
 import os
-
-# remove warnings from geopandas
-import warnings
+import geopandas as gpd
+import torch
+import rasterio
 from datetime import datetime
 
-import geopandas as gpd
-import numpy as np
-import pandas as pd
-import torch
-from torch.utils.data import DataLoader, Dataset
-from tqdm import tqdm
 
-
-# remove warnings from fiona
-warnings.filterwarnings("ignore", module="fiona")
-warnings.filterwarnings("ignore", module="proj")
-
-
-class PastisLight(Dataset):
-    def __init__(
-        self,
-        dataset_dir: str,
-        stage: str,
-        n_classes: int,
-        img_size: int,
-        categorical: bool = False,
-        channels: list = [2, 1, 0],
-        sequence_length: int = 61,
-        target="semantic",
-        cache=False,
-        mem16=False,
-        reference_date="2018-09-01",
-        class_mapping=None,
-        mono_date=None,
-        sats=["S2"],
-    ):
-        super(PastisLight, self).__init__()
-        self.dataset_dir = dataset_dir
-        self.stage = stage
-        self.n_classes = n_classes
-        self.img_size = img_size
-        self.categorical = categorical
-        self.channels = channels
-        self.sequence_length = sequence_length
-        self.reference_date = datetime(*map(int, reference_date.split("-")))
-        self.memory = {}
-        self.memory_dates = {}
-        self.target = target
-        self.sats = sats
-        self.value_treshold = 5.0
-
-        # Get metadata
-        self.meta_patch = gpd.read_file(os.path.join(dataset_dir, "metadata.geojson"))
-        self.meta_patch.index = self.meta_patch["ID_PATCH"].astype(int)
-        self.meta_patch.sort_index(inplace=True)
-
-        self.date_tables = {s: None for s in sats}
-        self.date_range = np.array(range(-200, 600))
-        for s in sats:
-            dates = self.meta_patch["dates-{}".format(s)]
-            date_table = pd.DataFrame(
-                index=self.meta_patch.index, columns=self.date_range, dtype=int
+def collate_fn(batch):
+    """
+    Collate function for the dataloader.
+    Args:
+        batch (list): list of dictionaries with keys "label", "name" and the other corresponding to the modalities used
+    Returns:
+        dict: dictionary with keys "label", "name"  and the other corresponding to the modalities used
+    """
+    keys = list(batch[0].keys())
+    output = {}
+    for key in ["s2", "s1-asc", "s1-des", "s1"]:
+        if key in keys:
+            idx = [x[key] for x in batch]
+            max_size_0 = max(tensor.size(0) for tensor in idx)
+            stacked_tensor = torch.stack(
+                [
+                    torch.nn.functional.pad(
+                        tensor, (0, 0, 0, 0, 0, 0, 0, max_size_0 - tensor.size(0))
+                    )
+                    for tensor in idx
+                ],
+                dim=0,
             )
-            for pid, date_seq in dates.items():
-                d = pd.DataFrame().from_dict(date_seq, orient="index")
-                d = d[0].apply(
-                    lambda x: (
-                        datetime(int(str(x)[:4]), int(str(x)[4:6]), int(str(x)[6:]))
-                        - self.reference_date
-                    ).days
-                )
-                date_table.loc[pid, d.values] = 1
-            date_table = date_table.fillna(0)
-            self.date_tables[s] = {
-                index: np.array(list(d.values()))
-                for index, d in date_table.to_dict(orient="index").items()
-            }
-        # Select Fold samples
-        folds = {"train": [1, 2, 3], "val": [4], "test": [5]}[stage]
-        self.meta_patch = pd.concat(
-            [self.meta_patch[self.meta_patch["Fold"] == f] for f in folds]
-        )
-
-        # Get norms for Sentinel 2 data
-        with open(os.path.join(self.dataset_dir, "NORM_S2_patch.json"), "r") as file:
-            normvals = json.loads(file.read())
-        selected_folds = folds if folds is not None else range(1, 6)
-        means = [normvals["Fold_{}".format(f)]["mean"] for f in selected_folds]
-        stds = [normvals["Fold_{}".format(f)]["std"] for f in selected_folds]
-        self.norm = np.stack(means).mean(axis=0), np.stack(stds).mean(axis=0)
-        self.norm = (
-            torch.from_numpy(self.norm[0])[self.channels].float(),
-            torch.from_numpy(self.norm[1])[self.channels].float(),
-        )
-
-        self.len = self.meta_patch.shape[0]
-        self.id_patches = self.meta_patch.index
-
-        self.max_pixel = torch.tensor([22626, 21891, 22256]).reshape(1, -1, 1, 1)
-        self.min_pixel = torch.tensor([-10000, -10000, -10000]).reshape(1, -1, 1, 1)
-
-    def __len__(self):
-        return self.len
-
-    def preprocess(self, x: torch.Tensor) -> torch.Tensor:
-        return 2 * (x - self.min_pixel) / (self.max_pixel - self.min_pixel) - 1
-
-    def get_dates(self, id_patch, sat):
-        return self.date_range[np.where(self.date_tables[sat][id_patch] == 1)[0]]
-
-    def pad_tensor(self, x: torch.Tensor) -> torch.Tensor:
-        pad_length = self.sequence_length - x.shape[0]
-        # pad with last elt
-        last_elt = x[-1:]
-        seq = torch.cat([x] + [last_elt] * pad_length, dim=0)
-        return seq
-
-    def time_warping(self, time: torch.Tensor) -> torch.Tensor:
-        t_min, t_max = 16, 421
-        return (time - t_min) / (t_max - t_min)
-
-    def __getitem__(self, item):
-        id_patch = self.id_patches[item]
-
-        # Retrieve and prepare satellite data
-        img_path = os.path.join(self.dataset_dir, "DATA_S2", f"S2_{id_patch}.npy")
-        img = np.load(img_path).astype(np.float32)
-        img = torch.from_numpy(img)[:, self.channels]
-        img = self.preprocess(img)
-
-        # get MASK data
-        target_path = os.path.join(
-            self.dataset_dir, "ANNOTATIONS", "TARGET_{}.npy".format(id_patch)
-        )
-        target = np.load(target_path)
-        target = torch.from_numpy(target[0].astype(int))
-
-        # get DATES data
-        dates = torch.from_numpy(self.get_dates(id_patch, "S2"))
-        dates = self.time_warping(dates)
-
-        img, target = rdm_crop_img_msk(img, target, self.img_size)
-
-        return {
-            "img": self.pad_tensor(img),
-            "t": self.pad_tensor(dates),
-            "msk": target,
-        }
+            output[key] = stacked_tensor.float()
+            keys.remove(key)
+            key = "_".join([key, "dates"])
+            idx = [x[key] for x in batch]
+            max_size_0 = max(tensor.size(0) for tensor in idx)
+            stacked_tensor = torch.stack(
+                [
+                    torch.nn.functional.pad(tensor, (0, max_size_0 - tensor.size(0)))
+                    for tensor in idx
+                ],
+                dim=0,
+            )
+            output[key] = stacked_tensor.long()
+            keys.remove(key)
+    if "name" in keys:
+        output["name"] = [x["name"] for x in batch]
+        keys.remove("name")
+    for key in keys:
+        output[key] = torch.stack([x[key] for x in batch]).float()
+    return output
 
 
 def prepare_dates(date_dict, reference_date):
+    """Date formating."""
     d = pd.DataFrame().from_dict(date_dict, orient="index")
     d = d[0].apply(
         lambda x: (
@@ -158,36 +62,262 @@ def prepare_dates(date_dict, reference_date):
             - reference_date
         ).days
     )
-    return d.values
+    return torch.tensor(d.values)
 
 
-if __name__ == "__main__":
-    # Example of use
-    dl = PastisLight(
-        dataset_dir="/share/DEEPLEARNING/datasets/PASTIS/PASTIS/",
-        stage="train",
-        n_classes=18,
-        img_size=64,
-        batch_size=64,
-        num_workers=1,
-        categorical=False,
-    )
+def split_image(image_tensor, nb_split, id):
+    """
+    Split the input image tensor into four quadrants based on the integer i.
+    To use if Pastis data does not fit in your GPU memory.
+    Returns the corresponding quadrant based on the value of i
+    """
+    if nb_split == 1:
+        return image_tensor
+    i1 = id // nb_split
+    i2 = id % nb_split
+    height, width = image_tensor.shape[-2:]
+    half_height = height // nb_split
+    half_width = width // nb_split
+    if image_tensor.dim() == 4:
+        return image_tensor[
+            :,
+            :,
+            i1 * half_height : (i1 + 1) * half_height,
+            i2 * half_width : (i2 + 1) * half_width,
+        ].float()
+    if image_tensor.dim() == 3:
+        return image_tensor[
+            :,
+            i1 * half_height : (i1 + 1) * half_height,
+            i2 * half_width : (i2 + 1) * half_width,
+        ].float()
+    if image_tensor.dim() == 2:
+        return image_tensor[
+            i1 * half_height : (i1 + 1) * half_height,
+            i2 * half_width : (i2 + 1) * half_width,
+        ].float()
 
-    max_pxl = torch.zeros(
-        3,
-    )
-    min_pxl = float("inf") * torch.ones(
-        3,
-    )
 
-    for data in tqdm(dl):
-        print("img", data["img"].shape)
-        sample_max = torch.amax(data["img"], dim=(0, 1, -2, -1))
-        sample_min = torch.amin(data["img"], dim=(0, 1, -2, -1))
-        max_pxl = torch.maximum(max_pxl, sample_max)
-        min_pxl = torch.minimum(min_pxl, sample_min)
-        print("Sample mean", data["img"].mean())
-        print("Sample std", data["img"].std())
+class PASTIS(Dataset):
+    def __init__(
+        self,
+        path,
+        modalities,
+        transform,
+        folds=None,
+        reference_date="2018-09-01",
+        nb_split=1,
+        num_classes=20,
+    ):
+        """
+        Initializes the dataset.
+        Args:
+            path (str): path to the dataset
+            modalities (list): list of modalities to use
+            transform (torch module): transform to apply to the data
+            folds (list): list of folds to use
+            reference_date (str date): reference date for the data
+            nb_split (int): number of splits from one observation
+            num_classes (int): number of classes
+        """
+        super(PASTIS, self).__init__()
+        self.path = path
+        self.transform = transform
+        self.modalities = modalities
+        self.nb_split = nb_split
 
-    print(max_pxl)
-    print(min_pxl)
+        self.reference_date = datetime(*map(int, reference_date.split("-")))
+
+        self.meta_patch = gpd.read_file(os.path.join(self.path, "metadata.geojson"))
+
+        self.num_classes = num_classes
+
+        if folds is not None:
+            self.meta_patch = pd.concat(
+                [self.meta_patch[self.meta_patch["Fold"] == f] for f in folds]
+            )
+        self.collate_fn = collate_fn
+
+    def __getitem__(self, i):
+        """
+        Returns an item from the dataset.
+        Args:
+            i (int): index of the item
+        Returns:
+            dict: dictionary with keys "label", "name" and the other corresponding to the modalities used
+        """
+        line = self.meta_patch.iloc[i // (self.nb_split * self.nb_split)]
+        name = line["ID_PATCH"]
+        part = i % (self.nb_split * self.nb_split)
+        label = torch.from_numpy(
+            np.load(
+                os.path.join(self.path, "ANNOTATIONS/TARGET_" + str(name) + ".npy")
+            )[0].astype(np.int32)
+        )
+        label = torch.unique(split_image(label, self.nb_split, part)).long()
+        label = torch.sum(
+            torch.nn.functional.one_hot(label, num_classes=self.num_classes), dim=0
+        )
+        label = label[1:-1]  # remove Background and Void classes
+        output = {"label": label, "name": name}
+
+        for modality in self.modalities:
+            if modality == "aerial":
+                with rasterio.open(
+                    os.path.join(
+                        self.path,
+                        "DATA_SPOT/PASTIS_SPOT6_RVB_1M00_2019/SPOT6_RVB_1M00_2019_"
+                        + str(name)
+                        + ".tif",
+                    )
+                ) as f:
+                    output["aerial"] = split_image(
+                        torch.FloatTensor(f.read()), self.nb_split, part
+                    )
+            elif modality == "s1-median":
+                modality_name = "s1a"
+                images = split_image(
+                    torch.from_numpy(
+                        np.load(
+                            os.path.join(
+                                self.path,
+                                "DATA_{}".format(modality_name.upper()),
+                                "{}_{}.npy".format(modality_name.upper(), name),
+                            )
+                        )
+                    ),
+                    self.nb_split,
+                    part,
+                ).to(torch.float32)
+                out, _ = torch.median(images, dim=0)
+                output[modality] = out
+            elif modality == "s2-median":
+                modality_name = "s2"
+                images = split_image(
+                    torch.from_numpy(
+                        np.load(
+                            os.path.join(
+                                self.path,
+                                "DATA_{}".format(modality_name.upper()),
+                                "{}_{}.npy".format(modality_name.upper(), name),
+                            )
+                        )
+                    ),
+                    self.nb_split,
+                    part,
+                ).to(torch.float32)
+                out, _ = torch.median(images, dim=0)
+                output[modality] = out
+            elif modality == "s1-4season-median":
+                modality_name = "s1a"
+                images = split_image(
+                    torch.from_numpy(
+                        np.load(
+                            os.path.join(
+                                self.path,
+                                "DATA_{}".format(modality_name.upper()),
+                                "{}_{}.npy".format(modality_name.upper(), name),
+                            )
+                        )
+                    ),
+                    self.nb_split,
+                    part,
+                ).to(torch.float32)
+                dates = prepare_dates(
+                    line["-".join(["dates", modality_name.upper()])],
+                    self.reference_date,
+                )
+                l = []
+                for i in range(4):
+                    mask = (dates >= 92 * i) & (dates < 92 * (i + 1))
+                    if sum(mask) > 0:
+                        r, _ = torch.median(images[mask], dim=0)
+                        l.append(r)
+                    else:
+                        l.append(
+                            torch.zeros(
+                                (images.shape[1], images.shape[-2], images.shape[-1])
+                            )
+                        )
+                output[modality] = torch.cat(l)
+            elif modality == "s2-4season-median":
+                modality_name = "s2"
+                images = split_image(
+                    torch.from_numpy(
+                        np.load(
+                            os.path.join(
+                                self.path,
+                                "DATA_{}".format(modality_name.upper()),
+                                "{}_{}.npy".format(modality_name.upper(), name),
+                            )
+                        )
+                    ),
+                    self.nb_split,
+                    part,
+                ).to(torch.float32)
+                dates = prepare_dates(
+                    line["-".join(["dates", modality_name.upper()])],
+                    self.reference_date,
+                )
+                l = []
+                for i in range(4):
+                    mask = (dates >= 92 * i) & (dates < 92 * (i + 1))
+                    if sum(mask) > 0:
+                        r, _ = torch.median(images[mask], dim=0)
+                        l.append(r)
+                    else:
+                        l.append(
+                            torch.zeros(
+                                (images.shape[1], images.shape[-2], images.shape[-1])
+                            )
+                        )
+                output[modality] = torch.cat(l)
+            else:
+                if len(modality) > 3:
+                    modality_name = modality[:2] + modality[3]
+                    output[modality] = split_image(
+                        torch.from_numpy(
+                            np.load(
+                                os.path.join(
+                                    self.path,
+                                    "DATA_{}".format(modality_name.upper()),
+                                    "{}_{}.npy".format(modality_name.upper(), name),
+                                )
+                            )
+                        ),
+                        self.nb_split,
+                        part,
+                    )
+                    output["_".join([modality, "dates"])] = prepare_dates(
+                        line["-".join(["dates", modality_name.upper()])],
+                        self.reference_date,
+                    )
+                else:
+                    output[modality] = split_image(
+                        torch.from_numpy(
+                            np.load(
+                                os.path.join(
+                                    self.path,
+                                    "DATA_{}".format(modality.upper()),
+                                    "{}_{}.npy".format(modality.upper(), name),
+                                )
+                            )
+                        ),
+                        self.nb_split,
+                        part,
+                    )
+                    output["_".join([modality, "dates"])] = prepare_dates(
+                        line["-".join(["dates", modality.upper()])], self.reference_date
+                    )
+                N = len(output[modality])
+                if N > 50:
+                    random_indices = torch.randperm(N)[:50]
+                    output[modality] = output[modality][random_indices]
+                    output["_".join([modality, "dates"])] = output[
+                        "_".join([modality, "dates"])
+                    ][random_indices]
+
+        return self.transform(output)
+
+    def __len__(self):
+        return len(self.meta_patch) * self.nb_split * self.nb_split
