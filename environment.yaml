@@ -2,6 +2,7 @@ name: geofm-bench3
 channels:
   - pytorch
   - conda-forge
+  - nvidia
 dependencies:
   - python=3.10
   - gdal
