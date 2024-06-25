@@ -23,15 +23,13 @@ import time
 from tqdm import tqdm
 from os.path import dirname as up
 
-import yaml
-
 import torch
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader
 from torch.nn import functional as F
 from torchvision.transforms import functional as T
 
-from calflops import calculate_flops # NOTE: it seems like this is not available on conda, maybe swith to https://github.com/sovrasov/flops-counter.pytorch/
+import ptflops
 
 sys.path.append(up(os.path.abspath(__file__)))
 sys.path.append(os.path.join(up(up(os.path.abspath(__file__))), 'tasks'))
@@ -46,30 +44,7 @@ from models import adapt_gfm_pretrained
 from utils.metrics import Evaluation
 from models.pos_embed import interpolate_pos_embed
 from utils.make_datasets import make_dataset
-
-
-def load_config(args):
-    cfg_path = args["run_config"]
-    with open(cfg_path, "r") as file:
-        train_config = yaml.safe_load(file)
-    
-    def load_specific_config(key):
-        if args.get(key):
-            with open(args[key], "r") as file:
-                return yaml.safe_load(file)
-        elif train_config.get(key):
-            with open(train_config[key], "r") as file:
-                return yaml.safe_load(file)
-        else:
-            raise ValueError(f"No configuration found for {key}")
-
-    encoder_config = load_specific_config("encoder_config")
-    dataset_config = load_specific_config("dataset_config") 
-    task_config = load_specific_config("task_config")
-
-
-    return train_config, encoder_config, dataset_config, task_config
-
+from utils.configs import load_config
 
 def load_checkpoint(encoder, ckpt_path, model="prithvi"):
     checkpoint = torch.load(ckpt_path, map_location="cpu")
@@ -527,18 +502,17 @@ def main(args):
                     size=img_size,
                     device=device
                 )   
-                
                 if epoch == start_epoch and it == 0:
-                    flops, macs, params = calculate_flops(
+                    macs, params = ptflops.get_model_complexity_info(
                         model=model,
-                        input_shape=tuple(image.size()),
-                        output_as_string=True,
-                        output_precision=4,
+                        input_res=tuple(image.size()[1:]),
+                        as_strings=True, backend='pytorch',
+                        verbose=True
                     )
-                    logging.info(
-                        f"Model FLOPs:{flops}   MACs:{macs}    Params:{params}"
-                    )
-                
+                    logging.info(f"Model MACs: {macs}")
+                    logging.info(f"Model Params: {params}")
+                    print(f"Model MACs:{macs}")
+                    print(f"Model Params:{params}")
                 optimizer.zero_grad()
 
                 logits = model(image)#.squeeze(dim=1)

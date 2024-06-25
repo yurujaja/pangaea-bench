@@ -21,83 +21,48 @@ Clone the repository:
 git clone git@github.com:yurujaja/geofm-bench.git
 cd geofm-bench
 ```
+
 Dependencies:
 ```
-conda create -n <env_name> python=3.9.0  # change <env_name> 
-conda activate <env_name> 
-conda install -c conda-forge gdal==3.3.2 
-
-pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu118 -f https://download.openmmlab.com/mmcv/dist/cu118/torch2.1/index.html
-
-conda install pytables==3.7.0
+conda env create -f environment.yaml
+conda activate geofm-bench3
 ```
-
-Alternative conda-only dependencies (on the mados branch):
 
 Optional: install Mamba (https://github.com/conda-forge/miniforge/releases/) for faster resolution times
 ```
 wget https://github.com/conda-forge/miniforge/releases/download/24.3.0-0/Mambaforge-24.3.0-0-Linux-x86_64.sh
 ./Mambaforge-24.3.0-0-Linux-x86_64.sh
 
-mamba create -f environment.yaml
+mamba env create -f environment.yaml
 mamba activate geofm-bench3
-```
-Without mamba (might take a while):
-```
-conda create -f environment.yaml
-conda activate geofm-bench3
 ```
 
 ### Download pre-trained weights
-Please download pretrained weights into the `pretrained_models` folder.
+For using GFM please download pretrained weights into the `pretrained_models` folder manually.
 ```
-mkdir pretrained
-# Prithvi
-wget https://huggingface.co/ibm-nasa-geospatial/Prithvi-100M/resolve/main/Prithvi_100M.pt?download=true -O pretrained_models/Prithvi_100M.pt
-
-# SpectralGPT+ 
-wget https://zenodo.org/records/8412455/files/SpectralGPT+.pth -O pretrained_models/SpectralGPT+.pth
-# or SpectralGTP
-wget https://zenodo.org/records/8412455/files/SpectralGPT.pth -O pretrained_models/SpectralGPT.pth
-
-# Scale-MAE
-wget https://github.com/bair-climate-initiative/scale-mae/releases/download/base-800/scalemae-vitlarge-800.pth
-
-# RemoteCLIP Base
-wget https://huggingface.co/chendelong/RemoteCLIP/blob/main/RemoteCLIP-ViT-B-32.pt
-# or RemoteCLIP Large
-wget https://huggingface.co/chendelong/RemoteCLIP/blob/main/RemoteCLIP-ViT-L-14.pt
-
-# CROMA Base
-wget https://huggingface.co/antofuller/CROMA/blob/main/CROMA_base.pt
-# or CROMA Large
-wget https://huggingface.co/antofuller/CROMA/blob/main/CROMA_large.pt
-
-# DOFA Base
-wget https://huggingface.co/XShadow/DOFA/blob/main/DOFA_ViT_base_e100.pth
-# or DOFA Large
-wget https://huggingface.co/XShadow/DOFA/blob/main/DOFA_ViT_large_e100.pth
-
-# SSL4EO
-You can find all the links in their official repository https://github.com/zhu-xlab/SSL4EO-S12/tree/main
+mkdir pretrained_models
+cd pretrained_models
 
 # GFM
 You can find the links in their official repository 
 https://github.com/boranhan/Geospatial_Foundation_Models?tab=readme-ov-file#geopile-and-gfm-pretrained-model
 
-# SatlasPretrain
-You can find the links in their official repository 
-https://github.com/allenai/satlaspretrain_models/
-
 ```
 ### Download Data
-- Please download [MADOS](https://zenodo.org/records/10664073)  into the `./data/MADOS` folder.
 - Please download [Sen1Floods11](https://github.com/cloudtostreet/Sen1Floods11)   into the `./data/Sen1Floods11` folder.
 - Please download [HLS Burn Scars](https://huggingface.co/datasets/ibm-nasa-geospatial/hls_burn_scars) using:
     ```
     wget https://huggingface.co/datasets/ibm-nasa-geospatial/hls_burn_scars/resolve/main/hls_burn_scars.tar.gz?download=true -O ./data/HLSBurnScars/hls_burn_scars.tar.gz
     tar -xzvf hls_burn_scars.tar.gz
     ```
+
+## Tests
+To run our unit tests, simply run
+```
+python -m unittest
+```
+
+Warning: This will download all pretrained model files.
 
 ## Pipeline -demo
 To quickly get started, utilize [MADOS dataset](https://zenodo.org/records/10664073) to establish the complete pipeline for semantic segmentation.

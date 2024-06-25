@@ -2,6 +2,7 @@ name: geofm-bench3
 channels:
   - pytorch
   - conda-forge
+  - nvidia
 dependencies:
   - python=3.10
   - gdal
@@ -21,4 +22,4 @@ dependencies:
   - rioxarray
   - pytorch-cuda=11.8
   - gdown
-prefix: /localhome/yjia/.conda/envs/geofm-bench3
+  - ptflops

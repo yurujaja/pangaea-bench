@@ -1,5 +1,6 @@
 encoder_name: dofa
-encoder_weights: /geomatics/gpuserver-0/vmarsocci/pretrained_models/DOFA_ViT_base_e100.pth
+encoder_weights: ./pretrained_models/DOFA_ViT_base_e100.pth
+download_url: https://huggingface.co/XShadow/DOFA/resolve/main/DOFA_ViT_base_e100.pth
 
 encoder_model_args:
   img_size: 224

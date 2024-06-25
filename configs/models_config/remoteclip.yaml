@@ -1,5 +1,6 @@
 encoder_name: remote_clip
-encoder_weights: /geomatics/gpuserver-0/vmarsocci/pretrained_models/RemoteCLIP-ViT-B-32.pt
+encoder_weights: ./pretrained_models/RemoteCLIP-ViT-B-32.pt
+download_url: https://huggingface.co/chendelong/RemoteCLIP/resolve/main/RemoteCLIP-ViT-B-32.pt
 
 encoder_model_args:
   model_name: ViT-B-32

@@ -21,7 +21,7 @@ import math
 
 # import torch
 # import torch.nn as nn
-from timm.models.layers import to_2tuple
+from timm.layers import to_2tuple
 # from timm.models.vision_transformer import DropPath, Mlp
 
 

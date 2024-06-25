@@ -59,7 +59,7 @@ def get_1d_sincos_pos_embed_from_grid(embed_dim, pos):
     out: (M, D)
     """
     assert embed_dim % 2 == 0
-    omega = np.arange(embed_dim // 2, dtype=np.float)
+    omega = np.arange(embed_dim // 2, dtype=float)
     omega /= embed_dim / 2.
     omega = 1. / 10000**omega  # (D/2,)
 
@@ -80,7 +80,7 @@ def get_1d_sincos_pos_embed_from_grid_torch(embed_dim, pos):
     out: (M, D)
     """
     assert embed_dim % 2 == 0
-    omega = torch.arange(embed_dim // 2, dtype=np.float, device=pos.device)
+    omega = torch.arange(embed_dim // 2, dtype=float, device=pos.device)
     omega /= embed_dim / 2.
     omega = 1. / 10000**omega  # (D/2,)
 
