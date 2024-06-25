@@ -1,5 +1,4 @@
 import json
-import logging
 import os
 
 # remove warnings from geopandas
@@ -7,17 +6,12 @@ import warnings
 from datetime import datetime
 
 import geopandas as gpd
-import lightning as l
 import numpy as np
 import pandas as pd
 import torch
-from PIL import Image
 from torch.utils.data import DataLoader, Dataset
-from torchvision import transforms as T
 from tqdm import tqdm
 
-from eo_dataset.data_augmenter import DataAugmenter
-from eo_dataset.utils import rdm_crop_img_msk
 
 # remove warnings from fiona
 warnings.filterwarnings("ignore", module="fiona")
@@ -31,7 +25,6 @@ class PastisLight(Dataset):
         stage: str,
         n_classes: int,
         img_size: int,
-        data_augmenter: DataAugmenter,
         categorical: bool = False,
         channels: list = [2, 1, 0],
         sequence_length: int = 61,
@@ -48,7 +41,6 @@ class PastisLight(Dataset):
         self.stage = stage
         self.n_classes = n_classes
         self.img_size = img_size
-        self.data_augmenter = data_augmenter
         self.categorical = categorical
         self.channels = channels
         self.sequence_length = sequence_length
@@ -150,8 +142,6 @@ class PastisLight(Dataset):
         dates = self.time_warping(dates)
 
         img, target = rdm_crop_img_msk(img, target, self.img_size)
-        if self.data_augmenter is not None:
-            data, target = self.data_augmenter(img, target)
 
         return {
             "img": self.pad_tensor(img),
@@ -171,96 +161,17 @@ def prepare_dates(date_dict, reference_date):
     return d.values
 
 
-class PASTISDataModule(l.LightningDataModule):
-    def __init__(
-        self,
-        dataset_dir: str,
-        n_classes: int,
-        img_size: int,
-        batch_size: int,
-        num_workers: int,
-        data_augmenter: DataAugmenter,
-        categorical: bool = False,
-    ) -> None:
-        super().__init__()
-        self.dataset_dir = dataset_dir
-        self.n_classes = n_classes
-        self.img_size = img_size
-        self.batch_size = batch_size
-        self.num_workers = num_workers
-        self.data_augmenter = data_augmenter
-        self.categorical = categorical
-
-    def setup(self, stage: str | None = None):
-        self.train = PastisLight(
-            dataset_dir=self.dataset_dir,
-            stage="train",
-            n_classes=self.n_classes,
-            img_size=self.img_size,
-            data_augmenter=self.data_augmenter,
-            categorical=self.categorical,
-        )
-
-        self.val = PastisLight(
-            dataset_dir=self.dataset_dir,
-            stage="val",
-            n_classes=self.n_classes,
-            img_size=self.img_size,
-            data_augmenter=None,
-            categorical=self.categorical,
-        )
-
-        self.test = PastisLight(
-            dataset_dir=self.dataset_dir,
-            stage="test",
-            n_classes=self.n_classes,
-            img_size=self.img_size,
-            data_augmenter=None,
-            categorical=self.categorical,
-        )
-
-    def train_dataloader(self):
-        return DataLoader(
-            self.train,
-            batch_size=self.batch_size,
-            shuffle=True,
-            num_workers=self.num_workers,
-            pin_memory=True,
-        )
-
-    def val_dataloader(self):
-        return DataLoader(
-            self.val,
-            batch_size=self.batch_size,
-            shuffle=False,
-            num_workers=self.num_workers,
-            pin_memory=True,
-        )
-
-    def test_dataloader(self):
-        return DataLoader(
-            self.test,
-            batch_size=self.batch_size,
-            shuffle=False,
-            num_workers=self.num_workers,
-            pin_memory=True,
-        )
-
-
 if __name__ == "__main__":
     # Example of use
-    data_augmenter = DataAugmenter(["rotation", "flip", "blur"], probability=0.5)
-    dm = PASTISDataModule(
+    dl = PastisLight(
         dataset_dir="/share/DEEPLEARNING/datasets/PASTIS/PASTIS/",
+        stage="train",
         n_classes=18,
         img_size=64,
         batch_size=64,
         num_workers=1,
-        data_augmenter=data_augmenter,
         categorical=False,
     )
-    dm.setup()
-    dl = dm.train_dataloader()
 
     max_pxl = torch.zeros(
         3,
