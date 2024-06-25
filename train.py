@@ -527,7 +527,7 @@ def main(args):
                     size=img_size,
                     device=device
                 )   
-                '''
+                
                 if epoch == start_epoch and it == 0:
                     flops, macs, params = calculate_flops(
                         model=model,
@@ -538,7 +538,7 @@ def main(args):
                     logging.info(
                         f"Model FLOPs:{flops}   MACs:{macs}    Params:{params}"
                     )
-                '''
+                
                 optimizer.zero_grad()
 
                 logits = model(image)#.squeeze(dim=1)
