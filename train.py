@@ -31,7 +31,7 @@ from torch.utils.data import DataLoader
 from torch.nn import functional as F
 from torchvision.transforms import functional as T
 
-# from calflops import calculate_flops # NOTE: it seems like this is not available on conda, maybe swith to https://github.com/sovrasov/flops-counter.pytorch/
+import ptflops
 
 sys.path.append(up(os.path.abspath(__file__)))
 sys.path.append(os.path.join(up(up(os.path.abspath(__file__))), 'tasks'))
@@ -527,18 +527,17 @@ def main(args):
                     size=img_size,
                     device=device
                 )   
-                '''
                 if epoch == start_epoch and it == 0:
-                    flops, macs, params = calculate_flops(
+                    flops, params = ptflops.get_model_complexity_info(
                         model=model,
-                        input_shape=tuple(image.size()),
-                        output_as_string=True,
-                        output_precision=4,
+                        input_res=tuple(image.size()[1:]),
+                        as_strings=True, backend='pytorch',
+                        verbose=True
                     )
-                    logging.info(
-                        f"Model FLOPs:{flops}   MACs:{macs}    Params:{params}"
-                    )
-                '''
+                    logging.info(f"Model MACs: {macs}")
+                    logging.info(f"Model Params: {params}")
+                    print(f"Model MACs:{macs}")
+                    print(f"Model Params:{params}")
                 optimizer.zero_grad()
 
                 logits = model(image)#.squeeze(dim=1)

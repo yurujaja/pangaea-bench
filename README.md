@@ -23,15 +23,9 @@ cd geofm-bench
 ```
 Dependencies:
 ```
-conda create -n <env_name> python=3.9.0  # change <env_name> 
-conda activate <env_name> 
-conda install -c conda-forge gdal==3.3.2 
-
-pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu118 -f https://download.openmmlab.com/mmcv/dist/cu118/torch2.1/index.html
-
-conda install pytables==3.7.0
+conda create -f environment.yaml
+conda activate geofm-bench3
 ```
-Alternative conda-only dependencies (on the mados branch):
 
 Optional: install Mamba (https://github.com/conda-forge/miniforge/releases/) for faster resolution times
 ```
@@ -40,11 +34,6 @@ wget https://github.com/conda-forge/miniforge/releases/download/24.3.0-0/Mambafo
 
 mamba create -f environment.yaml
 mamba activate geofm-bench3
-```
-Without mamba (might take a while):
-```
-conda create -f environment.yaml
-conda activate geofm-bench3
 ```
 
 ### Download pre-trained weights
@@ -90,7 +79,6 @@ https://github.com/allenai/satlaspretrain_models/
 
 ```
 ### Download Data
-- Please download [MADOS](https://zenodo.org/records/10664073)  into the `./data/MADOS` folder.
 - Please download [Sen1Floods11](https://github.com/cloudtostreet/Sen1Floods11)   into the `./data/Sen1Floods11` folder.
 - Please download [HLS Burn Scars](https://huggingface.co/datasets/ibm-nasa-geospatial/hls_burn_scars) using:
     ```
