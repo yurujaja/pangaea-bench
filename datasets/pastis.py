@@ -1,4 +1,4 @@
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 import pandas as pd
 import numpy as np
 import os
@@ -324,22 +324,15 @@ class PASTIS(Dataset):
 
 
 if __name__ == "__main__":
-    from torchvision import transforms
-
     path = "/share/DEEPLEARNING/datasets/PASTIS-HD"
     modalities = ["s2", "aerial"]
-    transform = transforms.transform.Identity()
+    transform = lambda x: x
     dataset = PASTIS(path, modalities, transform, folds=[1, 2, 3], nb_split=1)
     dataloader = DataLoader(dataset, batch_size=2, collate_fn=collate_fn)
 
     for i, data in enumerate(dataloader):
+        print("Key: ", data.keys())
         print(data["label"].shape)
         print(data["s2"].shape)
-        print(data["s1-asc"].shape)
-        print(data["s1-des"].shape)
-        print(data["s1"].shape)
-        print(data["s2_dates"].shape)
-        print(data["s1-asc_dates"].shape)
-        print(data["s1-des_dates"].shape)
-        print(data["s1_dates"].shape)
+        print(data["aerial"].shape)
         break
