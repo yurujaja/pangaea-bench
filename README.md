@@ -38,47 +38,14 @@ mamba activate geofm-bench3
 ```
 
 ### Download pre-trained weights
-Please download pretrained weights into the `pretrained_models` folder.
+For using GFM please download pretrained weights into the `pretrained_models` folder manually.
 ```
 mkdir pretrained_models
 cd pretrained_models
 
-# Prithvi
-wget https://huggingface.co/ibm-nasa-geospatial/Prithvi-100M/resolve/main/Prithvi_100M.pt?download=true -O pretrained_models/Prithvi_100M.pt
-
-# SpectralGPT+ 
-wget https://zenodo.org/records/8412455/files/SpectralGPT+.pth -O pretrained_models/SpectralGPT+.pth
-# or SpectralGTP
-wget https://zenodo.org/records/8412455/files/SpectralGPT.pth -O pretrained_models/SpectralGPT.pth
-
-# Scale-MAE
-wget https://github.com/bair-climate-initiative/scale-mae/releases/download/base-800/scalemae-vitlarge-800.pth
-
-# RemoteCLIP Base
-wget https://huggingface.co/chendelong/RemoteCLIP/blob/main/RemoteCLIP-ViT-B-32.pt
-# or RemoteCLIP Large
-wget https://huggingface.co/chendelong/RemoteCLIP/blob/main/RemoteCLIP-ViT-L-14.pt
-
-# CROMA Base
-wget https://huggingface.co/antofuller/CROMA/blob/main/CROMA_base.pt
-# or CROMA Large
-wget https://huggingface.co/antofuller/CROMA/blob/main/CROMA_large.pt
-
-# DOFA Base
-wget https://huggingface.co/XShadow/DOFA/blob/main/DOFA_ViT_base_e100.pth
-# or DOFA Large
-wget https://huggingface.co/XShadow/DOFA/blob/main/DOFA_ViT_large_e100.pth
-
-# SSL4EO
-You can find all the links in their official repository https://github.com/zhu-xlab/SSL4EO-S12/tree/main
-
 # GFM
 You can find the links in their official repository 
 https://github.com/boranhan/Geospatial_Foundation_Models?tab=readme-ov-file#geopile-and-gfm-pretrained-model
-
-# SatlasPretrain
-You can find the links in their official repository 
-https://github.com/allenai/satlaspretrain_models/
 
 ```
 ### Download Data
@@ -88,6 +55,14 @@ https://github.com/allenai/satlaspretrain_models/
     wget https://huggingface.co/datasets/ibm-nasa-geospatial/hls_burn_scars/resolve/main/hls_burn_scars.tar.gz?download=true -O ./data/HLSBurnScars/hls_burn_scars.tar.gz
     tar -xzvf hls_burn_scars.tar.gz
     ```
+
+## Tests
+To run our unit tests, simply run
+```
+python -m unittest
+```
+
+Warning: This will download all pretrained model files.
 
 ## Pipeline -demo
 To quickly get started, utilize [MADOS dataset](https://zenodo.org/records/10664073) to establish the complete pipeline for semantic segmentation.

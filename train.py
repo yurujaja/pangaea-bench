@@ -23,8 +23,6 @@ import time
 from tqdm import tqdm
 from os.path import dirname as up
 
-import yaml
-
 import torch
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader
@@ -46,30 +44,7 @@ from models import adapt_gfm_pretrained
 from utils.metrics import Evaluation
 from models.pos_embed import interpolate_pos_embed
 from utils.make_datasets import make_dataset
-
-
-def load_config(args):
-    cfg_path = args["run_config"]
-    with open(cfg_path, "r") as file:
-        train_config = yaml.safe_load(file)
-    
-    def load_specific_config(key):
-        if args.get(key):
-            with open(args[key], "r") as file:
-                return yaml.safe_load(file)
-        elif train_config.get(key):
-            with open(train_config[key], "r") as file:
-                return yaml.safe_load(file)
-        else:
-            raise ValueError(f"No configuration found for {key}")
-
-    encoder_config = load_specific_config("encoder_config")
-    dataset_config = load_specific_config("dataset_config") 
-    task_config = load_specific_config("task_config")
-
-
-    return train_config, encoder_config, dataset_config, task_config
-
+from utils.configs import load_config
 
 def load_checkpoint(encoder, ckpt_path, model="prithvi"):
     checkpoint = torch.load(ckpt_path, map_location="cpu")
