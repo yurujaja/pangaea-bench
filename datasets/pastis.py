@@ -1,4 +1,4 @@
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 import pandas as pd
 import numpy as np
 import os
@@ -321,3 +321,18 @@ class PASTIS(Dataset):
 
     def __len__(self):
         return len(self.meta_patch) * self.nb_split * self.nb_split
+
+
+if __name__ == "__main__":
+    path = "/share/DEEPLEARNING/datasets/PASTIS-HD"
+    modalities = ["s2", "aerial"]
+    transform = lambda x: x
+    dataset = PASTIS(path, modalities, transform, folds=[1, 2, 3], nb_split=1)
+    dataloader = DataLoader(dataset, batch_size=2, collate_fn=collate_fn)
+
+    for i, data in enumerate(dataloader):
+        print("Key: ", data.keys())
+        print(data["label"].shape)
+        print(data["s2"].shape)
+        print(data["aerial"].shape)
+        break
