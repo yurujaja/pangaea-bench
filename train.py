@@ -528,7 +528,7 @@ def main(args):
                     device=device
                 )   
                 if epoch == start_epoch and it == 0:
-                    flops, params = ptflops.get_model_complexity_info(
+                    macs, params = ptflops.get_model_complexity_info(
                         model=model,
                         input_res=tuple(image.size()[1:]),
                         as_strings=True, backend='pytorch',
