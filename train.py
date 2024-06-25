@@ -321,9 +321,9 @@ def adapt_input(
     
     # TODO: to support croma and dofa multi-modality
 
-    tensor = input['s2'].to(device)
-    source_bands = source_modal['s2']
-    target_bands = target_modal['s2']
+    tensor = input['optical'].to(device)
+    source_bands = source_modal['optical']
+    target_bands = target_modal['optical']
     return adapt_input_tensor(tensor, size, source_bands, target_bands, encoder_type, device)
 
     '''

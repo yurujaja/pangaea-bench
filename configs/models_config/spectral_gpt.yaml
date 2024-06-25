@@ -14,7 +14,7 @@ encoder_model_args:
   mlp_ratio: 4
 
 input_bands:
-  s2:
+  optical:
     - B1
     - B2
     - B3

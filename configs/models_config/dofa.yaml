@@ -6,7 +6,7 @@ encoder_model_args:
   embed_dim: 768
 
 input_bands:
-  s2:
+  optical:
     - B4
     - B3
     - B2

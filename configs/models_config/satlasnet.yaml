@@ -9,7 +9,7 @@ encoder_model_args:
   img_size: 128
 
 input_bands:   # should correctly correspond to the model identifier
-  s2:
+  optical:
     - B4
     - B3
     - B2

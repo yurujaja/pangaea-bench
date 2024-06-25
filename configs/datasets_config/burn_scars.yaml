@@ -5,7 +5,7 @@ img_size: 224
 multi_temporal: false
 multi_modal: false
 bands:
-  s2:
+  optical:
     - B2
     - B3
     - B4

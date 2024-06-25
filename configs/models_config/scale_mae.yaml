@@ -9,7 +9,7 @@ encoder_model_args:
   global_pool: True
 
 input_bands:
-  s2:
+  optical:
     - B4
     - B3
     - B2

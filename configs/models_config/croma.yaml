@@ -12,7 +12,7 @@ encoder_model_args:
   modality: "optical" # support also "joint" and "SAR"
 
 input_bands:
-  s2:
+  optical:
     - B1
     - B2
     - B3

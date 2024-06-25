@@ -10,7 +10,7 @@ encoder_model_args:
   #check if to add other parameters (so far is useless)
 
 input_bands:
-  s2:
+  optical:
     - B4
     - B3
     - B2
