@@ -350,7 +350,7 @@ def main(args):
     train_cfg, encoder_cfg, dataset_cfg, task_cfg = load_config(args)
     
     encoder_name = encoder_cfg["encoder_name"]
-    dataset_name = dataset_cfg["dataset_name"]
+    dataset_name = dataset_cfg["dataset"]
     task_name = task_cfg["task_model_name"]
 
     exp_name = f"{encoder_name}-{dataset_name}-{task_name}-{train_cfg['mode']}-{timestamp}"

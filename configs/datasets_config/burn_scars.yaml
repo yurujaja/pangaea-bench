@@ -1,4 +1,4 @@
-dataset_name: hlsburnscars
+dataset: datasets.hlsburnscars.BurnScarsDataset
 data_path: ./data/hlsburnscars
 num_classes: 3
 img_size: 224

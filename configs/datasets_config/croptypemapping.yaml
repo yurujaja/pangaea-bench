@@ -1,4 +1,4 @@
-dataset_name: crop_type_mapping
+dataset: datasets.croptypemapping.CropTypeMappingDataset
 data_path: ./data/CropTypeMapping
 num_classes: 4
 img_size: 64

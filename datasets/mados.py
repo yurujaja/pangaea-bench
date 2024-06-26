@@ -116,6 +116,7 @@ class DownloadProgressBar:
 def get_band(path):
     return int(path.split('_')[-2])
 
+
 class MADOS(torch.utils.data.Dataset):
     def __init__(self, path, splits=None, mode='train', download=True, cache_clips=True):
 
@@ -277,6 +278,13 @@ class MADOS(torch.utils.data.Dataset):
             print("done.")
 
         os.remove(output_path / temp_file_name)
+
+    @staticmethod
+    def get_splits(dataset_config):
+        dataset_train = MADOS(dataset_config["data_path"], mode="train")
+        dataset_val = MADOS(dataset_config["data_path"], mode="val")
+        dataset_test = MADOS(dataset_config["data_path"], mode="test")
+        return dataset_train, dataset_val, dataset_test
 
 ###############################################################
 # Weighting Function for Semantic Segmentation                #

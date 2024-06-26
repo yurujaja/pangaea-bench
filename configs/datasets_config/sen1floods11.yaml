@@ -1,4 +1,4 @@
-dataset_name: sen1floods11
+dataset: datasets.sen1floods11.Sen1Floods11
 data_path: ./data/Sen1Floods11
 num_classes: 11
 img_size: 512

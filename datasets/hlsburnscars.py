@@ -100,6 +100,13 @@ class BurnScarsDataset(Dataset):
         normalized = ((image - means) / stds)
         normalized = torch.from_numpy(normalized).to(torch.float32)
         return normalized
+    
+    @staticmethod
+    def get_splits(dataset_config):
+        dataset_train = BurnScarsDataset(data_root=dataset_config["data_path"], split="training")
+        dataset_val = BurnScarsDataset(data_root=dataset_config["data_path"], split="validation")
+        dataset_test = dataset_val
+        return dataset_train, dataset_val, dataset_test
 
     # def clip(self, band):
     #     lower_percentile = np.percentile(band, 2)

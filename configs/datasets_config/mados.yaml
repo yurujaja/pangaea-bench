@@ -1,4 +1,4 @@
-dataset_name: mados
+dataset: datasets.mados.MADOS
 data_path: ./data/mados
 num_classes: 15
 img_size: 240

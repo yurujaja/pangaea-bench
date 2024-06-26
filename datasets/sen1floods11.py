@@ -204,7 +204,13 @@ class Sen1Floods11(Dataset):
         if suptitle is not None:
             plt.suptitle(suptitle)
         return fig
-    
+
+    @staticmethod
+    def get_splits(dataset_config):
+        dataset_train = Sen1Floods11(data_root=dataset_config["data_path"], split="train")
+        dataset_val = Sen1Floods11(data_root=dataset_config["data_path"], split="val")
+        dataset_test = Sen1Floods11(data_root=dataset_config["data_path"], split="test")
+        return dataset_train, dataset_val, dataset_test
 
 if __name__ == "__main__":
     import pdb
