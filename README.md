@@ -64,9 +64,9 @@ python -m unittest
 
 Warning: This will download all pretrained model files.
 
-## Pipeline -demo
+## Pipeline - demo
 To quickly get started, utilize [MADOS dataset](https://zenodo.org/records/10664073) to establish the complete pipeline for semantic segmentation.
-
+### Training
 **Option1**: Configure all your pipeline params in `configs/run.yaml`, set `encoder_config`, `dataset_config`, and  `task_config`. Then, start the training process by running:
 ```
 python train.py configs/run.yaml
@@ -79,6 +79,13 @@ python train.py configs/run.yaml \
     --dataset_config configs/datasets_config/mados.yaml \
     --task_config configs/tasks_config/upernet.yaml
 ```
+
+### Test
+Provide the checkpoint of the trained decoder for inference. Change `mode` to `test` in `configs/run.yaml` and provide the checkpoint path through the argument:
+```
+python train.py configs/run.yaml  --ckpt_path work-dir/your_exp/your_checkpoint_id.pth
+```
+
 
 #### Note:
 - **Configurations**: The current configurations include parameters related to foundation model encoders and downstream task models. Future updates will aim to enhance configuration files to support additional tasks. To support multitemporal, please modify the `num_frames` parameter in the config. Consider that in all the configs, it appears in the `task` parameters. For Prithvi it appears also in the `encoder` parameter.
@@ -109,8 +116,7 @@ python train.py configs/run.yaml \
         ```
     - Add a config file in `configs/datasets_config`.
     - Change the `utils/make_datasets.py` to add the corresponding data class.
-    
-- **Add the Test**: Create a `test.py`, following a similar structure of `train.py`
+
 
 #### Existing code
 
