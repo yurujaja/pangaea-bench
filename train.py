@@ -23,8 +23,6 @@ import time
 from tqdm import tqdm
 from os.path import dirname as up
 
-import yaml
-
 import torch
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader
@@ -46,30 +44,7 @@ from models import adapt_gfm_pretrained
 from utils.metrics import Evaluation
 from models.pos_embed import interpolate_pos_embed
 from utils.make_datasets import make_dataset
-
-
-def load_config(args):
-    cfg_path = args["run_config"]
-    with open(cfg_path, "r") as file:
-        train_config = yaml.safe_load(file)
-    
-    def load_specific_config(key):
-        if args.get(key):
-            with open(args[key], "r") as file:
-                return yaml.safe_load(file)
-        elif train_config.get(key):
-            with open(train_config[key], "r") as file:
-                return yaml.safe_load(file)
-        else:
-            raise ValueError(f"No configuration found for {key}")
-
-    encoder_config = load_specific_config("encoder_config")
-    dataset_config = load_specific_config("dataset_config") 
-    task_config = load_specific_config("task_config")
-
-
-    return train_config, encoder_config, dataset_config, task_config
-
+from utils.configs import load_config
 
 def load_checkpoint(encoder, ckpt_path, model="prithvi"):
     checkpoint = torch.load(ckpt_path, map_location="cpu")
@@ -186,20 +161,24 @@ def get_encoder_model(cfg, load_pretrained=True, frozen_backbone=True):
     return encoder_model
 
 
-def create_task_model(task_cfg, encoder_cfg, encoder):
+def create_task_model(task_cfg, encoder_cfg, dataset_cfg, encoder):
     models = {
         "upernet": upernet_vit_base,
         "cd_vit": cd_vit, 
     }
     model_name = task_cfg["task_model_name"]
     model_args = task_cfg["task_model_args"]
+    num_classes = dataset_cfg.get("num_classes")
     if model_name not in models:
         raise ValueError(f"{model_name} is not yet supported.")
 
     if encoder_cfg["encoder_name"] in ['satlas_pretrain']:
         encoder_cfg["embed_dim"] = encoder.backbone.out_channels[0][1]
 
-    model = models[model_name](encoder=encoder, **model_args)
+    if num_classes:
+        model = models[model_name](encoder=encoder, num_classes=num_classes, **model_args)
+    else:
+        model = models[model_name](encoder=encoder, **model_args)
 
     return model
 
@@ -227,6 +206,7 @@ def parse_args(input_args=None):
         description="Train a downstreamtask with geospatial foundation models."
     )
     parser.add_argument("run_config", help="train config file path")
+
     parser.add_argument("--dataset_config", help="train config file path")
     parser.add_argument("--encoder_config", help="train config file path")
     parser.add_argument("--task_config", help="train config file path")
@@ -235,6 +215,9 @@ def parse_args(input_args=None):
     )
     parser.add_argument(
         "--resume_from", type=str, help="load model from previous epoch"
+    )
+    parser.add_argument(
+        "--ckpt_path", type=str, help="load the checkpoint for evaluation"
     )
 
 
@@ -370,12 +353,13 @@ def main(args):
     dataset_name = dataset_cfg["dataset_name"]
     task_name = task_cfg["task_model_name"]
 
-    exp_name = f"{encoder_name}-{dataset_name}-{task_name}-{timestamp}"
+    exp_name = f"{encoder_name}-{dataset_name}-{task_name}-{train_cfg['mode']}-{timestamp}"
     exp_dir = osp.join(args["workdir"], exp_name)
     os.makedirs(exp_dir, exist_ok=True)
     log_file = osp.join(exp_dir, f"{exp_name}.log")
     # Checkpoints save path
-    os.makedirs(os.path.join(exp_dir, "checkpoints"), exist_ok=True)
+    if train_cfg["mode"] == "train":
+        os.makedirs(os.path.join(exp_dir, "checkpoints"), exist_ok=True) 
     # Tensorboard
     writer = SummaryWriter(os.path.join(exp_dir, "tensorboard", timestamp))
     
@@ -402,30 +386,37 @@ def main(args):
                                             dataset_cfg["dataset_name"], 
                                             dataset_cfg["data_path"])
     dl_cfg = dataset_cfg["data_loader"]
-    train_loader = DataLoader(
-        dataset_train,
-        batch_size=dl_cfg["batch"],
-        shuffle=True,
-        num_workers=dl_cfg["num_workers"],
-        pin_memory=dl_cfg["pin_memory"],
-        prefetch_factor=dl_cfg["prefetch_factor"],
-        persistent_workers=dl_cfg["persistent_workers"],
-        worker_init_fn=seed_worker,
-        generator=g,
-        drop_last=True,
-    )
+    if train_cfg["mode"] == "train":
+        train_loader = DataLoader(
+            dataset_train,
+            batch_size=dl_cfg["batch"],
+            shuffle=True,
+            num_workers=dl_cfg["num_workers"],
+            pin_memory=dl_cfg["pin_memory"],
+            prefetch_factor=dl_cfg["prefetch_factor"],
+            persistent_workers=dl_cfg["persistent_workers"],
+            worker_init_fn=seed_worker,
+            generator=g,
+            drop_last=True,
+        )
 
-    val_loader = DataLoader(
-        dataset_val,
-        batch_size=dl_cfg["batch"],
-        shuffle=False,
-        num_workers=dl_cfg["num_workers"],
-        pin_memory=dl_cfg["pin_memory"],
-        prefetch_factor=dl_cfg["prefetch_factor"],
-        persistent_workers=dl_cfg["persistent_workers"],
-        worker_init_fn=seed_worker,
-        generator=g,
-    )
+        val_loader = DataLoader(
+            dataset_val,
+            batch_size=dl_cfg["batch"],
+            shuffle=False,
+            num_workers=dl_cfg["num_workers"],
+            pin_memory=dl_cfg["pin_memory"],
+            prefetch_factor=dl_cfg["prefetch_factor"],
+            persistent_workers=dl_cfg["persistent_workers"],
+            worker_init_fn=seed_worker,
+            generator=g,
+        )
+    elif train_cfg["mode"] == "test":
+        test_loader = DataLoader(
+            dataset_test,
+            batch_size=dl_cfg["batch"],
+            shuffle=False
+        )
 
     # Use gpu or cpu
     if torch.cuda.is_available():
@@ -438,14 +429,8 @@ def main(args):
     encoder = get_encoder_model(encoder_cfg, load_pretrained=True)
     encoder.to(device)
 
-    model = create_task_model(task_cfg, encoder_cfg, encoder)
+    model = create_task_model(task_cfg, encoder_cfg, dataset_cfg, encoder)
     model.to(device)
-
-    # input1 = torch.randn((2, 12, 128, 128)).to(device)
-    # # input2 = torch.randn((2, 3, 128, 128)).to(device)
-    # output = model(input1) #, input2)
-    # print(output.shape)
-    # sys.exit("FINE TEST")
 
     # Load model from specific epoch to continue the training or start the evaluation
     if args["resume_from"]:
@@ -503,7 +488,7 @@ def main(args):
         model.train()
 
         for epoch in range(start_epoch, epochs + 1):
-            print(f"Epoch {epoch}/{epochs}")
+            logging.info(f"Epoch {epoch}/{epochs}")
             training_loss = []
             training_batches = 0
 
@@ -540,9 +525,7 @@ def main(args):
                     print(f"Model Params:{params}")
                 optimizer.zero_grad()
 
-                logits = model(image)#.squeeze(dim=1)
-                # print(logits.shape, target.shape)
-                # print(logits.dtype, target.dtype)
+                logits = model(image)
                 loss = criterion(logits, target)
                 loss.backward()
 
@@ -667,6 +650,74 @@ def main(args):
                     scheduler.step()
 
                 model.train()
+
+
+    elif train_cfg["mode"] == "test":
+        print(args["ckpt_path"])
+        print(os.path.exists(args["ckpt_path"]))
+        try:
+            checkpoint = torch.load(args["ckpt_path"], map_location="cpu")
+        except Exception as e:
+            
+            print(e)
+            raise e
+        model.load_state_dict(checkpoint)
+
+        del checkpoint
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        
+        model.eval()
+
+        y_true = []
+        y_predicted = []
+        print(len(test_loader))
+        with torch.no_grad():
+            for data in tqdm(test_loader, desc="testing"):
+                image = data['image']
+                target = data['target']
+                
+                seed_all(0)
+                image = adapt_input(
+                    input=image,
+                    size=img_size,
+                    source_modal=dataset_cfg["bands"],
+                    target_modal=encoder_cfg["input_bands"],
+                    encoder_type=encoder_name,
+                    device=device,
+                )
+
+                target = adapt_target(
+                    tensor=target,
+                    size=img_size,
+                    device=device
+                )
+
+                logits = model(image)
+
+                probs = torch.nn.functional.softmax(logits, dim=1)
+                predictions = probs.argmax(1)
+                
+                predictions = predictions.reshape(-1)
+                target = target.reshape(-1)
+                mask = target != -1
+                
+                predictions = predictions[mask].cpu().numpy()
+                target = target[mask]
+                
+                target = target.cpu().numpy()
+                
+                y_predicted += predictions.tolist()
+                y_true += target.tolist()
+
+
+            # Save Scores to the .log file and visualize also with tensorboard
+            acc = Evaluation(y_predicted, y_true)
+            acc = Evaluation(y_predicted, y_true)
+            logging.info("\n")
+            logging.info("STATISTICS: \n")
+            logging.info("Evaluation: " + str(acc))
+            print("Evaluation: " + str(acc))
 
 
 if __name__ == "__main__":

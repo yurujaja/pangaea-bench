@@ -24,7 +24,7 @@ cd geofm-bench
 
 Dependencies:
 ```
-conda create -f environment.yaml
+conda env create -f environment.yaml
 conda activate geofm-bench3
 ```
 
@@ -33,50 +33,19 @@ Optional: install Mamba (https://github.com/conda-forge/miniforge/releases/) for
 wget https://github.com/conda-forge/miniforge/releases/download/24.3.0-0/Mambaforge-24.3.0-0-Linux-x86_64.sh
 ./Mambaforge-24.3.0-0-Linux-x86_64.sh
 
-mamba create -f environment.yaml
+mamba env create -f environment.yaml
 mamba activate geofm-bench3
 ```
 
 ### Download pre-trained weights
-Please download pretrained weights into the `pretrained_models` folder.
+For using GFM please download pretrained weights into the `pretrained_models` folder manually.
 ```
-mkdir pretrained
-# Prithvi
-wget https://huggingface.co/ibm-nasa-geospatial/Prithvi-100M/resolve/main/Prithvi_100M.pt?download=true -O pretrained_models/Prithvi_100M.pt
-
-# SpectralGPT+ 
-wget https://zenodo.org/records/8412455/files/SpectralGPT+.pth -O pretrained_models/SpectralGPT+.pth
-# or SpectralGTP
-wget https://zenodo.org/records/8412455/files/SpectralGPT.pth -O pretrained_models/SpectralGPT.pth
-
-# Scale-MAE
-wget https://github.com/bair-climate-initiative/scale-mae/releases/download/base-800/scalemae-vitlarge-800.pth
-
-# RemoteCLIP Base
-wget https://huggingface.co/chendelong/RemoteCLIP/blob/main/RemoteCLIP-ViT-B-32.pt
-# or RemoteCLIP Large
-wget https://huggingface.co/chendelong/RemoteCLIP/blob/main/RemoteCLIP-ViT-L-14.pt
-
-# CROMA Base
-wget https://huggingface.co/antofuller/CROMA/blob/main/CROMA_base.pt
-# or CROMA Large
-wget https://huggingface.co/antofuller/CROMA/blob/main/CROMA_large.pt
-
-# DOFA Base
-wget https://huggingface.co/XShadow/DOFA/blob/main/DOFA_ViT_base_e100.pth
-# or DOFA Large
-wget https://huggingface.co/XShadow/DOFA/blob/main/DOFA_ViT_large_e100.pth
-
-# SSL4EO
-You can find all the links in their official repository https://github.com/zhu-xlab/SSL4EO-S12/tree/main
+mkdir pretrained_models
+cd pretrained_models
 
 # GFM
 You can find the links in their official repository 
 https://github.com/boranhan/Geospatial_Foundation_Models?tab=readme-ov-file#geopile-and-gfm-pretrained-model
-
-# SatlasPretrain
-You can find the links in their official repository 
-https://github.com/allenai/satlaspretrain_models/
 
 ```
 ### Download Data
@@ -88,9 +57,17 @@ https://github.com/allenai/satlaspretrain_models/
     ```
 - Please download [xView2](https://xview2.org/) into the `./data/xView2` folder. This requires signing up for the challenge and accepting the terms and conditions. We do not need the holdout test set. Untar with `tar -xvf`.
 
-## Pipeline -demo
-To quickly get started, utilize [MADOS dataset](https://zenodo.org/records/10664073) to establish the complete pipeline for semantic segmentation.
+## Tests
+To run our unit tests, simply run
+```
+python -m unittest
+```
 
+Warning: This will download all pretrained model files.
+
+## Pipeline - demo
+To quickly get started, utilize [MADOS dataset](https://zenodo.org/records/10664073) to establish the complete pipeline for semantic segmentation.
+### Training
 **Option1**: Configure all your pipeline params in `configs/run.yaml`, set `encoder_config`, `dataset_config`, and  `task_config`. Then, start the training process by running:
 ```
 python train.py configs/run.yaml
@@ -103,6 +80,13 @@ python train.py configs/run.yaml \
     --dataset_config configs/datasets_config/mados.yaml \
     --task_config configs/tasks_config/upernet.yaml
 ```
+
+### Test
+Provide the checkpoint of the trained decoder for inference. Change `mode` to `test` in `configs/run.yaml` and provide the checkpoint path through the argument:
+```
+python train.py configs/run.yaml  --ckpt_path work-dir/your_exp/your_checkpoint_id.pth
+```
+
 
 #### Note:
 - **Configurations**: The current configurations include parameters related to foundation model encoders and downstream task models. Future updates will aim to enhance configuration files to support additional tasks. To support multitemporal, please modify the `num_frames` parameter in the config. Consider that in all the configs, it appears in the `task` parameters. For Prithvi it appears also in the `encoder` parameter.
@@ -118,19 +102,22 @@ python train.py configs/run.yaml \
 ###  How to Contribute
 
 #### New code
-- **Datasets**: Add your dataset code within the `datasets` folder. In the `__getitem__` function-, the output should have a dict structure like below:
-    ```
-    output = {
-            'image': {
-                'optical':optical_image,
-                'sar': sar_image
-            },
-            'target': target,
-            'metadata': {}
-        }
-    return output
-    ```
-- **Add the Test**: Create a `test.py`, following a similar structure of `train.py`
+- **Datasets**: Add your dataset code within the `datasets` folder. 
+    - In the `__getitem__` function-, the output should have a dict structure like below:
+        ```
+        output = {
+                'image': {
+                    'optical':optical_image,
+                    'sar': sar_image
+                },
+                'target': target,
+                'metadata': {}
+            }
+        return output
+        ```
+    - Add a config file in `configs/datasets_config`.
+    - Change the `utils/make_datasets.py` to add the corresponding data class.
+
 
 #### Existing code
 

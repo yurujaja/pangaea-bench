@@ -23,7 +23,7 @@ class DownloadProgressBar:
 
 
 def download_model(model_config):
-    if "download_url" in model_config and (model_config["download_url"] is not None):
+    if "download_url" in model_config and model_config["download_url"]:
         if not os.path.isfile(model_config["encoder_weights"]):
             os.makedirs("pretrained_models", exist_ok=True)
 
