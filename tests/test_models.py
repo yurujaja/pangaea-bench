@@ -2,7 +2,6 @@ import unittest
 
 import torch.nn as nn
 
-import models
 from utils.configs import load_specific_config
 from train import get_encoder_model
 

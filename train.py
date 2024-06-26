@@ -10,8 +10,6 @@ import os
 import os.path as osp
 
 
-# os.environ['CUDA_VISIBLE_DEVICES'] ="3"
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'datasets')))
 from datasets.mados import MADOS, gen_weights, class_distr
 
 import json
@@ -31,10 +29,6 @@ from torchvision.transforms import functional as T
 
 import ptflops
 
-sys.path.append(up(os.path.abspath(__file__)))
-sys.path.append(os.path.join(up(up(os.path.abspath(__file__))), 'tasks'))
-sys.path.append(os.path.join(up(up(os.path.abspath(__file__))), 'models'))
-
 from tasks import upernet_vit_base, cd_vit
 import models
 from models import prithvi_vit_base, spectral_gpt_vit_base, scale_mae_large, croma, remote_clip, ssl4eo_mae, ssl4eo_dino_small, ssl4eo_moco, ssl4eo_data2vec_small, gfm_swin_base, dofa_vit, satlasnet
@@ -43,7 +37,7 @@ from models import SATLASNetWeights
 from models import adapt_gfm_pretrained
 from utils.metrics import Evaluation
 from models.pos_embed import interpolate_pos_embed
-from utils.make_datasets import make_dataset
+from datasets.utils import make_dataset
 from utils.configs import load_config
 
 def load_checkpoint(encoder, ckpt_path, model="prithvi"):
@@ -382,9 +376,7 @@ def main(args):
         logging.info(json.dumps(config, indent=2))   
 
     # Construct Data loader
-    dataset_train, dataset_val, dataset_test = make_dataset(
-                                            dataset_cfg["dataset_name"], 
-                                            dataset_cfg["data_path"])
+    dataset_train, dataset_val, dataset_test = make_dataset(dataset_cfg)
     dl_cfg = dataset_cfg["data_loader"]
     if train_cfg["mode"] == "train":
         train_loader = DataLoader(

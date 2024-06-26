@@ -19,6 +19,8 @@ import rasterio
 import numpy as np
 from osgeo import gdal
 
+from .utils import DownloadProgressBar
+
 # Pixel-Level class distribution (total sum equals 1.0)
 class_distr = torch.Tensor([0.00336, 0.00241, 0.00336, 0.00142, 0.00775, 0.18452, 
  0.34775, 0.20638, 0.00062, 0.1169, 0.09188, 0.01309, 0.00917, 0.00176, 0.00963])
@@ -92,23 +94,6 @@ def cat_map(x):
     return mados_cat_mapping[x]
 
 cat_mapping_vec = np.vectorize(cat_map)
-
-# Utility progress bar handler for urlretrieve
-# Should go in a dataset utils if we use it elsewhere
-class DownloadProgressBar:
-    def __init__(self):
-        self.pbar = None
-    
-    def __call__(self, block_num, block_size, total_size):
-        if self.pbar is None:
-            self.pbar = tqdm.tqdm(desc="Downloading...", total=total_size, unit="b", unit_scale=True, unit_divisor=1024)
-
-        downloaded = block_num * block_size
-        if downloaded < total_size:
-            self.pbar.update(downloaded - self.pbar.n)
-        else:
-            self.pbar.close()
-            self.pbar = None
 
 ###############################################################
 # MADOS DATASET                                               #
