@@ -86,6 +86,7 @@ https://github.com/allenai/satlaspretrain_models/
     wget https://huggingface.co/datasets/ibm-nasa-geospatial/hls_burn_scars/resolve/main/hls_burn_scars.tar.gz?download=true -O ./data/HLSBurnScars/hls_burn_scars.tar.gz
     tar -xzvf hls_burn_scars.tar.gz
     ```
+- Please download [xView2](https://xview2.org/) into the `./data/xView2` folder. This requires signing up for the challenge and accepting the terms and conditions. We do not need the holdout test set. Untar with `tar -xvf`.
 
 ## Pipeline -demo
 To quickly get started, utilize [MADOS dataset](https://zenodo.org/records/10664073) to establish the complete pipeline for semantic segmentation.

@@ -22,4 +22,5 @@ dependencies:
   - pytorch-cuda=11.8
   - gdown
   - ptflops
+  - opencv
 prefix: /localhome/yjia/.conda/envs/geofm-bench3

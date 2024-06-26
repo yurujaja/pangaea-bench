@@ -9,14 +9,15 @@ from datasets.mados import MADOS
 from datasets.croptypemapping import CropTypeMappingDataset
 from datasets.sen1floods11 import Sen1Floods11
 from datasets.hlsburnscars import BurnScarsDataset
-
+from datasets.xView2 import xView2
 
 def make_dataset(ds_name, path, **kwargs):
     datasets = {
         "mados": MADOS,
         "crop_type_mapping": CropTypeMappingDataset,
         "sen1floods11": Sen1Floods11,
-        "hlsburnscars": BurnScarsDataset       
+        "hlsburnscars": BurnScarsDataset,      
+        "xView2": xView2,
     }
 
     if ds_name not in datasets:
@@ -39,4 +40,8 @@ def make_dataset(ds_name, path, **kwargs):
         dataset_train = BurnScarsDataset(data_root=path, split="training")
         dataset_val = BurnScarsDataset(data_root=path, split="validation")
         dataset_test = dataset_val
+    elif ds_name == "xView2":
+        dataset_train = xView2(data_root=path, split="train")
+        dataset_val = xView2(data_root=path, split="val")
+        dataset_test = xView2(data_root=path, split="test")
     return dataset_train, dataset_val, dataset_test

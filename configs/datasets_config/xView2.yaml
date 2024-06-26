@@ -1,0 +1,25 @@
+dataset_name: xView2
+data_path: ./data/xView2
+num_classes: 5
+img_size: 1024 
+multi_temporal: true
+multi_modal: false
+bands:
+  optical: 
+    - B4
+    - B3
+    - B2
+data_mean:
+  - 66.7703
+  - 88.4452
+  - 85.1047
+data_std:
+  - 48.3066
+  - 51.9129
+  - 62.7612
+data_loader:
+  batch: 2
+  num_workers: 0
+  pin_memory: False
+  prefetch_factor: null
+  persistent_workers: False
