@@ -94,18 +94,22 @@ python train.py configs/run.yaml \
 ###  How to Contribute
 
 #### New code
-- **Datasets**: Add your dataset code within the `datasets` folder. In the `__getitem__` function-, the output should have a dict structure like below:
-    ```
-    output = {
-            'image': {
-                'optical':optical_image,
-                'sar': sar_image
-            },
-            'target': target,
-            'metadata': {}
-        }
-    return output
-    ```
+- **Datasets**: Add your dataset code within the `datasets` folder. 
+    - In the `__getitem__` function-, the output should have a dict structure like below:
+        ```
+        output = {
+                'image': {
+                    'optical':optical_image,
+                    'sar': sar_image
+                },
+                'target': target,
+                'metadata': {}
+            }
+        return output
+        ```
+    - Add a config file in `configs/datasets_config`.
+    - Change the `utils/make_datasets.py` to add the corresponding data class.
+    
 - **Add the Test**: Create a `test.py`, following a similar structure of `train.py`
 
 #### Existing code
