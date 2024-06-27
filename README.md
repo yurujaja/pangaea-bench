@@ -118,7 +118,7 @@ python train.py configs/run.yaml  --ckpt_path work-dir/your_exp/your_checkpoint_
         ```
     - Add a config file in `configs/datasets_config`.
     - Your dataset should implement a `get_splits(dataset_config)` static method, that returns three dataset splits: train, validation, and test. For examples see the existing datasets.
-    - It is also highly advised that your dataset implements a `download(dataset_config)` static method, that automates dataset download. This might not be required, eg. if your dataset is streamed from an online source.
+    - It is also highly advised that your dataset implements a `download(dataset_config)` static method, that automates dataset download. This might not be required, eg. if your dataset is streamed from an online source. For examples and existing utility functions, see the download functions in existing datasets (and/or the download functions of the models).
 
 
 #### Existing code
