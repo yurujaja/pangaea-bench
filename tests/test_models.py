@@ -1,8 +1,12 @@
 import unittest
 
+import os
+import glob
+
 import torch.nn as nn
 
 from utils.configs import load_specific_config
+from models.utils import download_model
 from train import get_encoder_model
 
 class testModelBuild(unittest.TestCase):
@@ -24,14 +28,24 @@ class testModelBuild(unittest.TestCase):
             'ssl4eo_moco': 'configs/models_config/ssl4eo_moco.yaml'
         }
 
+    def test_download(self):
+        for model in self.models.keys():
+            with self.subTest(model=model):
+                cfg = {'encoder_config': self.models[model]}
+                model_cfg = load_specific_config(cfg, 'encoder_config')
+
+                if os.path.isfile(model_cfg["encoder_weights"]):
+                    os.remove(model_cfg["encoder_weights"])
+                res = download_model(model_cfg)
+                self.assertTrue(res)
+
     def test_build(self):
         for model in self.models.keys():
             with self.subTest(model=model):
                 print(f"\nTesting {model}:")
                 cfg = {'encoder_config': self.models[model]}
                 model_cfg = load_specific_config(cfg, 'encoder_config')
+
                 model = get_encoder_model(model_cfg)
-
                 self.assertIsInstance(model, nn.Module)
-
                 del model
