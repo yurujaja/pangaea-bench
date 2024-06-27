@@ -5,7 +5,7 @@ import os
 from utils.configs import load_specific_config
 from datasets.utils import make_dataset
 
-class testModelBuild(unittest.TestCase):
+class testDatasetSetup(unittest.TestCase):
     def setUp(self):
         # TODO should we just glob these for convinience?
         self.datasets = {

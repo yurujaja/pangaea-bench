@@ -57,6 +57,15 @@ python -m unittest
 
 Warning: This will download all pretrained model files, and all datsets.
 
+You can also choose to run subsets of tests:
+```
+# Run a test module:
+python -m unittest tests.test_models
+
+# Run a test collection:
+python -m unittest tests.test_datasets.testDatasetSetup
+```
+
 ## Pipeline - demo
 To quickly get started, utilize [MADOS dataset](https://zenodo.org/records/10664073) to establish the complete pipeline for semantic segmentation.
 ### Training
