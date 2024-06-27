@@ -48,13 +48,6 @@ You can find the links in their official repository
 https://github.com/boranhan/Geospatial_Foundation_Models?tab=readme-ov-file#geopile-and-gfm-pretrained-model
 
 ```
-### Download Data
-- Please download [Sen1Floods11](https://github.com/cloudtostreet/Sen1Floods11)   into the `./data/Sen1Floods11` folder.
-- Please download [HLS Burn Scars](https://huggingface.co/datasets/ibm-nasa-geospatial/hls_burn_scars) using:
-    ```
-    wget https://huggingface.co/datasets/ibm-nasa-geospatial/hls_burn_scars/resolve/main/hls_burn_scars.tar.gz?download=true -O ./data/HLSBurnScars/hls_burn_scars.tar.gz
-    tar -xzvf hls_burn_scars.tar.gz
-    ```
 
 ## Tests
 To run our unit tests, simply run
@@ -62,7 +55,16 @@ To run our unit tests, simply run
 python -m unittest
 ```
 
-Warning: This will download all pretrained model files.
+Warning: This will download all pretrained model files, and all datsets.
+
+You can also choose to run subsets of tests:
+```
+# Run a test module:
+python -m unittest tests.test_models
+
+# Run a test collection:
+python -m unittest tests.test_datasets.testDatasetSetup
+```
 
 ## Pipeline - demo
 To quickly get started, utilize [MADOS dataset](https://zenodo.org/records/10664073) to establish the complete pipeline for semantic segmentation.
@@ -80,7 +82,7 @@ python train.py configs/run.yaml \
     --task_config configs/tasks_config/upernet.yaml
 ```
 
-### Test
+### Evaluate
 Provide the checkpoint of the trained decoder for inference. Change `mode` to `test` in `configs/run.yaml` and provide the checkpoint path through the argument:
 ```
 python train.py configs/run.yaml  --ckpt_path work-dir/your_exp/your_checkpoint_id.pth
@@ -115,7 +117,8 @@ python train.py configs/run.yaml  --ckpt_path work-dir/your_exp/your_checkpoint_
         return output
         ```
     - Add a config file in `configs/datasets_config`.
-    - Change the `utils/make_datasets.py` to add the corresponding data class.
+    - Your dataset should implement a `get_splits(dataset_config)` static method, that returns three dataset splits: train, validation, and test. For examples see the existing datasets.
+    - It is also highly advised that your dataset implements a `download(dataset_config)` static method, that automates dataset download. This might not be required, eg. if your dataset is streamed from an online source. For examples and existing utility functions, see the download functions in existing datasets (and/or the download functions of the models).
 
 
 #### Existing code
@@ -142,5 +145,3 @@ TODO: here are some aspects that should be improved:
 - improve the `adapt_input` function (in `train.py`), which is used to adapt the input shape of the data to be processed into the models 
     - At the moment, it supports just the mentioned models (and dataset) -> NEW MODELS/ Datasets TO BE ADDED
     - Moreover, for selecting the correct number of bands, just Sentinel-2 is supported -> TO SHAPE IT ALSO FOR OTHER MODALITIES
-
-

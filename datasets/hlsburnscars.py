@@ -1,10 +1,14 @@
 import os
+import time
 import torch
 import numpy as np
 import rasterio
-import yaml
-from torch.utils.data import Dataset, DataLoader
-import matplotlib.pyplot as plt
+from torch.utils.data import Dataset
+
+import pathlib
+import urllib
+import tarfile
+from .utils import DownloadProgressBar
 
 NO_DATA = -9999
 NO_DATA_FLOAT = 0.0001
@@ -100,27 +104,45 @@ class BurnScarsDataset(Dataset):
         normalized = ((image - means) / stds)
         normalized = torch.from_numpy(normalized).to(torch.float32)
         return normalized
+    
+    @staticmethod
+    def get_splits(dataset_config):
+        dataset_train = BurnScarsDataset(data_root=dataset_config["data_path"], split="training")
+        dataset_val = BurnScarsDataset(data_root=dataset_config["data_path"], split="validation")
+        dataset_test = dataset_val
+        return dataset_train, dataset_val, dataset_test
+    
+    @staticmethod
+    def download(dataset_config:dict, silent=False):
+        output_path = pathlib.Path(dataset_config["data_path"])
+        url = dataset_config["download_url"]
 
-    # def clip(self, band):
-    #     lower_percentile = np.percentile(band, 2)
-    #     upper_percentile = np.percentile(band, 98)
-    #     return np.clip(band, lower_percentile, upper_percentile)
+        try:
+            os.makedirs(output_path, exist_ok=False)
+        except FileExistsError:
+            if not silent:
+                print("HLSBurnScars dataset folder exists, skipping downloading dataset.")
+            return
 
-# def enhance_raster_for_visualization(raster, ref_img=None):
-#     if ref_img is None:
-#         ref_img = raster
-#     channels = []
-#     for channel in range(raster.shape[0]):
-#         valid_mask = np.ones_like(ref_img[channel], dtype=bool)
-#         valid_mask[ref_img[channel] == NO_DATA_FLOAT] = False
-#         mins, maxs = np.percentile(ref_img[channel][valid_mask], PERCENTILES)
-#         normalized_raster = (raster[channel] - mins) / (maxs - mins)
-#         normalized_raster[~valid_mask] = 0
-#         clipped = np.clip(normalized_raster, 0, 1)
-#         channels.append(clipped)
-#     clipped = np.stack(channels)
-#     channels_last = np.moveaxis(clipped, 0, -1)[..., :3]
-#     rgb = channels_last[..., ::-1]
-#     return rgb
+        temp_file_name = f"temp_{hex(int(time.time()))}_hls_burn_scars.tar.gz"
+        pbar = DownloadProgressBar()
+
+        try:
+            urllib.request.urlretrieve(url, output_path / temp_file_name, pbar)
+        except urllib.error.HTTPError as e:
+            print('Error while downloading dataset: The server couldn\'t fulfill the request.')
+            print('Error code: ', e.code)
+            return
+        except urllib.error.URLError as e:
+            print('Error while downloading dataset: Failed to reach a server.')
+            print('Reason: ', e.reason)
+            return
+
+        with tarfile.open(output_path / temp_file_name, 'r') as tar:
+            print(f"Extracting to {output_path} ...")
+            tar.extractall(output_path)
+            print("done.")
+
+        os.remove(output_path / temp_file_name)
 
 

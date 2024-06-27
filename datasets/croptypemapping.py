@@ -856,7 +856,15 @@ class CropTypeMappingDataset(SustainBenchDataset):
         True if aditional bands (NDVI and GCVI) will be calculated on the fly and appended
         """
         return self._calculate_bands
-    
+
+    @staticmethod
+    def get_splits(dataset_config):
+        dataset = CropTypeMappingDataset(data_dir=dataset_config["data_path"], split_scheme='southsudan', calculate_bands=False, normalize=True)
+        dataset_train = dataset.get_subset('train')
+        dataset_val = dataset.get_subset('val')
+        dataset_test = dataset.get_subset('test')
+        return dataset_train, dataset_val, dataset_test
+        
 '''
 # test CropTypeMappingDataset
 if __name__=="__main__":

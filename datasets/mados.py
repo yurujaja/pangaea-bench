@@ -19,6 +19,8 @@ import rasterio
 import numpy as np
 from osgeo import gdal
 
+from .utils import DownloadProgressBar
+
 # Pixel-Level class distribution (total sum equals 1.0)
 class_distr = torch.Tensor([0.00336, 0.00241, 0.00336, 0.00142, 0.00775, 0.18452, 
  0.34775, 0.20638, 0.00062, 0.1169, 0.09188, 0.01309, 0.00917, 0.00176, 0.00963])
@@ -93,36 +95,17 @@ def cat_map(x):
 
 cat_mapping_vec = np.vectorize(cat_map)
 
-# Utility progress bar handler for urlretrieve
-# Should go in a dataset utils if we use it elsewhere
-class DownloadProgressBar:
-    def __init__(self):
-        self.pbar = None
-    
-    def __call__(self, block_num, block_size, total_size):
-        if self.pbar is None:
-            self.pbar = tqdm.tqdm(desc="Downloading...", total=total_size, unit="b", unit_scale=True, unit_divisor=1024)
-
-        downloaded = block_num * block_size
-        if downloaded < total_size:
-            self.pbar.update(downloaded - self.pbar.n)
-        else:
-            self.pbar.close()
-            self.pbar = None
-
 ###############################################################
 # MADOS DATASET                                               #
 ###############################################################
 def get_band(path):
     return int(path.split('_')[-2])
 
+
 class MADOS(torch.utils.data.Dataset):
-    def __init__(self, path, splits=None, mode='train', download=True, cache_clips=True):
+    def __init__(self, path, splits=None, mode='train', cache_clips=True):
 
         cache_folder = "image_cache"
-
-        if download:
-            self.download_dataset(pathlib.Path(path), silent=True)
 
         #Default splits dir
         if not splits:
@@ -242,7 +225,10 @@ class MADOS(torch.utils.data.Dataset):
         return output
     
     @staticmethod
-    def download_dataset(output_path:pathlib.Path, silent=False, mados_url="https://zenodo.org/records/10664073/files/MADOS.zip?download=1"):
+    def download(dataset_config:dict, silent=False):
+        output_path = pathlib.Path(dataset_config["data_path"])
+        url = dataset_config["download_url"]
+
         try:
             os.makedirs(output_path, exist_ok=False)
         except FileExistsError:
@@ -254,7 +240,7 @@ class MADOS(torch.utils.data.Dataset):
         pbar = DownloadProgressBar()
 
         try:
-            urllib.request.urlretrieve(mados_url, output_path / temp_file_name, pbar)
+            urllib.request.urlretrieve(url, output_path / temp_file_name, pbar)
         except urllib.error.HTTPError as e:
             print('Error while downloading dataset: The server couldn\'t fulfill the request.')
             print('Error code: ', e.code)
@@ -277,6 +263,13 @@ class MADOS(torch.utils.data.Dataset):
             print("done.")
 
         os.remove(output_path / temp_file_name)
+
+    @staticmethod
+    def get_splits(dataset_config):
+        dataset_train = MADOS(dataset_config["data_path"], mode="train")
+        dataset_val = MADOS(dataset_config["data_path"], mode="val")
+        dataset_test = MADOS(dataset_config["data_path"], mode="test")
+        return dataset_train, dataset_val, dataset_test
 
 ###############################################################
 # Weighting Function for Semantic Segmentation                #
