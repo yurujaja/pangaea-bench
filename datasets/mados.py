@@ -103,12 +103,9 @@ def get_band(path):
 
 
 class MADOS(torch.utils.data.Dataset):
-    def __init__(self, path, splits=None, mode='train', download=True, cache_clips=True):
+    def __init__(self, path, splits=None, mode='train', cache_clips=True):
 
         cache_folder = "image_cache"
-
-        if download:
-            self.download_dataset(pathlib.Path(path), silent=True)
 
         #Default splits dir
         if not splits:
@@ -228,7 +225,10 @@ class MADOS(torch.utils.data.Dataset):
         return output
     
     @staticmethod
-    def download_dataset(output_path:pathlib.Path, silent=False, mados_url="https://zenodo.org/records/10664073/files/MADOS.zip?download=1"):
+    def download(dataset_config:dict, silent=False):
+        output_path = pathlib.Path(dataset_config["data_path"])
+        url = dataset_config["download_url"]
+
         try:
             os.makedirs(output_path, exist_ok=False)
         except FileExistsError:
@@ -240,7 +240,7 @@ class MADOS(torch.utils.data.Dataset):
         pbar = DownloadProgressBar()
 
         try:
-            urllib.request.urlretrieve(mados_url, output_path / temp_file_name, pbar)
+            urllib.request.urlretrieve(url, output_path / temp_file_name, pbar)
         except urllib.error.HTTPError as e:
             print('Error while downloading dataset: The server couldn\'t fulfill the request.')
             print('Error code: ', e.code)

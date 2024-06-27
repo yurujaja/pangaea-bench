@@ -31,7 +31,8 @@ import ptflops
 
 from tasks import upernet_vit_base, cd_vit
 import models
-from models import prithvi_vit_base, spectral_gpt_vit_base, scale_mae_large, croma, remote_clip, ssl4eo_mae, ssl4eo_dino_small, ssl4eo_moco, ssl4eo_data2vec_small, gfm_swin_base, dofa_vit, satlasnet
+from models import prithvi_vit_base, spectral_gpt_vit_base, scale_mae_large, croma, remote_clip,\
+      ssl4eo_mae, ssl4eo_dino_small, ssl4eo_moco, ssl4eo_data2vec_small, gfm_swin_base, dofa_vit, satlasnet
 from models import SATLASNetWeights
 
 from models import adapt_gfm_pretrained

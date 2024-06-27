@@ -1,7 +1,6 @@
 import unittest
 
 import os
-import glob
 
 import torch.nn as nn
 
@@ -11,6 +10,7 @@ from train import get_encoder_model
 
 class testModelBuild(unittest.TestCase):
     def setUp(self):
+        # TODO should we just glob these for convinience?
         self.models = {
             'ssl4eo_moco': 'configs/models_config/ssl4eo_mae.yaml',
             'aa_encoder_config': 'configs/models_config/aa_encoder_config.yaml',
