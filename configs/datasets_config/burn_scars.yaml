@@ -1,5 +1,6 @@
-dataset_name: hlsburnscars
+dataset: datasets.hlsburnscars.BurnScarsDataset
 data_path: ./data/hlsburnscars
+download_url: https://huggingface.co/datasets/ibm-nasa-geospatial/hls_burn_scars/resolve/main/hls_burn_scars.tar.gz?download=true
 num_classes: 3
 img_size: 224
 multi_temporal: false

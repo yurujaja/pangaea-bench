@@ -24,3 +24,4 @@ dependencies:
   - gdown
   - ptflops
   - opencv
+  - google-cloud-storage
