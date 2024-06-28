@@ -13,6 +13,7 @@ import pathlib
 from sklearn.model_selection import train_test_split
 
 class xView2(Dataset):
+    # Note that this dataset must be downloaded from the competition website, which you will need to sign up for.
     def __init__(self, data_root: str="data/xView2", split:Literal["train", "val", "test"]="train", standardize:bool = True, transform = None) -> None:
         
         super().__init__()
@@ -98,3 +99,10 @@ class xView2(Dataset):
             'target': msk,  
             'metadata': {"filename":fn}
         }
+
+    @staticmethod
+    def get_splits(dataset_config):
+        dataset_train = xView2(data_root=dataset_config["data_path"], split="train")
+        dataset_val = xView2(data_root=dataset_config["data_path"], split="val")
+        dataset_test = xView2(data_root=dataset_config["data_path"], split="test")
+        return dataset_train, dataset_val, dataset_test

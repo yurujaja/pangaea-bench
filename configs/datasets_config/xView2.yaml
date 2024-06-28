@@ -1,4 +1,4 @@
-dataset_name: xView2
+dataset: datasets.xView2.xView2
 data_path: ./data/xView2
 num_classes: 5
 img_size: 1024 
