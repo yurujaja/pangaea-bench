@@ -23,4 +23,5 @@ dependencies:
   - pytorch-cuda=11.8
   - gdown
   - ptflops
+  - opencv
   - google-cloud-storage
