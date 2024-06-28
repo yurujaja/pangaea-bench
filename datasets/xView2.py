@@ -72,12 +72,12 @@ class xView2(Dataset):
         img_pre = cv2.imread(fn, cv2.IMREAD_COLOR)
         img_post = cv2.imread(fn.replace('_pre_', '_post_'), cv2.IMREAD_COLOR)
 
-        msk_pre = cv2.imread(fn.replace('/images/', '/masks/'),
-                             cv2.IMREAD_UNCHANGED)
+        #msk_pre = cv2.imread(fn.replace('/images/', '/masks/'), cv2.IMREAD_UNCHANGED)
         msk_post = cv2.imread(fn.replace('/images/', '/masks/').replace(
             '_pre_disaster', '_post_disaster'), cv2.IMREAD_UNCHANGED)
 
-        msk = np.stack([msk_pre, msk_post], axis=0)
+        #msk = np.stack([msk_pre, msk_post], axis=0)
+        msk = msk_post
         img = np.stack([img_pre, img_post], axis=0) 
 
         # Reshaping tensors from (T, H, W, C) to (C, T, H, W)
