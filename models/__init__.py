@@ -18,8 +18,6 @@ from .gfm_swin import adapt_gfm_pretrained
 from .satlasnet import Model as SATLASNet
 from .satlasnet import Weights as SATLASNetWeights
 
-from . import utils
-
 spectral_gpt_vit_base = vit_spectral_gpt
 prithvi_vit_base = MaskedAutoencoderViT
 scale_mae_large = ScaleMAE_baseline
