@@ -6,7 +6,7 @@ import torch.nn as nn
 
 from utils.configs import load_specific_config
 from models.utils import download_model
-from train import get_encoder_model
+from models.utils import make_encoder
 
 class testModelBuild(unittest.TestCase):
     def setUp(self):
@@ -46,6 +46,6 @@ class testModelBuild(unittest.TestCase):
                 cfg = {'encoder_config': self.models[model]}
                 model_cfg = load_specific_config(cfg, 'encoder_config')
 
-                model = get_encoder_model(model_cfg)
+                model = make_encoder(model_cfg)
                 self.assertIsInstance(model, nn.Module)
                 del model
