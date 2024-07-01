@@ -21,70 +21,54 @@ Clone the repository:
 git clone git@github.com:yurujaja/geofm-bench.git
 cd geofm-bench
 ```
+
 Dependencies:
 ```
-conda create -n <env_name> python=3.9.0  # change <env_name> 
-conda activate <env_name> 
-conda install -c conda-forge gdal==3.3.2 
-
-pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu118 -f https://download.openmmlab.com/mmcv/dist/cu118/torch2.1/index.html
-
-conda install pytables==3.7.0
+conda env create -f environment.yaml
+conda activate geofm-bench3
 ```
+
+Optional: install Mamba (https://github.com/conda-forge/miniforge/releases/) for faster resolution times
+```
+wget https://github.com/conda-forge/miniforge/releases/download/24.3.0-0/Mambaforge-24.3.0-0-Linux-x86_64.sh
+./Mambaforge-24.3.0-0-Linux-x86_64.sh
+
+mamba env create -f environment.yaml
+mamba activate geofm-bench3
+```
+
 ### Download pre-trained weights
-Please download pretrained weights into the `pretrained` folder.
+For using GFM please download pretrained weights into the `pretrained_models` folder manually.
 ```
-mkdir pretrained
-# Prithvi
-wget https://huggingface.co/ibm-nasa-geospatial/Prithvi-100M/resolve/main/Prithvi_100M.pt?download=true -O pretrained/Prithvi_100M.pt
-
-# SpectralGPT+ 
-wget https://zenodo.org/records/8412455/files/SpectralGPT+.pth -O pretrained/SpectralGPT+.pth
-# or SpectralGTP
-wget https://zenodo.org/records/8412455/files/SpectralGPT.pth -O pretrained/SpectralGPT.pth
-
-# Scale-MAE
-wget https://github.com/bair-climate-initiative/scale-mae/releases/download/base-800/scalemae-vitlarge-800.pth
-
-# RemoteCLIP Base
-wget https://huggingface.co/chendelong/RemoteCLIP/blob/main/RemoteCLIP-ViT-B-32.pt
-# or RemoteCLIP Large
-wget https://huggingface.co/chendelong/RemoteCLIP/blob/main/RemoteCLIP-ViT-L-14.pt
-
-# CROMA Base
-wget https://huggingface.co/antofuller/CROMA/blob/main/CROMA_base.pt
-# or CROMA Large
-wget https://huggingface.co/antofuller/CROMA/blob/main/CROMA_large.pt
-
-# DOFA Base
-wget https://huggingface.co/XShadow/DOFA/blob/main/DOFA_ViT_base_e100.pth
-# or DOFA Large
-wget https://huggingface.co/XShadow/DOFA/blob/main/DOFA_ViT_large_e100.pth
-
-# SSL4EO
-You can find all the links in their official repository https://github.com/zhu-xlab/SSL4EO-S12/tree/main
+mkdir pretrained_models
+cd pretrained_models
 
 # GFM
 You can find the links in their official repository 
 https://github.com/boranhan/Geospatial_Foundation_Models?tab=readme-ov-file#geopile-and-gfm-pretrained-model
 
-# SatlasPretrain
-You can find the links in their official repository 
-https://github.com/allenai/satlaspretrain_models/
-
 ```
-### Download Data
-- Please download [MADOS](https://zenodo.org/records/10664073)  into the `./data/MADOS` folder.
-- Please download [Sen1Floods11](https://github.com/cloudtostreet/Sen1Floods11)   into the `./data/Sen1Floods11` folder.
-- Please download [HLS Burn Scars](https://huggingface.co/datasets/ibm-nasa-geospatial/hls_burn_scars) using:
-    ```
-    wget https://huggingface.co/datasets/ibm-nasa-geospatial/hls_burn_scars/resolve/main/hls_burn_scars.tar.gz?download=true -O ./data/HLSBurnScars/hls_burn_scars.tar.gz
-    tar -xzvf hls_burn_scars.tar.gz
-    ```
 
-## Pipeline -demo
+## Tests
+To run our unit tests, simply run
+```
+python -m unittest
+```
+
+Warning: This will download all pretrained model files, and all datsets.
+
+You can also choose to run subsets of tests:
+```
+# Run a test module:
+python -m unittest tests.test_models
+
+# Run a test collection:
+python -m unittest tests.test_datasets.testDatasetSetup
+```
+
+## Pipeline - demo
 To quickly get started, utilize [MADOS dataset](https://zenodo.org/records/10664073) to establish the complete pipeline for semantic segmentation.
-
+### Training
 **Option1**: Configure all your pipeline params in `configs/run.yaml`, set `encoder_config`, `dataset_config`, and  `task_config`. Then, start the training process by running:
 ```
 python train.py configs/run.yaml
@@ -98,10 +82,17 @@ python train.py configs/run.yaml \
     --task_config configs/tasks_config/upernet.yaml
 ```
 
+### Evaluate
+Provide the checkpoint of the trained decoder for inference. Change `mode` to `test` in `configs/run.yaml` and provide the checkpoint path through the argument:
+```
+python train.py configs/run.yaml  --ckpt_path work-dir/your_exp/your_checkpoint_id.pth
+```
+
+
 #### Note:
 - **Configurations**: The current configurations include parameters related to foundation model encoders and downstream task models. Future updates will aim to enhance configuration files to support additional tasks. To support multitemporal, please modify the `num_frames` parameter in the config. Consider that in all the configs, it appears in the `task` parameters. For Prithvi it appears also in the `encoder` parameter.
 - **Logging**: By default, logs and checkpoints are stored in the `work_dir`.
-- **The Mados dataset** in use is a simple example that only iterates over the first few data items. To do so, we added the following line 153 in `datasets/mados.py`. Also, the validation dataloder is set to be the same as the train dataloader (line 323 in `train.py`).
+- **The Mados dataset** in use is a simple example that only iterates over the first few data items. To do so, we added the following line 156 in `datasets/mados.py`. 
     ```
     if crop_name in self.ROIs_split[:2]:
     ```
@@ -112,8 +103,23 @@ python train.py configs/run.yaml \
 ###  How to Contribute
 
 #### New code
-- **Datasets**: Add your dataset code within the `datasets` folder.
-- **Add the Test**: Create a `test.py`, following a similar structure of `train.py`
+- **Datasets**: Add your dataset code within the `datasets` folder. 
+    - In the `__getitem__` function-, the output should have a dict structure like below:
+        ```
+        output = {
+                'image': {
+                    'optical':optical_image,
+                    'sar': sar_image
+                },
+                'target': target,
+                'metadata': {}
+            }
+        return output
+        ```
+    - Add a config file in `configs/datasets_config`.
+    - Your dataset should implement a `get_splits(dataset_config)` static method, that returns three dataset splits: train, validation, and test. For examples see the existing datasets.
+    - It is also highly advised that your dataset implements a `download(dataset_config)` static method, that automates dataset download. This might not be required, eg. if your dataset is streamed from an online source. For examples and existing utility functions, see the download functions in existing datasets (and/or the download functions of the models).
+
 
 #### Existing code
 
@@ -139,5 +145,3 @@ TODO: here are some aspects that should be improved:
 - improve the `adapt_input` function (in `train.py`), which is used to adapt the input shape of the data to be processed into the models 
     - At the moment, it supports just the mentioned models (and dataset) -> NEW MODELS/ Datasets TO BE ADDED
     - Moreover, for selecting the correct number of bands, just Sentinel-2 is supported -> TO SHAPE IT ALSO FOR OTHER MODALITIES
-
-

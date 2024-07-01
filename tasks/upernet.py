@@ -11,12 +11,13 @@ import torch
 import torch.nn as nn
 
 from timm.models.vision_transformer import DropPath, Mlp
-from timm.models.layers import to_2tuple
+from timm.layers import to_2tuple
 import os
 
 import math
 
 from .ltae import LTAE2d
+
 
 class UperNetViT(nn.Module):
     """Vision Transformer with support for global average pooling"""
@@ -217,6 +218,7 @@ class UperNetViT(nn.Module):
 
         # return {'out': x}
         return x
+
 
 class PPM(nn.ModuleList):
     def __init__(self, pool_sizes, in_channels, out_channels):

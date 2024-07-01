@@ -1,11 +1,12 @@
-dataset_name: sen1floods11
+dataset: datasets.sen1floods11.Sen1Floods11
 data_path: ./data/Sen1Floods11
+gcs_bucket: sen1floods11
 num_classes: 11
 img_size: 512
 multi_temporal: false
 multi_modal: true
 bands:
-  s2:
+  optical:
     - B2
     - B3
     - B4

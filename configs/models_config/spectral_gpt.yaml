@@ -1,5 +1,6 @@
 encoder_name: spectral_gpt
-encoder_weights: /geomatics/gpuserver-0/vmarsocci/pretrained_models/SpectralGPT.pth
+encoder_weights: ./pretrained_models/SpectralGPT.pth
+download_url: https://zenodo.org/records/8412455/files/SpectralGPT.pth
 
 encoder_model_args:
   in_chans: 12    # number of spectral bands
@@ -14,7 +15,7 @@ encoder_model_args:
   mlp_ratio: 4
 
 input_bands:
-  s2:
+  optical:
     - B1
     - B2
     - B3

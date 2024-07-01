@@ -23,7 +23,7 @@ class DownloadProgressBar:
 
 
 def download_model(model_config):
-    if "download_url" in model_config:
+    if "download_url" in model_config and model_config["download_url"]:
         if not os.path.isfile(model_config["encoder_weights"]):
             os.makedirs("pretrained_models", exist_ok=True)
 
@@ -38,8 +38,11 @@ def download_model(model_config):
                 except urllib.error.HTTPError as e:
                     print('Error while downloading model: The server couldn\'t fulfill the request.')
                     print('Error code: ', e.code)
-                    return
+                    return False
                 except urllib.error.URLError as e:
                     print('Error while downloading model: Failed to reach a server.')
                     print('Reason: ', e.reason)
-                    return
+                    return False
+        return True
+    else:
+        return False

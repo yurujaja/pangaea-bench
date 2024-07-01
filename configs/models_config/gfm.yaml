@@ -1,5 +1,6 @@
 encoder_name: gfm_swin
-encoder_weights: /geomatics/gpuserver-0/yjia/pretrained_models/gfm.pth
+encoder_weights: ./pretrained_models/gfm.pth
+download_url: null
 
 encoder_model_args:
   img_size: 128
@@ -12,7 +13,7 @@ encoder_model_args:
   drop_path_rate: 0.1
 
 input_bands:
-  s2:
+  optical:
     - B4
     - B3
     - B2

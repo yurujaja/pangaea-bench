@@ -1,6 +1,5 @@
 # Obtained from: https://github.com/synativ/RSFMs/blob/main/src/rsfms/datamodules/sen1floods11.py
 
-import dataclasses
 import glob
 import os
 from pathlib import Path
@@ -20,6 +19,8 @@ from matplotlib.figure import Figure
 from matplotlib.patches import Rectangle
 from torch import Tensor
 from torch.utils.data import Dataset
+
+from .utils import download_bucket_concurrently
 
 
 def filter_valid_files(
@@ -121,7 +122,7 @@ class Sen1Floods11(Dataset):
 
         output = {
             'image': {
-                's2':image,
+                'optical':image,
             },
             'target': self._load_file(self.segmentation_mask_files[index]).astype(np.int64),
             'metadata': {
@@ -204,7 +205,21 @@ class Sen1Floods11(Dataset):
         if suptitle is not None:
             plt.suptitle(suptitle)
         return fig
+
+    @staticmethod
+    def get_splits(dataset_config):
+        dataset_train = Sen1Floods11(data_root=dataset_config["data_path"], split="train")
+        dataset_val = Sen1Floods11(data_root=dataset_config["data_path"], split="val")
+        dataset_test = Sen1Floods11(data_root=dataset_config["data_path"], split="test")
+        return dataset_train, dataset_val, dataset_test
     
+    @staticmethod
+    def download(dataset_config:dict, silent=False):
+        if os.path.exists(dataset_config["data_path"]):
+            if not silent:
+                print("Sen1Floods11 Dataset folder exists, skipping downloading dataset.")
+            return
+        download_bucket_concurrently(dataset_config["gcs_bucket"], dataset_config["data_path"])
 
 if __name__ == "__main__":
     import pdb

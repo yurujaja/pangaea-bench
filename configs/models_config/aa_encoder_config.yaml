@@ -1,5 +1,7 @@
 encoder_name: ssl4eo_dino
 encoder_weights: ./pretrained_models/B13_vits16_dino_0099.pth
+download_url: https://drive.google.com/uc?id=1CseO5vvMReGlAulm5o4ZgbjUgj8VlAH7&export=download&confirm=yes
+
 encoder_model_args:
   img_size: 224
   in_chans: 13

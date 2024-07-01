@@ -1,5 +1,6 @@
 encoder_name: croma
-encoder_weights: /geomatics/gpuserver-0/vmarsocci/pretrained_models/CROMA_large.pt
+encoder_weights: ./pretrained_models/CROMA_large.pt
+download_url: https://huggingface.co/antofuller/CROMA/resolve/main/CROMA_large.pt
 
 encoder_model_args:
   img_size: 120
@@ -12,7 +13,7 @@ encoder_model_args:
   modality: "optical" # support also "joint" and "SAR"
 
 input_bands:
-  s2:
+  optical:
     - B1
     - B2
     - B3
