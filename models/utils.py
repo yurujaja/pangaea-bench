@@ -1,7 +1,9 @@
 import os
-import tqdm
 import urllib.request
 import urllib.error
+import logging
+
+import tqdm
 import gdown
 import torch
 from . import prithvi_vit_base, spectral_gpt_vit_base, scale_mae_large, croma, remote_clip, ssl4eo_mae, ssl4eo_dino_small, ssl4eo_moco, ssl4eo_data2vec_small, dofa_vit, gfm_swin_base, satlasnet
@@ -53,8 +55,9 @@ def download_model(model_config):
         return False
     
 
-def load_checkpoint(encoder, ckpt_path, logger, model="prithvi"):
+def load_checkpoint(encoder, ckpt_path, model="prithvi"):
     checkpoint = torch.load(ckpt_path, map_location="cpu")
+    logger = logging.getLogger()
     logger.info("Load pre-trained checkpoint from: %s" % ckpt_path)
 
     if model in ["prithvi", "remote_clip", "dofa"]:
@@ -118,7 +121,7 @@ def load_checkpoint(encoder, ckpt_path, logger, model="prithvi"):
     return msg
 
 
-def make_encoder(cfg, logger, load_pretrained=True, frozen_backbone=True):
+def make_encoder(cfg, load_pretrained=True, frozen_backbone=True):
     # create model
     encoders = {
         "prithvi": prithvi_vit_base,
@@ -155,7 +158,7 @@ def make_encoder(cfg, logger, load_pretrained=True, frozen_backbone=True):
         if encoder_name in ["satlas_pretrain"]:
             pass
         else:
-            msg = load_checkpoint(encoder_model, encoder_weights, logger, encoder_name)
+            msg = load_checkpoint(encoder_model, encoder_weights, encoder_name)
             print(msg)
 
     if frozen_backbone:

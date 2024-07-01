@@ -6,7 +6,7 @@ def setup_logger(log_file, level=logging.DEBUG):
 
     os.makedirs(os.path.dirname(log_file), exist_ok=True)
 
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger()
     logger.setLevel(level)
 
     # Remove existing handlers to avoid duplicate logging

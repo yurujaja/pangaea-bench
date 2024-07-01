@@ -1,3 +1,5 @@
+import logging
+
 import torch
 from tqdm import tqdm
 from utils.adaptation import adapt_input, adapt_target
@@ -69,7 +71,7 @@ class SemanticSegmentationTask():
         return loss
         
     
-    def train_one_epoch(self, dataloader, epoch, optimizer, device, logger, writer):
+    def train_one_epoch(self, dataloader, epoch, optimizer, device, writer):
         self.head.train()
 
         training_batches = 0
@@ -120,7 +122,7 @@ class SemanticSegmentationTask():
             i_board += 1
 
         for loss_name, total_loss in cumulative_losses.items():
-            logger.info(f"The training loss {loss_name}: {total_loss/training_batches}")
+            logging.getLogger().info(f"The training loss {loss_name}: {total_loss/training_batches}")
 
 
     def evaluate_one_step(self, image, target):
@@ -131,7 +133,7 @@ class SemanticSegmentationTask():
         return loss
     
 
-    def eval_after_epoch(self, dataloader, epoch, scheduler, device, logger, writer):
+    def eval_after_epoch(self, dataloader, epoch, scheduler, device, writer):
         self.head.eval()
         
         val_loss = dict()
@@ -192,7 +194,7 @@ class SemanticSegmentationTask():
             # Save Scores to the .log file and visualize also with tensorboard
             acc_val = self.evaluation_metrics(y_predicted_val, y_true_val)
 
-        
+        logger = logging.getLogger()
         logger.info("Evaluating model..")
         logger.info("RESULTS AFTER EPOCH " + str(epoch) + ": \n")
         for loss_name, total_loss in val_loss.items():
@@ -224,7 +226,6 @@ class SemanticSegmentationTask():
         else:
             scheduler.step()
 
-               
 
     def evaluation_metrics(self, y_predicted, y_true):
         micro_prec = precision_score(y_true, y_predicted, average='micro')
@@ -260,7 +261,7 @@ class SemanticSegmentationTask():
         return info
 
 
-    def make_prediction(self, ckpt_path, dataloader, device, logger):
+    def make_prediction(self, ckpt_path, dataloader, device):
         self.load_model(ckpt_path)
         self.head.eval()
 
@@ -308,11 +309,11 @@ class SemanticSegmentationTask():
 
             # Save Scores to the .log file and visualize also with tensorboard
             acc = self.evaluation_metrics(y_predicted, y_true)
+            logger = logging.getLogger()
             logger.info("\n")
             logger.info("STATISTICS: \n")
             logger.info("Evaluation: " + str(acc))
             print("Evaluation: " + str(acc))
-
 
 
     def save_model(self, path):

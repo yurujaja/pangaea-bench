@@ -145,7 +145,7 @@ def main(args):
         logger.info(json.dumps(config, indent=2))   
     
     # Construct Data loader
-    dataset_train, dataset_val, dataset_test = make_dataset(dataset_cfg, logger)
+    dataset_train, dataset_val, dataset_test = make_dataset(dataset_cfg)
     dl_cfg = dataset_cfg["data_loader"]
     
     if train_cfg["mode"] == "train":
@@ -188,7 +188,7 @@ def main(args):
     logger.info(f"Device used: {device}")
 
     # Get the encoder
-    encoder = make_encoder(encoder_cfg, logger, load_pretrained=True)
+    encoder = make_encoder(encoder_cfg, load_pretrained=True)
     encoder.to(device)
 
     # Build the task model with the encoder
@@ -244,11 +244,11 @@ def main(args):
         for epoch in range(start_epoch, epochs + 1):
             logger.info(f"Epoch {epoch}/{epochs}")
 
-            task.train_one_epoch(train_loader, epoch, optimizer, device, logger, writer)  
+            task.train_one_epoch(train_loader, epoch, optimizer, device, writer)  
             # Start Evaluation
             if epoch % train_cfg["eval_every"] == 0 or epoch == 1:
                 seed_all(0)
-                task.eval_after_epoch(val_loader, epoch, scheduler, device, logger, writer)
+                task.eval_after_epoch(val_loader, epoch, scheduler, device, writer)
 
                 
             # Save model
@@ -258,7 +258,7 @@ def main(args):
                 logger.info(f"Model saved at {ckpt_path}")
 
     elif train_cfg["mode"] == "test":
-        task.make_prediction(args["ckpt_path"], test_loader, device, logger)
+        task.make_prediction(args["ckpt_path"], test_loader, device)
         
 
 if __name__ == "__main__":

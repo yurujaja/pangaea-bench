@@ -94,13 +94,13 @@ def download_bucket_concurrently(bucket_name, destination_directory=""):
             print("Downloaded {} to {}.".format(name, destination_directory + name))
 
 
-def make_dataset(dataset_config, logger):
+def make_dataset(dataset_config):
     dataset = load_class(dataset_config['dataset'])
 
     if hasattr(dataset, 'download') and callable(dataset.download):
         dataset.download(dataset_config, silent=True)
     else:
-        logger.warning(f"Dataset {dataset_config['dataset']} doesn't implement autodownload, you might have to download it manually.")
+        logging.getLogger().warning(f"Dataset {dataset_config['dataset']} doesn't implement autodownload, you might have to download it manually.")
 
     if hasattr(dataset, 'get_splits') and callable(dataset.get_splits):
         return dataset.get_splits(dataset_config)
