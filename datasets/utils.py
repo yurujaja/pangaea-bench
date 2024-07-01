@@ -4,6 +4,8 @@ import importlib
 import logging
 import concurrent.futures
 from google.cloud.storage import Client
+from utils.utils import load_class  
+
 
 # Utility progress bar handler for urlretrieve
 class DownloadProgressBar:
@@ -20,6 +22,7 @@ class DownloadProgressBar:
         else:
             self.pbar.close()
             self.pbar = None
+
 
 def download_bucket_concurrently(bucket_name, destination_directory=""):
     """Adapted from: https://cloud.google.com/storage/docs/samples/storage-transfer-manager-download-bucket#storage_transfer_manager_download_bucket-python
@@ -90,12 +93,6 @@ def download_bucket_concurrently(bucket_name, destination_directory=""):
         else:
             print("Downloaded {} to {}.".format(name, destination_directory + name))
 
-def load_class(class_name:str):
-    components = class_name.split('.')
-    module_string = '.'.join(components[:-1])
-    class_string = components[-1]
-    module = importlib.import_module(module_string)
-    return getattr(module, class_string)
 
 def make_dataset(dataset_config):
     dataset = load_class(dataset_config['dataset'])
@@ -103,7 +100,7 @@ def make_dataset(dataset_config):
     if hasattr(dataset, 'download') and callable(dataset.download):
         dataset.download(dataset_config, silent=True)
     else:
-        logging.warning(f"Dataset {dataset_config['dataset']} doesn't implement autodownload, you might have to download it manually.")
+        logging.getLogger().warning(f"Dataset {dataset_config['dataset']} doesn't implement autodownload, you might have to download it manually.")
 
     if hasattr(dataset, 'get_splits') and callable(dataset.get_splits):
         return dataset.get_splits(dataset_config)

@@ -1,6 +1,6 @@
-encoder_config: configs/models_config/prithvi.yaml
-dataset_config: configs/datasets_config/burn_scars.yaml
-task_config: configs/tasks_config/upernet.yaml
+encoder_config: configs/models_config/spectral_gpt.yaml
+dataset_config: configs/datasets_config/mados.yaml
+task_config: configs/tasks_config/segmentation.yaml
 mode: train
 epochs: 80
 weight_param: 1.03
@@ -11,4 +11,5 @@ decay: 0
 reduce_lr_on_plateau: 0
 lr_steps: [45,65]
 eval_every: 1
+save_every: 5
 resume_from: null   
