@@ -1,0 +1,12 @@
+task: tasks.segmentation.SemanticSegmentationTask
+head: tasks.upernet.UperNet
+head_args:
+  num_frames: 1 
+  num_classes: null   # Number of classes in the dataset, updated when loading the dataset config
+  mt_strategy: "ltae" #activated only when if num_frames > 1
+
+losses:
+  - cross_entropy
+  - dice
+
+

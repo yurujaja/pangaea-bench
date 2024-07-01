@@ -12,15 +12,13 @@ import torch.nn as nn
 
 from timm.models.vision_transformer import DropPath, Mlp
 from timm.layers import to_2tuple
-import os
 
 import math
 
 from .ltae import LTAE2d
 
 
-class UperNetViT(nn.Module):
-    """Vision Transformer with support for global average pooling"""
+class UperNet(nn.Module):
 
     def __init__(
             self,
@@ -350,14 +348,3 @@ class FPNHEAD(nn.Module):
 
         return x
 
-
-def upernet_vit_base(encoder, num_classes = 15, num_frames = 1, **kwargs):
-    
-    model = UperNetViT(
-        encoder = encoder,
-        num_frames = num_frames,
-        num_classes = num_classes, 
-        norm_layer=partial(nn.LayerNorm, eps=1e-6),
-        **kwargs,
-    )
-    return model
