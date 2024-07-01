@@ -14,10 +14,8 @@ from glob import glob
 
 import torch
 import torch.utils.data
-import random
 import rasterio
 import numpy as np
-from osgeo import gdal
 
 from .utils import DownloadProgressBar
 
@@ -134,7 +132,7 @@ class MADOS(torch.utils.data.Dataset):
                 for crop in splits:
                     crop_name = os.path.basename(tile)+'_'+crop.split('.tif')[0]
                     
-                    if crop_name in self.ROIs_split[:2]:
+                    if crop_name in self.ROIs_split:
     
                         # Load Input Images
                         # Get the bands for the specific crop 
@@ -174,17 +172,22 @@ class MADOS(torch.utils.data.Dataset):
 
                             np.save(cache_path/'x.npy', stacked_image , allow_pickle=False)
 
+                            def read_tif(file: pathlib.Path):
+                                with rasterio.open(file) as dataset:
+                                    arr = dataset.read()  # (bands X height X width)
+                                    transform = dataset.transform
+                                    crs = dataset.crs
+                                return arr.transpose((1, 2, 0)), transform, crs
+
                             # Load Classsification Mask
-                            cl_path = os.path.join(tile,'10',os.path.basename(tile)+'_L2R_cl_'+crop)
-                            ds = gdal.Open(cl_path)
-                            temp = ds.ReadAsArray().astype(np.int64)
-                            ds=None                   # Close file
+                            cl_path = os.path.join(tile, '10', os.path.basename(tile)+'_L2R_cl_'+crop)
+                            labels, _, _ = read_tif(cl_path)
                             
-                            # Categories from 1 to 0
-                            temp = temp - 1
+                            # Categories from 1-based indexing to 0-based
+                            labels = labels - 1
 
                             # self.y.append(temp)
-                            np.save(cache_path/'y.npy', temp, allow_pickle=False)
+                            np.save(cache_path/'y.npy', labels, allow_pickle=False)
 
         self.impute_nan = None 
         self.mode = mode
@@ -209,16 +212,14 @@ class MADOS(torch.utils.data.Dataset):
         nan_mask = np.isnan(image)
         image[nan_mask] = self.impute_nan[nan_mask]
         
-        target = target[:,:,np.newaxis]
-
-        image = ((image.astype(np.float32).transpose(2, 0, 1).copy() - bands_mean.reshape(-1,1,1))/ bands_std.reshape(-1,1,1)).squeeze()
+        image = ((image.astype(np.float32).transpose(2, 0, 1) - bands_mean.reshape(-1,1,1))/ bands_std.reshape(-1,1,1)).squeeze()
         target = target.squeeze()
 
         output = {
             'image': {
                 'optical': image,
             },
-            'target': target.copy(),
+            'target': target,
             'metadata': {}
         }
         
@@ -230,7 +231,7 @@ class MADOS(torch.utils.data.Dataset):
         url = dataset_config["download_url"]
 
         try:
-            os.makedirs(output_path, exist_ok=False)
+            output_path.mkdir(parents=True)
         except FileExistsError:
             if not silent:
                 print("MADOS Dataset folder exists, skipping downloading dataset.")
@@ -262,7 +263,7 @@ class MADOS(torch.utils.data.Dataset):
             zip_ref.extractall(output_path, members)
             print("done.")
 
-        os.remove(output_path / temp_file_name)
+        (output_path / temp_file_name).unlink()
 
     @staticmethod
     def get_splits(dataset_config):
