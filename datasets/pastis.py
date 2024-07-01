@@ -328,10 +328,11 @@ if __name__ == "__main__":
     modalities = ["s2", "aerial"]
     transform = lambda x: x
     dataset = PASTIS(path, modalities, transform, folds=[1, 2, 3], nb_split=1)
-    dataloader = DataLoader(dataset, batch_size=2, collate_fn=collate_fn)
+    dataloader = DataLoader(dataset, batch_size=1, collate_fn=collate_fn)
 
     for i, data in enumerate(dataloader):
         print("Key: ", data.keys())
+        print(data["label"])
         print(data["label"].shape)
         print(data["s2"].shape)
         print(data["aerial"].shape)
