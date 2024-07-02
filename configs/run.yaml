@@ -1,5 +1,5 @@
 encoder_config: configs/models_config/spectral_gpt.yaml
-dataset_config: configs/datasets_config/mados.yaml
+dataset_config: configs/datasets_config/mados_tiny.yaml
 task_config: configs/tasks_config/segmentation.yaml
 mode: train
 epochs: 80

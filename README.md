@@ -79,7 +79,7 @@ python train.py configs/run.yaml
 python train.py configs/run.yaml \
     --encoder_config configs/models_config/prithvi.yaml \
     --dataset_config configs/datasets_config/mados.yaml \
-    --task_config configs/tasks_config/upernet.yaml
+    --task_config configs/tasks_config/segmentation.yaml
 ```
 
 ### Evaluate
@@ -92,10 +92,7 @@ python train.py configs/run.yaml  --ckpt_path work-dir/your_exp/your_checkpoint_
 #### Note:
 - **Configurations**: The current configurations include parameters related to foundation model encoders and downstream task models. Future updates will aim to enhance configuration files to support additional tasks. To support multitemporal, please modify the `num_frames` parameter in the config. Consider that in all the configs, it appears in the `task` parameters. For Prithvi it appears also in the `encoder` parameter.
 - **Logging**: By default, logs and checkpoints are stored in the `work_dir`.
-- **The Mados dataset** in use is a simple example that only iterates over the first few data items. To do so, we added the following line 156 in `datasets/mados.py`. 
-    ```
-    if crop_name in self.ROIs_split[:2]:
-    ```
+- **The Mados Tiny dataset** in use is a simple example that only iterates over the first few data items.
 - **Design Choices**: to make the comparison fairer we have implemented (so far) the two following solutions: 
     - L-TAE is the choice for combining the multitemporal information not in a vanilla way (a linear layer is used in this case). Please consider that Prithvi and SatlasNet have their own multitemporal encoding choices, so in those cases L-TAE (and linear) are not used
     - We inserted a FLOPs/MACs computation. In fact, different models can have different sizes and hyperparameters, so comparing the performances without considering the needed computation would be a limit. For example, Prithvi pretrained model has 1/4 of GFLOPs w.r.t. SpectralGPT pretrained model (e.g. SpectralGPT uses a patch size of 8 w.r.t. Prithvi that uses 16). We can also consider adding inference times when we will develop the test.py

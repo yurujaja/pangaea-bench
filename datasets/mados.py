@@ -104,22 +104,14 @@ class MADOS(torch.utils.data.Dataset):
     def __init__(self, path, splits=None, mode='train', cache_clips=True):
 
         cache_folder = "image_cache"
+        cache_version = '1.0.ver'
 
         #Default splits dir
         if not splits:
             splits = pathlib.Path(path) / "splits"
         
-        if mode=='train':
-            self.ROIs_split = np.genfromtxt(os.path.join(splits, 'train_X.txt'),dtype='str')
-                
-        elif mode=='test':
-            self.ROIs_split = np.genfromtxt(os.path.join(splits, 'test_X.txt'),dtype='str')
-                
-        elif mode=='val':
-            self.ROIs_split = np.genfromtxt(os.path.join(splits, 'val_X.txt'),dtype='str')
-            
-        else:
-            raise
+        self.ROIs_split = np.genfromtxt(str(splits/f'{mode}_X.txt'),dtype='str')
+
         self.cache_paths = []
             
         self.tiles = glob(os.path.join(path,'*'))
@@ -143,13 +135,19 @@ class MADOS(torch.utils.data.Dataset):
                         cache_path = pathlib.Path(path) / cache_folder / corp_id
                         self.cache_paths.append(cache_path)
 
-                        if not os.path.exists(cache_path) or not os.path.exists(cache_path/'x.npy') or not os.path.exists(cache_path/'y.npy'):
+                        if not (cache_path).exists() \
+                            or not (cache_path/'x.npy').exists() \
+                                or not (cache_path/'y.npy').exists() \
+                                    or not (cache_path/cache_version).exists():
                             # Clean up previous cache attempts if the dir is inconsistent
-                            os.makedirs(cache_path, exist_ok=True)
-                            if os.path.exists(cache_path/'x.npy'):
-                                os.remove(cache_path/'x.npy')
-                            if os.path.exists(cache_path/'y.npy'):
-                                os.remove(cache_path/'y.npy')
+                            cache_path.mkdir(parents=True, exist_ok=True)
+                            (cache_path/'x.npy').unlink(missing_ok=True)
+                            (cache_path/'y.npy').unlink(missing_ok=True)
+                            #Remove version files
+                            for p in cache_path.glob('*.ver'):
+                                p.unlink()
+                            #Add current version file
+                            (cache_path/cache_version).touch()
 
                             ################################
                             # Upsample the bands #
@@ -182,9 +180,9 @@ class MADOS(torch.utils.data.Dataset):
                             # Load Classsification Mask
                             cl_path = os.path.join(tile, '10', os.path.basename(tile)+'_L2R_cl_'+crop)
                             labels, _, _ = read_tif(cl_path)
-                            
                             # Categories from 1-based indexing to 0-based
-                            labels = labels - 1
+                            # -1 is the non-annotated mask.
+                            labels = labels.astype(np.int8) - 1
 
                             # self.y.append(temp)
                             np.save(cache_path/'y.npy', labels, allow_pickle=False)
@@ -214,6 +212,8 @@ class MADOS(torch.utils.data.Dataset):
         
         image = ((image.astype(np.float32).transpose(2, 0, 1) - bands_mean.reshape(-1,1,1))/ bands_std.reshape(-1,1,1)).squeeze()
         target = target.squeeze()
+
+        #TODO: One-hot encoding?
 
         output = {
             'image': {
@@ -270,6 +270,14 @@ class MADOS(torch.utils.data.Dataset):
         dataset_train = MADOS(dataset_config["data_path"], mode="train")
         dataset_val = MADOS(dataset_config["data_path"], mode="val")
         dataset_test = MADOS(dataset_config["data_path"], mode="test")
+        return dataset_train, dataset_val, dataset_test
+
+class MADOSTiny(MADOS):
+    @staticmethod
+    def get_splits(dataset_config):
+        dataset_train = MADOS(dataset_config["data_path"], mode="tiny")
+        dataset_val = MADOS(dataset_config["data_path"], mode="tiny")
+        dataset_test = MADOS(dataset_config["data_path"], mode="tiny")
         return dataset_train, dataset_val, dataset_test
 
 ###############################################################
