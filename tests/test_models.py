@@ -34,8 +34,9 @@ class testModelBuild(unittest.TestCase):
                 cfg = {'encoder_config': self.models[model]}
                 model_cfg = load_specific_config(cfg, 'encoder_config')
 
-                if os.path.isfile(model_cfg["encoder_weights"]):
-                    os.remove(model_cfg["encoder_weights"])
+                if 'encoder_weights' in model_cfg:
+                    if os.path.isfile(model_cfg["encoder_weights"]):
+                        os.remove(model_cfg["encoder_weights"])
                 res = download_model(model_cfg)
                 self.assertTrue(res)
 
