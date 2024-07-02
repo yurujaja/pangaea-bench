@@ -230,12 +230,13 @@ class MADOS(torch.utils.data.Dataset):
         output_path = pathlib.Path(dataset_config["data_path"])
         url = dataset_config["download_url"]
 
-        try:
-            output_path.mkdir(parents=True)
-        except FileExistsError:
+        existing_dirs = output_path.glob("Scene_*")
+        if existing_dirs:
             if not silent:
                 print("MADOS Dataset folder exists, skipping downloading dataset.")
             return
+
+        output_path.mkdir(parents=True, exist_ok=True)
 
         temp_file_name = f"temp_{hex(int(time.time()))}_MADOS.zip"
         pbar = DownloadProgressBar()
