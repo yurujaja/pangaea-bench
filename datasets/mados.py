@@ -230,7 +230,7 @@ class MADOS(torch.utils.data.Dataset):
         output_path = pathlib.Path(dataset_config["data_path"])
         url = dataset_config["download_url"]
 
-        existing_dirs = output_path.glob("Scene_*")
+        existing_dirs = list(output_path.glob("Scene_*"))
         if existing_dirs:
             if not silent:
                 print("MADOS Dataset folder exists, skipping downloading dataset.")
