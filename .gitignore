@@ -4,6 +4,13 @@ old_files/
 pretrained/
 pretrained_models/
 work-dir/
-data/
+data/*
+# Scenes for mados tiny
+# Wow gitignore pattern mathcing is a mess
+!data/mados
+data/mados/*
+!data/mados/splits
+data/mados/splits/*
+!data/mados/splits/tiny_X.txt
 
 .vscode

@@ -10,6 +10,7 @@ class testDatasetSetup(unittest.TestCase):
         # TODO should we just glob these for convinience?
         self.datasets = {
             'mados': 'configs/datasets_config/mados.yaml',
+            'mados-tiny': 'configs/datasets_config/mados_tiny.yaml',
             'sen1floods11': 'configs/datasets_config/sen1floods11.yaml',
             'burn_scars': 'configs/datasets_config/burn_scars.yaml',
             'croptypemapping': 'configs/datasets_config/croptypemapping.yaml',
