@@ -1,11 +1,9 @@
-# -*- coding: utf-8 -*-
 ''' 
 Adapted from: https://huggingface.co/ibm-nasa-geospatial/Prithvi-100M/blob/main/Prithvi.py
 Modifications: modifications for compatibility with the benchmark
 Authors: Yuru Jia, Valerio Marsocci
 '''
 
-from functools import partial
 
 import torch
 import torch.nn as nn
@@ -18,36 +16,7 @@ import numpy as np
 
 from einops import rearrange
 
-from .pos_embed import get_1d_sincos_pos_embed_from_grid
-
-def get_3d_sincos_pos_embed(embed_dim, grid_size, cls_token=False):
-    """
-    grid_size: 3d tuple of grid size: t, h, w
-    return:
-    pos_embed: L, D
-    """
-
-    assert embed_dim % 16 == 0
-
-    t_size, h_size, w_size = grid_size
-
-    w_embed_dim = embed_dim // 16 * 6
-    h_embed_dim = embed_dim // 16 * 6
-    t_embed_dim = embed_dim // 16 * 4
-
-    w_pos_embed = get_1d_sincos_pos_embed_from_grid(w_embed_dim, np.arange(w_size))
-    h_pos_embed = get_1d_sincos_pos_embed_from_grid(h_embed_dim, np.arange(h_size))
-    t_pos_embed = get_1d_sincos_pos_embed_from_grid(t_embed_dim, np.arange(t_size))
-
-    w_pos_embed = np.tile(w_pos_embed, (t_size * h_size, 1))
-    h_pos_embed = np.tile(np.repeat(h_pos_embed, w_size, axis=0), (t_size, 1))
-    t_pos_embed = np.repeat(t_pos_embed, h_size * w_size, axis=0)
-
-    pos_embed = np.concatenate((w_pos_embed, h_pos_embed, t_pos_embed), axis=1)
-
-    if cls_token:
-        pos_embed = np.concatenate([np.zeros([1, embed_dim]), pos_embed], axis=0)
-    return pos_embed
+from .pos_embed import get_3d_sincos_pos_embed
 
 
 class PatchEmbed(nn.Module):
@@ -81,6 +50,7 @@ class PatchEmbed(nn.Module):
                               kernel_size=(tubelet_size, patch_size[0], patch_size[1]),
                               stride=(tubelet_size, patch_size[0], patch_size[1]), bias=bias)
         self.norm = norm_layer(embed_dim) if norm_layer else nn.Identity()
+
 
     def forward(self, x):
         B, C, T, H, W = x.shape
@@ -140,6 +110,24 @@ class MaskedAutoencoderViT(nn.Module):
 
         self.initialize_weights()
 
+
+    def load_pretrained(self, pretrained_path):
+        pretrained_model = torch.load(pretrained_path, map_location="cpu")
+        
+        del pretrained_model["pos_embed"]
+        del pretrained_model["decoder_pos_embed"]
+        
+        k = pretrained_model.keys()
+        pretrained_encoder = {}
+        for name, param in self.named_parameters():
+            if name in k and pretrained_model[name].shape == param.shape:
+                pretrained_encoder[name] = pretrained_model[name]
+
+        msg = self.load_state_dict(pretrained_encoder, strict=False)
+
+        return msg
+    
+
     def initialize_weights(self):
         # initialization
         # initialize (and freeze) pos_embed by sin-cos embedding
@@ -160,6 +148,7 @@ class MaskedAutoencoderViT(nn.Module):
         # initialize nn.Linear and nn.LayerNorm
         self.apply(self._init_weights)
 
+
     def _init_weights(self, m):
         if isinstance(m, nn.Linear):
             # we use xavier_uniform following official JAX ViT:
@@ -169,6 +158,7 @@ class MaskedAutoencoderViT(nn.Module):
         elif isinstance(m, nn.LayerNorm):
             nn.init.constant_(m.bias, 0)
             nn.init.constant_(m.weight, 1.0)
+
 
     def patchify(self, imgs):
         """
@@ -181,6 +171,7 @@ class MaskedAutoencoderViT(nn.Module):
 
         return x
 
+
     def unpatchify(self, x):
         """
         x: B, L, D
@@ -191,6 +182,7 @@ class MaskedAutoencoderViT(nn.Module):
         tub = self.patch_embed.tubelet_size
         imgs = rearrange(x, 'b (t h w) (tub p q c) -> b c (t tub) (h p) (w q)', h=num_p, w=num_p, tub=tub, p=p, q=p)
         return imgs
+
 
     def random_masking(self, x, mask_ratio):
         """
@@ -219,6 +211,7 @@ class MaskedAutoencoderViT(nn.Module):
 
         return x_masked, mask, ids_restore
 
+
     def forward_encoder(self, x, mask_ratio):
         # embed patches
         x = self.patch_embed(x)
@@ -240,6 +233,7 @@ class MaskedAutoencoderViT(nn.Module):
         x = self.norm(x)
 
         return x, mask, ids_restore
+
 
     def forward_decoder(self, x, ids_restore):
         # embed tokens
@@ -267,6 +261,7 @@ class MaskedAutoencoderViT(nn.Module):
 
         return x
 
+
     def forward_loss(self, imgs, pred, mask):
         """
         imgs: B, C, T, H, W
@@ -286,30 +281,13 @@ class MaskedAutoencoderViT(nn.Module):
         loss = (loss * mask).sum() / mask.sum()  # mean loss on removed patches
         return loss
 
+
     def forward(self, imgs, mask_ratio=0.75):
         latent, mask, ids_restore = self.forward_encoder(imgs, mask_ratio)
         pred = self.forward_decoder(latent, ids_restore)
         loss = self.forward_loss(imgs, pred, mask)
         return loss, pred, mask
-
-# def vit_base_patch16_prithvi(num_classes = 15, num_frames = 1, **kwargs):
     
-#     model = MaskedAutoencoderViT(
-#         decoder_depth = 8, 
-#         decoder_embed_dim = 512, 
-#         decoder_num_heads = 16, 
-#         depth = 12, 
-#         embed_dim =  768, 
-#         img_size = 224,
-#         in_chans= 6,
-#         num_frames= num_frames,
-#         num_heads=12,
-#         patch_size= 16,
-#         tubelet_size= 1,
-#         **kwargs)
-
-#     return model
-
 
 def vit_prithvi(num_frames=1, decoder_depth=8, decoder_embed_dim=512, decoder_num_heads=16, depth=12, 
                 embed_dim=768, img_size=224, in_chans=6, num_heads=12, patch_size=16, tubelet_size=1, **kwargs):

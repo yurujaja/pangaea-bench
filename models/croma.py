@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 ''' 
 Adapted from: https://github.com/mvrl/rshf
 Modifications: modifications for compatibility with the benchmark
@@ -101,6 +100,34 @@ class CROMA(nn.Module, PyTorchModelHubMixin):
             return_dict['joint_GAP'] = joint_GAP
 
         return return_dict
+    
+
+    def load_pretrained(self, pretrained_path):
+        pretrained_model = torch.load(pretrained_path, map_location="cpu")
+
+        if self.modality in ("optical"):
+            checkpoint_model = pretrained_model["s2_encoder"]
+            checkpoint_model = {"s2_encoder."+k: v for k, v in checkpoint_model.items()}
+        elif self.modality in ("SAR"):
+            checkpoint_model = pretrained_model["s1_encoder"]
+            checkpoint_model = {"s1_encoder."+k: v for k, v in checkpoint_model.items()}
+        elif self.modality == "joint":
+            checkpoint_model = pretrained_model
+            checkpoint_model_joint = {"cross_encoder."+k: v for k, v in checkpoint_model["joint_encoder"].items()}
+            checkpoint_model_s1 = {"s1_encoder."+k: v for k, v in checkpoint_model["s1_encoder"].items()}
+            checkpoint_model_s2 = {"s2_encoder."+k: v for k, v in checkpoint_model["s2_encoder"].items()}
+            checkpoint_model = {**checkpoint_model_s2, **checkpoint_model_s1, **checkpoint_model_joint}
+
+        k = checkpoint_model.keys()
+        pretrained_encoder = {}
+        for name, param in self.named_parameters():
+            if name in k and checkpoint_model[name].shape == param.shape:
+                pretrained_encoder[name] = checkpoint_model[name]
+
+        msg = self.load_state_dict(pretrained_encoder, strict=False)
+
+        return msg
+
 
 def get_2dalibi(num_heads, num_patches):
     # inspired by: https://github.com/ofirpress/attention_with_linear_biases

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 ''' 
 Adapted from: https://github.com/mvrl/rshf
 Modifications: modifications for compatibility with the benchmark
@@ -213,3 +212,19 @@ class ScaleMAE_baseline(nn.Module, PyTorchModelHubMixin):
         x = self.model(x,input_res=input_res)#.double()
         
         return x
+    
+    def load_pretrained(self, pretrained_path):
+        checkpoint= torch.load(pretrained_path, map_location="cpu")
+        checkpoint_model = checkpoint["model"]
+        pretrained_model = {"model."+k: v for k, v in checkpoint_model.items()}
+
+        k = pretrained_model.keys()
+        pretrained_encoder = {}
+        for name, param in self.named_parameters():
+            if name in k and pretrained_model[name].shape == param.shape:
+                pretrained_encoder[name] = pretrained_model[name]
+
+        msg = self.load_state_dict(pretrained_encoder, strict=False)
+
+        return msg
+    

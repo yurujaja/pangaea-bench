@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 ''' 
 Adapted from: https://github.com/ChenDelong1999/RemoteCLIP
 Modifications: modifications of 'pool_type' config for compatibility with the benchmark
@@ -6,6 +5,7 @@ Authors: Yuru Jia
 '''
 
 import open_clip
+import torch
 import torch.nn as nn
 from huggingface_hub import PyTorchModelHubMixin
 
@@ -41,3 +41,18 @@ class RemoteCLIP(nn.Module, PyTorchModelHubMixin):
                                                     vision_cfg=vision_cfg)
         
         self.tokenizer = open_clip.get_tokenizer(model_name)
+
+
+    def load_pretrained(self, pretrained_path):
+        pretrained_model = torch.load(pretrained_path, map_location="cpu")
+        pretrained_model = {"model."+k: v for k, v in pretrained_model.items()}
+
+        k = pretrained_model.keys()
+        pretrained_encoder = {}
+        for name, param in self.named_parameters():
+            if name in k and pretrained_model[name].shape == param.shape:
+                pretrained_encoder[name] = pretrained_model[name]
+
+        msg = self.load_state_dict(pretrained_encoder, strict=False)
+
+        return msg

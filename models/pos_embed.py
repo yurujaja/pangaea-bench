@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 ''' 
 Adapted from: https://github.com/facebookresearch/mae
 Modifications: minimal modifications
@@ -7,6 +6,7 @@ Authors: Yuru Jia, Valerio Marsocci
 
 import numpy as np
 import torch
+
 
 def get_2d_sincos_pos_embed(embed_dim, grid_size, cls_token=False):
     """
@@ -93,6 +93,37 @@ def get_1d_sincos_pos_embed_from_grid_torch(embed_dim, pos):
     emb = torch.cat([emb_sin, emb_cos], dim=1)  # (M, D)
     return emb #.double()
 
+
+def get_3d_sincos_pos_embed(embed_dim, grid_size, cls_token=False):
+    """
+    grid_size: 3d tuple of grid size: t, h, w
+    return:
+    pos_embed: L, D
+    """
+
+    assert embed_dim % 16 == 0
+
+    t_size, h_size, w_size = grid_size
+
+    w_embed_dim = embed_dim // 16 * 6
+    h_embed_dim = embed_dim // 16 * 6
+    t_embed_dim = embed_dim // 16 * 4
+
+    w_pos_embed = get_1d_sincos_pos_embed_from_grid(w_embed_dim, np.arange(w_size))
+    h_pos_embed = get_1d_sincos_pos_embed_from_grid(h_embed_dim, np.arange(h_size))
+    t_pos_embed = get_1d_sincos_pos_embed_from_grid(t_embed_dim, np.arange(t_size))
+
+    w_pos_embed = np.tile(w_pos_embed, (t_size * h_size, 1))
+    h_pos_embed = np.tile(np.repeat(h_pos_embed, w_size, axis=0), (t_size, 1))
+    t_pos_embed = np.repeat(t_pos_embed, h_size * w_size, axis=0)
+
+    pos_embed = np.concatenate((w_pos_embed, h_pos_embed, t_pos_embed), axis=1)
+
+    if cls_token:
+        pos_embed = np.concatenate([np.zeros([1, embed_dim]), pos_embed], axis=0)
+    return pos_embed
+
+
 def interpolate_pos_embed(model, checkpoint_model):
     if 'pos_embed' in checkpoint_model:
         pos_embed_checkpoint = checkpoint_model['pos_embed']
@@ -118,3 +149,5 @@ def interpolate_pos_embed(model, checkpoint_model):
             pos_tokens = pos_tokens.permute(0, 2, 3, 1).flatten(1, 2)
             new_pos_embed = torch.cat((extra_tokens, pos_tokens), dim=1)
             checkpoint_model['pos_embed'] = new_pos_embed
+
+

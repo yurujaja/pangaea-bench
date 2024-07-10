@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 ''' 
 Adapted from: https://github.com/zhu-xlab/DOFA
 Modifications: minimal modifications
@@ -39,6 +38,7 @@ def get_1d_sincos_pos_embed_from_grid_torch(embed_dim, pos):
 
     emb = torch.cat([emb_sin, emb_cos], dim=1)  # (M, D)
     return emb
+
 
 class TransformerWeightGenerator(nn.Module):
     def __init__(self, input_dim, output_dim, embed_dim, num_heads=4, num_layers=1):
@@ -166,6 +166,7 @@ class Dynamic_MLP_Decoder(nn.Module):
         x = dynamic_out
         return x
 
+
 class Dynamic_MLP_OFA(nn.Module):
     """
     Input: channels of wavelength (normalized): List -> List
@@ -234,7 +235,6 @@ class Dynamic_MLP_OFA(nn.Module):
         x = x.flatten(2).transpose(1, 2)
 
         return x, waves
-
 
 
 class OFAViT(nn.Module):
@@ -309,6 +309,19 @@ class OFAViT(nn.Module):
         x = self.forward_features(x, wave_list)
         x = self.forward_head(x)
         return x
+    
+    def load_pretrained(self, pretrained_path):
+        pretrained_model = torch.load(pretrained_path, map_location="cpu")
+        k = pretrained_model.keys()
+        pretrained_encoder = {}
+        for name, param in self.named_parameters():
+            if name in k and pretrained_model[name].shape == param.shape:
+                pretrained_encoder[name] = pretrained_model[name]
+
+        msg = self.load_state_dict(pretrained_encoder, strict=False)
+
+        return msg
+
 
 def dofa_vit(img_size = 224, patch_size=16, embed_dim=1024, depth=24, num_heads=16, mlp_ratio=4, global_pool=False):
     model = OFAViT(

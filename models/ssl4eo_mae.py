@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 ''' 
 Adapted from: https://github.com/zhu-xlab/SSL4EO-S12/tree/main
 Modifications: modifications for compatibility with the benchmark
@@ -221,6 +220,20 @@ class MaskedAutoencoderViT(nn.Module):
         pred = self.forward_decoder(latent, ids_restore)  # [N, L, p*p*3]
         loss = self.forward_loss(imgs, pred, mask)
         return loss, pred, mask
+
+    def load_pretrained(self, pretrained_path):
+        checkpoint= torch.load(pretrained_path, map_location="cpu")
+        pretrained_model = checkpoint["model"]
+        
+        k = pretrained_model.keys()
+        pretrained_encoder = {}
+        for name, param in self.named_parameters():
+            if name in k and pretrained_model[name].shape == param.shape:
+                pretrained_encoder[name] = pretrained_model[name]
+
+        msg = self.load_state_dict(pretrained_encoder, strict=False)
+
+        return msg
 
 
 def mae_vit(embed_dim=384, img_size=224, patch_size=16, in_chans=3,

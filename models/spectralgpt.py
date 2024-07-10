@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 ''' 
 Adapted from: https://github.com/danfenghong/IEEE_TPAMI_SpectralGPT
 Modifications: modifications for compatibility with the benchmark
@@ -9,23 +8,11 @@ from functools import partial
 import torch.nn.functional as F
 import torch
 import torch.nn as nn
-# from util.logging import master_print as print
-
-# from util.video_vit import Attention, Block, PatchEmbed
 
 from timm.models.vision_transformer import DropPath, Mlp
-import os
-# import numpy as np
-import math
-
-
-# import torch
-# import torch.nn as nn
 from timm.layers import to_2tuple
-# from timm.models.vision_transformer import DropPath, Mlp
 
-
-# logger = logging.get_logger(__name__)
+from .pos_embed import interpolate_pos_embed
 
 
 class PatchEmbed(nn.Module):
@@ -393,6 +380,39 @@ class VisionTransformer(nn.Module):
                 seg1 = x
         return x
 
+
+    def load_pretrained(self, pretrained_path):
+        checkpoint= torch.load(pretrained_path, map_location="cpu")
+        pretrained_model = checkpoint["model"]
+
+        interpolate_pos_embed(self, pretrained_model)
+        
+        k = pretrained_model.keys()
+        state_dict = self.state_dict()
+
+
+        for k in [
+            "patch_embed.0.proj.weight",
+            "patch_embed.1.proj.weight",
+            "patch_embed.2.proj.weight",
+            "patch_embed.2.proj.bias",
+            "head.weight",
+            "head.bias",
+            "pos_embed_spatial",
+            "pos_embed_temporal",
+        ]:
+            if (
+                k in pretrained_model
+                and pretrained_model[k].shape != state_dict[k].shape
+            ):
+                print(f"Removing key {k} from pretrained checkpoint")
+                del pretrained_model[k]
+
+        msg = self.load_state_dict(pretrained_model, strict=False)
+
+        return msg
+
+    
     def unpatchify(self, x):
         """
         x: (N, L, patch_size**2 *3)

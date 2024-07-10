@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 ''' 
 Adapted from: https://github.com/zhu-xlab/SSL4EO-S12/tree/main
 Modifications: modifications for compatibility with the benchmark
@@ -174,6 +173,22 @@ class VisionTransformerMoCo(VisionTransformer):
             x = blk(x)
         x = self.norm(x)
         return x
+
+    def load_pretrained(self, pretrained_path):
+        checkpoint= torch.load(pretrained_path, map_location="cpu")
+        pretrained_model = checkpoint["state_dict"]
+        pretrained_model = {k.replace("module.base_encoder.",""): v for k, v in pretrained_model.items()}
+
+        
+        k = pretrained_model.keys()
+        pretrained_encoder = {}
+        for name, param in self.named_parameters():
+            if name in k and pretrained_model[name].shape == param.shape:
+                pretrained_encoder[name] = pretrained_model[name]
+
+        msg = self.load_state_dict(pretrained_encoder, strict=False)
+
+        return msg
 
 
 class ConvStem(nn.Module):
