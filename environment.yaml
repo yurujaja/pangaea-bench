@@ -24,3 +24,4 @@ dependencies:
   - ptflops
   - opencv
   - google-cloud-storage
+  - yacs
