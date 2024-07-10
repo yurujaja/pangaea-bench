@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 ''' 
 Adapted from: https://github.com/boranhan/Geospatial_Foundation_Models
 Modifications: support different datasets, models, and tasks
@@ -6,7 +5,7 @@ Authors: Yuru Jia, Valerio Marsocci
 '''
 
 import numpy as np
-from scipy import interpolate
+from scipy.interpolate import RegularGridInterpolator
 import torch
 import torch.nn as nn
 import torch.utils.checkpoint as checkpoint
@@ -591,6 +590,14 @@ class SwinTransformer(nn.Module):
         flops += self.num_features * self.patches_resolution[0] * self.patches_resolution[1] // (2 ** self.num_layers)
         flops += self.num_features * self.num_classes
         return flops
+    
+    def load_pretrained(self, pretrained_path):
+        pretrained_model = torch.load(pretrained_path, map_location="cpu")
+        pretrained_model = adapt_gfm_pretrained(self, pretrained_model)
+
+        msg = self.load_state_dict(pretrained_model, strict=False)
+
+        return msg
 
 
 def adapt_gfm_pretrained(model, checkpoint):
@@ -685,8 +692,11 @@ def remap_pretrained_keys_swin(model, checkpoint_model):
 
                     for i in range(nH1):
                         z = relative_position_bias_table_pretrained[:, i].view(src_size, src_size).float().numpy()
-                        f_cubic = interpolate.interp2d(x, y, z, kind='cubic')
-                        all_rel_pos_bias.append(torch.Tensor(f_cubic(dx, dy)).contiguous().view(-1, 1).to(
+                        f_cubic = RegularGridInterpolator((x, y), z, method='cubic')
+                        dxx, dyy = np.meshgrid(dx, dy)
+                        points = np.vstack((dxx.ravel(), dyy.ravel())).T
+
+                        all_rel_pos_bias.append(torch.Tensor(f_cubic(points)).contiguous().view(-1, 1).to(
                             relative_position_bias_table_pretrained.device))
 
                     new_rel_pos_bias = torch.cat(all_rel_pos_bias, dim=-1)
