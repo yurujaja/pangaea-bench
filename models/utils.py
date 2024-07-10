@@ -54,73 +54,7 @@ def download_model(model_config):
     else:
         return False
     
-
-def load_checkpoint(encoder, ckpt_path, model="prithvi"):
-    checkpoint = torch.load(ckpt_path, map_location="cpu")
-    logger = logging.getLogger()
-    logger.info("Load pre-trained checkpoint from: %s" % ckpt_path)
-
-    if model in ["prithvi", "remote_clip", "dofa"]:
-        checkpoint_model = checkpoint
-        if model == "prithvi":
-            del checkpoint_model["pos_embed"]
-            del checkpoint_model["decoder_pos_embed"]
-        elif model in ["remote_clip"]:
-            checkpoint_model = {"model."+k: v for k, v in checkpoint_model.items()}
-    elif model in ["croma"]:
-        if encoder.modality in ("optical"):
-            checkpoint_model = checkpoint["s2_encoder"]
-            checkpoint_model = {"s2_encoder."+k: v for k, v in checkpoint_model.items()}
-        elif encoder.modality in ("SAR"):
-            checkpoint_model = checkpoint["s1_encoder"]
-            checkpoint_model = {"s1_encoder."+k: v for k, v in checkpoint_model.items()}
-        elif encoder.modality == "joint":
-            checkpoint_model = checkpoint
-            checkpoint_model_joint = {"cross_encoder."+k: v for k, v in checkpoint_model["joint_encoder"].items()}
-            checkpoint_model_s1 = {"s1_encoder."+k: v for k, v in checkpoint_model["s1_encoder"].items()}
-            checkpoint_model_s2 = {"s2_encoder."+k: v for k, v in checkpoint_model["s2_encoder"].items()}
-            checkpoint_model = {**checkpoint_model_s2, **checkpoint_model_s1, **checkpoint_model_joint}
-    elif model in ["spectral_gpt", "ssl4eo_data2vec", "ssl4eo_mae"]:
-        checkpoint_model = checkpoint["model"]
-    elif model in ["scale_mae"]:
-        checkpoint_model = checkpoint["model"]
-        checkpoint_model = {"model."+k: v for k, v in checkpoint_model.items()}
-    elif model in ["ssl4eo_moco"]:
-        checkpoint_model = checkpoint["state_dict"]
-        checkpoint_model = {k.replace("module.base_encoder.",""): v for k, v in checkpoint_model.items()}
-    elif model in ["ssl4eo_dino"]:
-        checkpoint_model = checkpoint["teacher"]
-        checkpoint_model = {k.replace("backbone.",""): v for k, v in checkpoint_model.items()}
-    elif model in ["gfm_swin"]:
-        checkpoint_model = adapt_gfm_pretrained(encoder, checkpoint)
-    elif model in ["satlas_pretrain"]:
-        logger.info("Loading pretrained model is already done when initializing the model.")
-
-
-    state_dict = encoder.state_dict()
-
-    if model == "spectral_gpt":
-        interpolate_pos_embed(encoder, checkpoint_model)
-        for k in [
-            "patch_embed.0.proj.weight",
-            "patch_embed.1.proj.weight",
-            "patch_embed.2.proj.weight",
-            "patch_embed.2.proj.bias",
-            "head.weight",
-            "head.bias",
-            "pos_embed_spatial",
-            "pos_embed_temporal",
-        ]:
-            if (
-                k in checkpoint_model
-                and checkpoint_model[k].shape != state_dict[k].shape
-            ):
-                print(f"Removing key {k} from pretrained checkpoint")
-                del checkpoint_model[k]
-    msg = encoder.load_state_dict(checkpoint_model, strict=False)
-    return msg
-
-
+    
 def make_encoder(cfg, load_pretrained=True, frozen_backbone=True):
     # create model
     encoders = {
@@ -158,8 +92,12 @@ def make_encoder(cfg, load_pretrained=True, frozen_backbone=True):
         if encoder_name in ["satlas_pretrain"]:
             pass
         else:
-            msg = load_checkpoint(encoder_model, encoder_weights, encoder_name)
+            logger = logging.getLogger()
+            logger.info(f"Load pre-trained checkpoint from:{encoder_weights}")
+
+            msg = encoder_model.load_pretrained(encoder_weights)
             print(msg)
+            logger.info(msg)
 
     if frozen_backbone:
         for param in encoder_model.parameters():
