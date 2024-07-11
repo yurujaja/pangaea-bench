@@ -36,7 +36,7 @@ class BurnScarsDataset(Dataset):
     def __init__(self, data_root, split, crop=(224, 224), transform=None):
         self.root_dir = os.path.join(data_root, split)
         self.image_files = self._load_image_files()
-        self.bands = ["B2", "B3", "B4", "B8a","B11", "B12"]
+        self.bands = ["B2", "B3", "B4", "B8a", "B11", "B12"]
         self.crop = crop
         self.transform = transform
 
@@ -58,9 +58,9 @@ class BurnScarsDataset(Dataset):
         image = self.load_raster(image_path)
         mask = self.load_mask(mask_path)
         
-        if self.transform:
-            image = self.transform(image)
-            mask = self.transform(mask)
+        #if self.transform:
+        #    image = self.transform(image)
+        #    mask = self.transform(mask)
 
         normalized_image = self.preprocess_image(image)
 
@@ -85,15 +85,20 @@ class BurnScarsDataset(Dataset):
             img = np.stack(bands_data)
 
             img = np.where(img == NO_DATA, NO_DATA_FLOAT, img)
+            #print(img.shape)
+
             if self.crop:
-                img = img[:, -self.crop[0]:, -self.crop[1]:]
+                img = img[:, 144:-144, 144:-144]
+            #print(img.shape)
+
+
         return img
 
     def load_mask(self, path):
         with rasterio.open(path) as src:
             mask = src.read(1)
             if self.crop:
-                mask = mask[-self.crop[0]:, -self.crop[1]:]
+                mask = mask[144:-144, 144:-144]
         return mask
 
     def preprocess_image(self, image):

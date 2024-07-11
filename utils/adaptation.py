@@ -64,27 +64,6 @@ def adapt_input(
     target_bands = target_modal['optical']
     return adapt_input_tensor(tensor, size, source_bands, target_bands, encoder_type, device)
 
-    '''
-    if encoder_type not in ["dofa", "croma"]:
-        tensor = input['s2'].to(device)
-        source_bands = source_modal['s2']
-        target_bands = target_modal['s2']
-
-        return adapt_input_tensor(tensor, size, source_bands, target_bands, encoder_type, device)
-    else:
-        output = []
-        for modal in ["s1", "s2"]:
-            # TODO: to support croma and dofa multi-modality
-            if modal not in input:
-                continue
-            tensor = input[modal].to(device)
-            source_bands = source_modal[modal]
-            target_bands = target_modal[modal]
-            input[modal] = adapt_input_tensor(tensor, size, source_bands, target_bands, encoder_type, device)
-            output.append(input[modal])
-        return output
-    '''
-
 
 def adapt_target(tensor, size, device=torch.device("cuda")):
     tensor = tensor.to(device)

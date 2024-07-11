@@ -1,6 +1,7 @@
 encoder_name: prithvi
 encoder_weights: ./pretrained_models/Prithvi_100M.pt
 download_url: https://huggingface.co/ibm-nasa-geospatial/Prithvi-100M/resolve/main/Prithvi_100M.pt?download=true
+temporal_input: True
 
 encoder_model_args:
   img_size: 224
@@ -22,3 +23,8 @@ input_bands:
     - B6
     - B7
 
+output_layers:
+  - 3
+  - 5
+  - 7
+  - 11

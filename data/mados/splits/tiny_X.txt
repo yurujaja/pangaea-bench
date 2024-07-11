@@ -1,2 +1,0 @@
-Scene_0_1
-Scene_0_2
