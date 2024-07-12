@@ -1,8 +1,0 @@
-task_model_name: cd_vit
-task_model_args:
-  num_classes: 5
-
-
-
-
-

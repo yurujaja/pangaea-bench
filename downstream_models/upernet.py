@@ -14,6 +14,9 @@ import math
 from mmcv.cnn import ConvModule
 from mmcv.cnn import build_norm_layer
 
+from utils.registry import SEGMENTOR_REGISTRY
+
+@SEGMENTOR_REGISTRY.register()
 class UPerNet(nn.Module):
     """Unified Perceptual Parsing for Scene Understanding.
 
@@ -25,30 +28,30 @@ class UPerNet(nn.Module):
             Module applied on the last feature. Default: (1, 2, 3, 6).
     """
 
-    def __init__(self, backbone, pool_scales=(1, 2, 3, 6)):
+    def __init__(self, encoder, cfg, pool_scales=(1, 2, 3, 6)):
         super().__init__()
 
         # self.frozen_backbone = frozen_backbone
 
         self.model_name = 'UPerNet'
-        self.backbone = backbone
-        for param in self.backbone.parameters():
+        self.encoder = encoder
+        for param in self.encoder.parameters():
             param.requires_grad = False
         #
         # if frozen_backbone:
         #     for param in self.backbone.parameters():
         #         param.requires_grad = False
 
-        self.neck = Feature2Pyramid(embed_dim=768, rescales=[4, 2, 1, 0.5])
+        self.neck = Feature2Pyramid(embed_dim=cfg['in_channels'], rescales=[4, 2, 1, 0.5])
 
         self.conv_cfg = None
         self.norm_cfg = dict(type='SyncBN', requires_grad=True)
         self.act_cfg = None
         self.align_corners = False
 
-        self.in_channels = [768, 768, 768, 768]
-        self.channels = 512
-        self.num_classes = 15
+        self.in_channels = [cfg['in_channels'] for _ in range(4)]
+        self.channels = cfg['channels']
+        self.num_classes = cfg['num_classes']
 
         # PSP Module
         self.psp_modules = PPM(
@@ -172,7 +175,7 @@ class UPerNet(nn.Module):
         # else:
 
         with torch.no_grad():
-            feat = self.backbone(img)
+            feat = self.encoder(img)
         #print(feat)
 
         feat = self.neck(feat)

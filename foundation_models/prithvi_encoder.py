@@ -16,41 +16,12 @@ from timm.layers import to_2tuple
 
 import numpy as np
 
-from einops import rearrange
+from .pos_embed import get_3d_sincos_pos_embed
+from utils.registry import ENCODER_REGISTRY
 
-from .pos_embed import get_1d_sincos_pos_embed_from_grid
-import matplotlib.pyplot as plt
 
-def get_3d_sincos_pos_embed(embed_dim, grid_size, cls_token=False):
-    """
-    grid_size: 3d tuple of grid size: t, h, w
-    return:
-    pos_embed: L, D
-    """
-
-    assert embed_dim % 16 == 0
-
-    t_size, h_size, w_size = grid_size
-
-    w_embed_dim = embed_dim // 16 * 6
-    h_embed_dim = embed_dim // 16 * 6
-    t_embed_dim = embed_dim // 16 * 4
-
-    w_pos_embed = get_1d_sincos_pos_embed_from_grid(w_embed_dim, np.arange(w_size))
-    h_pos_embed = get_1d_sincos_pos_embed_from_grid(h_embed_dim, np.arange(h_size))
-    t_pos_embed = get_1d_sincos_pos_embed_from_grid(t_embed_dim, np.arange(t_size))
-
-    w_pos_embed = np.tile(w_pos_embed, (t_size * h_size, 1))
-    h_pos_embed = np.tile(np.repeat(h_pos_embed, w_size, axis=0), (t_size, 1))
-    t_pos_embed = np.repeat(t_pos_embed, h_size * w_size, axis=0)
-
-    pos_embed = np.concatenate((w_pos_embed, h_pos_embed, t_pos_embed), axis=1)
-
-    if cls_token:
-        pos_embed = np.concatenate([np.zeros([1, embed_dim]), pos_embed], axis=0)
-    return pos_embed
-
-class prithviEncoderViT(nn.Module):
+@ENCODER_REGISTRY.register()
+class Prithvi_Encoder(nn.Module):
     """ Masked Autoencoder with VisionTransformer backbone
     """
     def __init__(self, cfg, img_size=224, patch_size=16,
@@ -61,7 +32,7 @@ class prithviEncoderViT(nn.Module):
 
         self.input_bands = cfg['input_bands']
         self.output_layers = cfg['output_layers']
-        self.model_name = 'prithvi'
+        self.model_name = 'Prithvi'
         self.img_size = img_size
 
         self.embed_dim = embed_dim
@@ -127,8 +98,9 @@ class prithviEncoderViT(nn.Module):
             nn.init.constant_(m.bias, 0)
             nn.init.constant_(m.weight, 1.0)
 
-    def forward(self, x):
+    def forward(self, image):
         # embed patches
+        x = image['optical']
         x = self.patch_embed(x)
 
         cls_tokens = self.cls_token.expand(x.shape[0], -1, -1)
@@ -143,8 +115,7 @@ class prithviEncoderViT(nn.Module):
             x = blk(x)
             if i in self.output_layers:
                 #out = self.norm(x)# if i == 11 else x
-                out = x
-                out = out[:, 1::].permute(0, 2, 1).view(-1, self.embed_dim, self.img_size // self.patch_size, self.img_size // self.patch_size).contiguous()
+                out = x[:, 1:].permute(0, 2, 1).view(x.shape[0], -1, self.img_size // self.patch_size, self.img_size // self.patch_size).contiguous()
                 outputs.append(out)
 
         return outputs

@@ -106,8 +106,8 @@ class MADOS(torch.utils.data.Dataset):
         cache_folder = "image_cache"
         cache_version = '1.0.ver'
 
-        #Default splits dir
         self.class_name = [k for k in mados_cat_mapping.keys()]
+        #Default splits dir
 
         if not splits:
             splits = pathlib.Path(path) / "splits"

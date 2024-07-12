@@ -55,7 +55,7 @@ class Trainer():
 
         self.evaluator(self.model)
         if self.rank == 0:
-            self.save_model(self.epochs)
+            self.save_model(self.epochs, is_final=True)
 
 
     def train_one_epoch(self, epoch):
@@ -63,9 +63,9 @@ class Trainer():
 
         end_time = time.time()
         for batch_idx, data in enumerate(self.train_loader):
-            #print(batch_idx)
             image, target = self.preprocessor(data)
-            image, target = image.to(self.device), target.to(self.device)
+            image = {k: v.to(self.device) for k, v in image.items()}
+            target = target.to(self.device)
             self.training_stats['data_time'].update(time.time() - end_time)
 
             with torch.cuda.amp.autocast(enabled=self.enable_mixed_precision, dtype=self.precision):
@@ -87,10 +87,8 @@ class Trainer():
 
             end_time = time.time()
 
-        #for loss_name, total_loss in cumulative_losses.items():
-        #    logging.getLogger().info(f"The training loss {loss_name}: {total_loss/training_batches}")
 
-    def save_model(self, epoch):
+    def save_model(self, epoch, is_final=False):
         checkpoint = {
             "model": self.model.module.state_dict(),
             "optimizer": self.optimizer.state_dict(),
@@ -99,9 +97,9 @@ class Trainer():
             "epoch": epoch,
             "args": self.args,
         }
-        checkpoint_path = os.path.join(self.exp_dir, f"checkpoint_epoch{epoch + 1}.pth")
+        checkpoint_path = os.path.join(self.exp_dir, "checkpoint_{}.pth".format('final' if is_final else f'epoch{epoch}'))
         torch.save(checkpoint, checkpoint_path)
-        self.logger.info(f"Epoch {epoch + 1} | Training checkpoint saved at {checkpoint_path}")
+        self.logger.info(f"Epoch {epoch} | Training checkpoint saved at {checkpoint_path}")
 
 
     def load_model(self, resume_path):

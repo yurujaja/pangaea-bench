@@ -1,4 +1,5 @@
 dataset: datasets.mados.MADOS
+dataset_name: MADOS
 data_path: ./data/MADOS
 download_url: https://zenodo.org/records/10664073/files/MADOS.zip?download=1
 num_classes: 15

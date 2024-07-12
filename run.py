@@ -9,7 +9,7 @@ from torch.utils.data.distributed import DistributedSampler
 
 
 from engine import SegPreprocessor, SegEvaluator, SegTrainer
-from foundation_models import prithviEncoderViT
+#from foundation_models import prithviEncoderViT
 from foundation_models.utils import download_model
 from downstream_models import UPerNet, UNet
 
@@ -18,7 +18,7 @@ from datasets.utils import make_dataset
 
 from utils.logger import init_logger
 from utils.configs import load_config
-#from utils.utils import fix_seed
+from utils.registry import ENCODER_REGISTRY, SEGMENTOR_REGISTRY, DATASET_REGISTRY
 
 parser = argparse.ArgumentParser(description="Train a downstreamtask with geospatial foundation models.")
 
@@ -28,10 +28,9 @@ parser.add_argument("--dataset_config", required=True,
                     help="train config file path")
 parser.add_argument("--encoder_config", required=True,
                     help="train config file path")
-parser.add_argument("--task_config", required=True,
+parser.add_argument("--segmentor_config", required=True,
                     help="train config file path")
-parser.add_argument("--run_config",
-                   help="read run config from file")
+
 parser.add_argument("--test_only", action="store_true",
                     help="")
 
@@ -95,17 +94,18 @@ if __name__ == "__main__":
     args.world_size = int(os.environ['WORLD_SIZE'])
     args.local_world_size = int(os.environ['LOCAL_WORLD_SIZE'])
 
-    encoder_cfg, dataset_cfg, task_cfg = load_config(args)
+    encoder_cfg, dataset_cfg, segmentor_cfg = load_config(args)
 
     #print(encoder_cfg)
-    mode = 'test' if args.test_only else 'train'
+    #mode = 'test' if args.test_only else 'train'
     encoder_name = encoder_cfg["encoder_name"]
-    dataset_name = dataset_cfg["dataset"]
-    task_name = task_cfg["task_model_name"]
+    dataset_name = dataset_cfg["dataset_name"]
+    task_name = segmentor_cfg["task_name"]
+    segmentor_name = segmentor_cfg["segmentor_name"]
 
     # setup a work directory
     timestamp = time.strftime("%Y%m%d_%H%M%S", time.localtime())
-    exp_name = f"{encoder_name}-{dataset_name}-{task_name}-{mode}-{timestamp}"
+    exp_name = f"{encoder_name}-{segmentor_name}-{dataset_name}-{task_name}-{timestamp}"
     exp_dir = os.path.join(args.work_dir, exp_name)
     os.makedirs(exp_dir, exist_ok=True)
     logger = init_logger(os.path.join(exp_dir, "train.log"), rank=args.rank)
@@ -115,7 +115,6 @@ if __name__ == "__main__":
     logger.info("The experiment will be stored in %s\n" % exp_dir)
 
     # initialize distributed training
-
     device = torch.device('cuda', args.local_rank)
     torch.cuda.set_device(device)
     logger.info(f"Device used: {device}")
@@ -149,26 +148,26 @@ if __name__ == "__main__":
     total_iters = args.epochs * len(train_loader)
     logger.info("Built {} dataset.".format(dataset_name))
 
+
     download_model(encoder_cfg)
 
-    encoder = prithviEncoderViT(encoder_cfg, **encoder_cfg["encoder_model_args"])
+    encoder = ENCODER_REGISTRY.get(encoder_cfg['encoder_name'])(encoder_cfg, **encoder_cfg['encoder_model_args'])
+    #encoder = encoder(encoder_cfg, **encoder_cfg["encoder_model_args"])
 
-    missing, incompatible_shape = encoder.load_encoder_weights(encoder_cfg["encoder_weights"])
-    logger.info("Loaded encoder weight from {}.".format(encoder_cfg["encoder_weights"]))
+    missing, incompatible_shape = encoder.load_encoder_weights(encoder_cfg['encoder_weights'])
+    logger.info("Loaded encoder weight from {}.".format(encoder_cfg['encoder_weights']))
     if missing:
         logger.warning("Missing parameters:\n" + "\n".join("%s: %s" % (k, v) for k, v in sorted(missing.items())))
     if incompatible_shape:
         logger.warning("Incompatible parameters:\n" + "\n".join("%s: expected %s but found %s" % (k, v[0], v[1]) for k, v in sorted(incompatible_shape.items())))
 
-
-    model = UPerNet(encoder).to(device)
+    model = SEGMENTOR_REGISTRY.get(segmentor_cfg['segmentor_name'])(encoder, segmentor_cfg).to(device)
     model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.local_rank], output_device=args.local_rank)
-    logger.info("Built {} for semantic segmentation with {} encoder.".format(model.module.model_name, encoder.model_name))
+    logger.info("Built {} for  with {} encoder.".format(model.module.model_name, encoder.model_name))
 
     optimizer = torch.optim.Adam(
         model.parameters(), lr=args.lr, weight_decay=args.wd)
     logger.info("Built {} optimizer.".format(str(type(optimizer))))
-
 
     scheduler = torch.optim.lr_scheduler.MultiStepLR(
         optimizer, [total_iters * r for r in args.lr_milestones], gamma=0.1)

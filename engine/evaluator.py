@@ -42,7 +42,8 @@ class SegEvaluator(Evaluator):
 
         for batch_idx, data in enumerate(self.val_loader):
             image, target = self.preprocessor(data)
-            image, target = image.to(self.device), target.to(self.device)
+            image = {k: v.to(self.device) for k, v in image.items()}
+            target = target.to(self.device)
 
             logits = model(image, output_shape=target.shape[-2:])
             pred = torch.argmax(logits, dim=1)

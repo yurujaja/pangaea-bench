@@ -1,16 +1,31 @@
-encoder_name: scale_mae
+encoder_name: ScaleMAE_Encoder
+foundation_model_name: scalemae-vitlarge-800
 encoder_weights: ./pretrained_models/scalemae-vitlarge-800.pth
 download_url: https://github.com/bair-climate-initiative/scale-mae/releases/download/base-800/scalemae-vitlarge-800.pth
+temporal_input: False
+
+num_layers: 24
+embed_dim: 1024
+input_size: 224
 
 encoder_model_args:
   img_size: 224
   embed_dim: 1024
   in_chans: 3
   patch_size: 16
-  global_pool: True
+  depth: 24
+  num_heads: 16
+  mlp_ratio: 4
+  qkv_bias: True
 
 input_bands:
   optical:
     - B4
     - B3
     - B2
+
+output_layers:
+  - 7
+  - 11
+  - 15
+  - 23
