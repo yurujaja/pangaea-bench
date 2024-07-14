@@ -21,7 +21,7 @@ from torch import Tensor
 from torch.utils.data import Dataset
 
 from .utils import download_bucket_concurrently
-
+from utils.registry import DATASET_REGISTRY
 
 def filter_valid_files(
     files, valid_files: Optional[Iterator[str]] = None, ignore_extensions: bool = False, allow_substring: bool = True
@@ -55,7 +55,7 @@ def _split_filter_function(file_name, valid_files: list[str], ignore_extensions=
             return True
     return False
 
-
+@DATASET_REGISTRY.register()
 class Sen1Floods11(Dataset):
     """NonGeo dataset implementation for fire scars."""
 

@@ -48,6 +48,8 @@ class Prithvi_Encoder(nn.Module):
             Block(embed_dim, num_heads, mlp_ratio, qkv_bias=True, norm_layer=norm_layer)
             for i in range(depth)])
 
+        #self.norm = norm_layer(embed_dim)
+
         self.initialize_weights()
 
     def load_encoder_weights(self, pretrained_path):
@@ -110,15 +112,15 @@ class Prithvi_Encoder(nn.Module):
 
         # apply Transformer blocks
 
-        outputs = []
+        output = []
         for i, blk in enumerate(self.blocks):
             x = blk(x)
             if i in self.output_layers:
-                #out = self.norm(x)# if i == 11 else x
+                #out = self.norm(x) if i == 11 else x
                 out = x[:, 1:].permute(0, 2, 1).view(x.shape[0], -1, self.img_size // self.patch_size, self.img_size // self.patch_size).contiguous()
-                outputs.append(out)
+                output.append(out)
 
-        return outputs
+        return output
 
 class PatchEmbed(nn.Module):
     """ Frames of 2D Images to Patch Embedding

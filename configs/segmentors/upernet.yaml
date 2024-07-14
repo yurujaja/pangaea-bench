@@ -1,5 +1,5 @@
 segmentor_name: UPerNet
-task_name: semantic segmentation
+task_name: semantic-segmentation
 #task_model_args:
   #num_frames: 1
   #mt_strategy: "ltae" #activated only when if num_frames > 1

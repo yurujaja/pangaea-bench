@@ -24,7 +24,7 @@ class Trainer():
         self.lr_scheduler = lr_scheduler
         self.evaluator = evaluator
         self.logger = logger
-        self.training_stats = {name: RunningAverageMeter(length=100) for name in ['loss', 'data_time', 'batch_time']}
+        self.training_stats = {name: RunningAverageMeter(length=100) for name in ['loss', 'data_time', 'batch_time', 'eval_time']}
         self.training_metrics ={}
         self.exp_dir = exp_dir
         self.device = device
@@ -34,8 +34,6 @@ class Trainer():
         self.scaler = GradScaler(enabled=self.enable_mixed_precision)
 
         self.start_epoch = 0
-        #self.eval_interval = args.eval_interval
-        #self.ckpt_interval = args.ckpt_interval
         self.epochs = args.epochs
         if args.resume_path is not None:
             self.load_model(args.resume_path)
@@ -44,18 +42,19 @@ class Trainer():
     def train(self):
         for epoch in range(self.start_epoch, self.epochs):
             # train the network for one epoch
+            if epoch % self.args.ckpt_interval == 0 and epoch != self.start_epoch:
+                self.save_model(epoch)
+            if epoch % self.args.eval_interval == 0:
+                _, used_time = self.evaluator(self.model, f'epoch {epoch}')
+                self.training_stats['eval_time'].update(used_time)
+
             self.logger.info("============ Starting epoch %i ... ============" % epoch)
             # set sampler
             self.train_loader.sampler.set_epoch(epoch)
             self.train_one_epoch(epoch)
-            if (epoch + 1) % self.args.eval_interval == 0:
-                self.evaluator(self.model)
-            if self.rank == 0 and (epoch + 1) % self.args.ckpt_interval == 0:
-                self.save_model(epoch)
 
-        self.evaluator(self.model)
-        if self.rank == 0:
-            self.save_model(self.epochs, is_final=True)
+        self.save_model(self.epochs, is_final=True)
+        self.evaluator(self.model, 'final model')
 
 
     def train_one_epoch(self, epoch):
@@ -69,7 +68,7 @@ class Trainer():
             self.training_stats['data_time'].update(time.time() - end_time)
 
             with torch.cuda.amp.autocast(enabled=self.enable_mixed_precision, dtype=self.precision):
-                logits = self.model(image, output_shape=(240, 240))
+                logits = self.model(image, output_shape=target.shape[-2:])
                 loss = self.compute_loss(logits, target)
                 self.compute_logging_metrics(logits.detach().clone(), target.detach().clone())
 
@@ -89,6 +88,8 @@ class Trainer():
 
 
     def save_model(self, epoch, is_final=False):
+        if self.rank != 0:
+            return
         checkpoint = {
             "model": self.model.module.state_dict(),
             "optimizer": self.optimizer.state_dict(),
@@ -103,6 +104,7 @@ class Trainer():
 
 
     def load_model(self, resume_path):
+
         model_dict = torch.load(resume_path, map_location=self.device)
         if 'model' in model_dict:
             self.model.module.load_state_dict(model_dict["model"])
@@ -114,7 +116,7 @@ class Trainer():
             self.model.module.load_state_dict(model_dict)
             self.start_epoch = 0
 
-        self.logger.info(f"Loaded model from {self.args.resume_path}. Start training from epoch {self.start_epoch}")
+        self.logger.info(f"Loaded model from {self.args.resume_path}. Resume training from epoch {self.start_epoch}")
 
     def compute_loss(self, logits, target):
         pass
@@ -128,8 +130,10 @@ class Trainer():
         #TO DO: upload to wandb
         left_batch_this_epoch = len(self.train_loader) - batch_idx
         left_batch_all = len(self.train_loader) * (self.epochs - epoch - 1) + left_batch_this_epoch
+        left_eval_times = (self.epochs - 0.5) // self.args.eval_interval - self.training_stats['eval_time'].count
         left_time_this_epoch = sec_to_hm(left_batch_this_epoch * self.training_stats['batch_time'].avg)
-        left_time_all = sec_to_hm(left_batch_all * self.training_stats['batch_time'].avg)
+        left_time_all = sec_to_hm(left_batch_all * self.training_stats['batch_time'].avg
+                                  + left_eval_times * self.training_stats['eval_time'].avg)
 
         basic_info = (
             "Epoch [{epoch}-{batch_idx}/{len_loader}]\t"
@@ -150,7 +154,7 @@ class Trainer():
             ))
 
         metrics_info = ['{} {:>7} ({:>7})'.format(k, '%.3f' % v.val, '%.3f' % v.avg) for k, v in self.training_metrics.items()]
-        metrics_info = '\n'+'\t'.join(metrics_info)
+        metrics_info = '\n Training metrics: '+'\t'.join(metrics_info)
         #extra_metrics_info = self.extra_info_template.format(**self.extra_info)
         log_info = basic_info + metrics_info
 

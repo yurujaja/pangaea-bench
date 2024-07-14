@@ -68,8 +68,8 @@ class OpticalPreprocessor():
 
         optical_image = F.interpolate(optical_image, (self.input_size, self.input_size), mode='bilinear', align_corners=False)
 
-        if self.temporal_input and len(image.shape) == 4:
-            optical_image = image.unsqueeze(2)
+        if self.temporal_input and len(optical_image.shape) == 4:
+            optical_image = optical_image.unsqueeze(2)
 
         return optical_image
 

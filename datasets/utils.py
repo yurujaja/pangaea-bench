@@ -4,7 +4,7 @@ import importlib
 import logging
 import concurrent.futures
 from google.cloud.storage import Client
-from utils.utils import load_class  
+
 
 
 # Utility progress bar handler for urlretrieve
@@ -94,15 +94,15 @@ def download_bucket_concurrently(bucket_name, destination_directory=""):
             print("Downloaded {} to {}.".format(name, destination_directory + name))
 
 
-def make_dataset(dataset_config):
-    dataset = load_class(dataset_config['dataset'])
-
-    if hasattr(dataset, 'download') and callable(dataset.download):
-        dataset.download(dataset_config, silent=True)
-    else:
-        logging.getLogger().warning(f"Dataset {dataset_config['dataset']} doesn't implement autodownload, you might have to download it manually.")
-
-    if hasattr(dataset, 'get_splits') and callable(dataset.get_splits):
-        return dataset.get_splits(dataset_config)
-    else:
-        raise TypeError(f"Please make sure your dataset {dataset_config['dataset']} implements a get_splits method.")
+# def make_dataset(dataset_config):
+#     dataset = load_class(dataset_config['dataset'])
+#
+#     if hasattr(dataset, 'download') and callable(dataset.download):
+#         dataset.download(dataset_config, silent=True)
+#     else:
+#         logging.getLogger().warning(f"Dataset {dataset_config['dataset']} doesn't implement autodownload, you might have to download it manually.")
+#
+#     if hasattr(dataset, 'get_splits') and callable(dataset.get_splits):
+#         return dataset.get_splits(dataset_config)
+#     else:
+#         raise TypeError(f"Please make sure your dataset {dataset_config['dataset']} implements a get_splits method.")

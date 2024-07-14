@@ -8,17 +8,21 @@ from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
 
+import foundation_models
+import datasets
+import segmentors
 from engine import SegPreprocessor, SegEvaluator, SegTrainer
-#from foundation_models import prithviEncoderViT
 from foundation_models.utils import download_model
-from downstream_models import UPerNet, UNet
+#from segmentors import UPerNet, UNet
 
-from datasets.utils import make_dataset
+#from datasets.utils import make_dataset
 
 
+from utils.seed import fix_seed, get_generator, seed_worker
 from utils.logger import init_logger
 from utils.configs import load_config
 from utils.registry import ENCODER_REGISTRY, SEGMENTOR_REGISTRY, DATASET_REGISTRY
+
 
 parser = argparse.ArgumentParser(description="Train a downstreamtask with geospatial foundation models.")
 
@@ -30,10 +34,8 @@ parser.add_argument("--encoder_config", required=True,
                     help="train config file path")
 parser.add_argument("--segmentor_config", required=True,
                     help="train config file path")
-
 parser.add_argument("--test_only", action="store_true",
                     help="")
-
 
 
 parser.add_argument("--work_dir", default="./work-dir",
@@ -43,7 +45,8 @@ parser.add_argument("--resume_path", type=str,
 #parser.add_argument("--ckpt_path", type=str,
 #                    help="load the checkpoint for evaluation")
 
-
+parser.add_argument("--seed", default=0, type=int,
+                    help="")
 parser.add_argument("--num_workers", default=8, type=int,
                     help="number of data loading workers")
 parser.add_argument("--batch_size", default=8, type=int,
@@ -89,23 +92,29 @@ parser.add_argument('--init_method', default='tcp://localhost:10111',
 if __name__ == "__main__":
     args = parser.parse_args()
 
+    # fix all random seeds
+    fix_seed(args.seed)
+
+    # distributed training variables
     args.rank = int(os.environ['RANK'])
     args.local_rank = int(os.environ['LOCAL_RANK'])
     args.world_size = int(os.environ['WORLD_SIZE'])
     args.local_world_size = int(os.environ['LOCAL_WORLD_SIZE'])
+    device = torch.device('cuda', args.local_rank)
+    torch.cuda.set_device(device)
+    torch.distributed.init_process_group(backend='nccl')
 
+    # load config
     encoder_cfg, dataset_cfg, segmentor_cfg = load_config(args)
 
-    #print(encoder_cfg)
-    #mode = 'test' if args.test_only else 'train'
     encoder_name = encoder_cfg["encoder_name"]
     dataset_name = dataset_cfg["dataset_name"]
     task_name = segmentor_cfg["task_name"]
     segmentor_name = segmentor_cfg["segmentor_name"]
 
-    # setup a work directory
+    # setup a work directory and logger
     timestamp = time.strftime("%Y%m%d_%H%M%S", time.localtime())
-    exp_name = f"{encoder_name}-{segmentor_name}-{dataset_name}-{task_name}-{timestamp}"
+    exp_name = f"{timestamp}-{encoder_name}-{segmentor_name}-{dataset_name}-{task_name}"
     exp_dir = os.path.join(args.work_dir, exp_name)
     os.makedirs(exp_dir, exist_ok=True)
     logger = init_logger(os.path.join(exp_dir, "train.log"), rank=args.rank)
@@ -113,16 +122,14 @@ if __name__ == "__main__":
     logger.info("============ Initialized logger ============")
     logger.info("\n".join("%s: %s" % (k, str(v)) for k, v in sorted(dict(vars(args)).items())))
     logger.info("The experiment will be stored in %s\n" % exp_dir)
-
-    # initialize distributed training
-    device = torch.device('cuda', args.local_rank)
-    torch.cuda.set_device(device)
     logger.info(f"Device used: {device}")
 
-    torch.distributed.init_process_group(backend='nccl')
+    # get datasets
+    dataset = DATASET_REGISTRY.get(dataset_cfg['dataset_name'])
+    #dataset.download(dataset_cfg, silent=True)
+    train_dataset, val_dataset, test_dataset = dataset.get_splits(dataset_cfg)
 
-    train_dataset, val_dataset, test_dataset = make_dataset(dataset_cfg)
-
+    # get train val data loaders
     train_loader = DataLoader(
         train_dataset,
         sampler=DistributedSampler(train_dataset),
@@ -130,8 +137,8 @@ if __name__ == "__main__":
         num_workers=args.num_workers,
         pin_memory=True,
         persistent_workers=True,
-        #worker_init_fn=self.seed_worker,
-        #generator=self.g,
+        worker_init_fn=seed_worker,
+        generator=get_generator(args.seed),
         drop_last=True,
     )
     val_loader = DataLoader(
@@ -141,18 +148,16 @@ if __name__ == "__main__":
         num_workers=args.num_workers,
         pin_memory=True,
         persistent_workers=False,
-        #worker_init_fn=self.seed_worker,
-        #generator=self.g,
+        #worker_init_fn=seed_worker,
+        #generator=g,
         drop_last=False,
     )
-    total_iters = args.epochs * len(train_loader)
+
     logger.info("Built {} dataset.".format(dataset_name))
 
-
+    # prepare the foundation model
     download_model(encoder_cfg)
-
     encoder = ENCODER_REGISTRY.get(encoder_cfg['encoder_name'])(encoder_cfg, **encoder_cfg['encoder_model_args'])
-    #encoder = encoder(encoder_cfg, **encoder_cfg["encoder_model_args"])
 
     missing, incompatible_shape = encoder.load_encoder_weights(encoder_cfg['encoder_weights'])
     logger.info("Loaded encoder weight from {}.".format(encoder_cfg['encoder_weights']))
@@ -161,24 +166,42 @@ if __name__ == "__main__":
     if incompatible_shape:
         logger.warning("Incompatible parameters:\n" + "\n".join("%s: expected %s but found %s" % (k, v[0], v[1]) for k, v in sorted(incompatible_shape.items())))
 
+    # prepare the segmentor
     model = SEGMENTOR_REGISTRY.get(segmentor_cfg['segmentor_name'])(encoder, segmentor_cfg).to(device)
     model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.local_rank], output_device=args.local_rank)
-    logger.info("Built {} for  with {} encoder.".format(model.module.model_name, encoder.model_name))
+    logger.info("Built {} for with {} encoder.".format(model.module.model_name, encoder.model_name))
 
+    # build optimizer
     optimizer = torch.optim.Adam(
         model.parameters(), lr=args.lr, weight_decay=args.wd)
     logger.info("Built {} optimizer.".format(str(type(optimizer))))
 
+    # build scheduler
+    total_iters = args.epochs * len(train_loader)
     scheduler = torch.optim.lr_scheduler.MultiStepLR(
         optimizer, [total_iters * r for r in args.lr_milestones], gamma=0.1)
     logger.info("Built {} scheduler.".format(str(type(scheduler))))
 
-
+    # training: put all components into engines
     preprocessor = SegPreprocessor(args, encoder_cfg, dataset_cfg, logger)
-    evaluator = SegEvaluator(args, preprocessor, val_loader, logger, exp_dir, device)
-    trainer = SegTrainer(args, model, preprocessor, train_loader, optimizer, scheduler, evaluator, logger, exp_dir, device)
-
+    val_evaluator = SegEvaluator(args, preprocessor, val_loader, logger, exp_dir, device)
+    trainer = SegTrainer(args, model, preprocessor, train_loader, optimizer, scheduler, val_evaluator, logger, exp_dir, device)
     trainer.train()
+
+    # testing
+    test_loader = DataLoader(
+        test_dataset,
+        sampler=DistributedSampler(test_dataset),
+        batch_size=args.batch_size,
+        num_workers=args.num_workers,
+        pin_memory=True,
+        persistent_workers=False,
+        drop_last=False,
+    )
+
+    test_evaluator = SegEvaluator(args, preprocessor, test_loader, logger, exp_dir, device)
+    test_evaluator.evaluate(model, 'final model')
+
 
 
 

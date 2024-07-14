@@ -3,123 +3,114 @@ import time
 import torch
 import numpy as np
 import rasterio
-from torch.utils.data import Dataset
+from glob import glob
+
+import torch
+import torchvision.transforms.functional as TF
+import torchvision.transforms as T
 
 import pathlib
 import urllib
 import tarfile
 from .utils import DownloadProgressBar
+from utils.registry import DATASET_REGISTRY
 
-NO_DATA = -9999
-NO_DATA_FLOAT = 0.0001
-PERCENTILES = (0.1, 99.9)
+@DATASET_REGISTRY.register()
+class HLSBurnScars(torch.utils.data.Dataset):
+    def __init__(self, cfg, split, is_train=True):
 
-class BurnScarsDataset(Dataset):
-    BAND_STATS = {
-        'B2': {'mean': 0.033349706741586264, 'std': 0.02269135568823774},
-        'B3': {'mean': 0.05701185520536176, 'std': 0.026807560223070237},
-        'B4': {'mean': 0.05889748132001316, 'std': 0.04004109844362779},
-        'B8a': {'mean': 0.2323245113436119, 'std': 0.07791732423672691},
-        'B11': {'mean': 0.1972854853760658, 'std': 0.08708738838140137},
-        'B12': {'mean': 0.11944914225186566, 'std': 0.07241979477437814}
-    }
+        self.root_path = cfg['root_path']
+        self.data_mean = cfg['data_mean']
+        self.data_std = cfg['data_std']
+        self.classes = cfg['classes']
+        self.class_num = len(self.classes)
+        self.split = split
+        self.is_train = is_train
 
-    BAND_INDICES = {
-        'B2': 1,   # Blue
-        'B3': 2,   # Green
-        'B4': 3,   # Red
-        'B8a': 4,  # NIR
-        'B11': 5,  # SWIR 1
-        'B12': 6   # SWIR 2
-    }
+        self.split_mapping = {'train': 'training', 'val': 'validation', 'test': 'validation'}
 
-    def __init__(self, data_root, split, crop=(224, 224), transform=None):
-        self.root_dir = os.path.join(data_root, split)
-        self.image_files = self._load_image_files()
-        self.bands = ["B2", "B3", "B4", "B8a", "B11", "B12"]
-        self.crop = crop
-        self.transform = transform
+        self.image_list = sorted(glob(os.path.join(self.root_path, self.split_mapping[self.split], '*merged.tif')))
+        self.target_list = sorted(glob(os.path.join(self.root_path, self.split_mapping[self.split], '*mask.tif')))
 
-    def _load_image_files(self):
-        image_files = []
-        for dirpath, _, filenames in os.walk(self.root_dir):
-            for filename in filenames:
-                if filename.endswith('_merged.tif'):
-                    image_files.append(os.path.join(dirpath, filename))
-        return image_files
+        print(self.data_mean['optical'])
+        self.transform = T.Compose([
+            # T.Resize((self.height, self.height), antialias=False),
+            T.Normalize(mean=self.data_mean['optical'], std=self.data_std['optical'])
+        ])
 
     def __len__(self):
-        return len(self.image_files)
+        return len(self.image_list)
 
-    def __getitem__(self, idx):
-        image_path = self.image_files[idx]
-        mask_path = image_path.replace('_merged.tif', '.mask.tif')
-        
-        image = self.load_raster(image_path)
-        mask = self.load_mask(mask_path)
-        
-        #if self.transform:
-        #    image = self.transform(image)
-        #    mask = self.transform(mask)
+    def __getitem__(self, index):
+        with rasterio.open(self.image_list[index]) as src:
+            image = src.read()
+        with rasterio.open(self.target_list[index]) as src:
+            target = src.read(1)
 
-        normalized_image = self.preprocess_image(image)
+        image = torch.from_numpy(image)
+        target = torch.from_numpy(target.astype(np.int64))
+
+        invalid_mask = image == 9999
+        image = self.transform(image)
+        image[invalid_mask] = 0
+
 
         output = {
             'image': {
-                'optical': normalized_image,
+                'optical': image,
             },
-            'target': torch.tensor(mask, dtype=torch.float32),  
+            'target': target,
             'metadata': {}
         }
         
         return output
 
 
-    def load_raster(self, path):
-        with rasterio.open(path) as src:
-            img = src.read()
+    # def load_raster(self, path):
+    #     with rasterio.open(path) as src:
+    #         img = src.read()
+    #
+    #         # Load specified bands
+    #         bands_data = [img[self.BAND_INDICES[band] - 1] for band in self.bands]
+    #
+    #         img = np.stack(bands_data)
+    #
+    #         img = np.where(img == NO_DATA, NO_DATA_FLOAT, img)
+    #         #print(img.shape)
+    #
+    #         #if self.crop:
+    #         #    img = img[:, 144:-144, 144:-144]
+    #         #print(img.shape)
+    #
+    #
+    #     return img
 
-            # Load specified bands
-            bands_data = [img[self.BAND_INDICES[band] - 1] for band in self.bands]
+    # def load_mask(self, path):
+    #     with rasterio.open(path) as src:
+    #         mask = src.read(1)
+    #         #if self.crop:
+    #         #    mask = mask[144:-144, 144:-144]
+    #     return mask
 
-            img = np.stack(bands_data)
-
-            img = np.where(img == NO_DATA, NO_DATA_FLOAT, img)
-            #print(img.shape)
-
-            if self.crop:
-                img = img[:, 144:-144, 144:-144]
-            #print(img.shape)
-
-
-        return img
-
-    def load_mask(self, path):
-        with rasterio.open(path) as src:
-            mask = src.read(1)
-            if self.crop:
-                mask = mask[144:-144, 144:-144]
-        return mask
-
-    def preprocess_image(self, image):
-        means = np.array([self.BAND_STATS[band]['mean'] for band in self.bands]).reshape(-1, 1, 1)
-        stds = np.array([self.BAND_STATS[band]['std'] for band in self.bands]).reshape(-1, 1, 1)
-        
-        # Normalize image
-        normalized = ((image - means) / stds)
-        normalized = torch.from_numpy(normalized).to(torch.float32)
-        return normalized
+    # def preprocess_image(self, image):
+    #     means = np.array([self.BAND_STATS[band]['mean'] for band in self.bands]).reshape(-1, 1, 1)
+    #     stds = np.array([self.BAND_STATS[band]['std'] for band in self.bands]).reshape(-1, 1, 1)
+    #
+    #     # Normalize image
+    #     normalized = ((image - means) / stds)
+    #     normalized = torch.from_numpy(normalized).to(torch.float32)
+    #     return normalized
     
     @staticmethod
     def get_splits(dataset_config):
-        dataset_train = BurnScarsDataset(data_root=dataset_config["data_path"], split="training")
-        dataset_val = BurnScarsDataset(data_root=dataset_config["data_path"], split="validation")
+        dataset_train = HLSBurnScars(dataset_config, split="train", is_train=True)
+        dataset_val = HLSBurnScars(dataset_config, split="val", is_train=False)
         dataset_test = dataset_val
         return dataset_train, dataset_val, dataset_test
     
     @staticmethod
     def download(dataset_config:dict, silent=False):
-        output_path = pathlib.Path(dataset_config["data_path"])
+        output_path = pathlib.Path(dataset_config["root_path"])
         url = dataset_config["download_url"]
 
         try:
