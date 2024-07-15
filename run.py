@@ -31,19 +31,20 @@ parser.add_argument("--encoder_config", required=True,
                     help="train config file path")
 parser.add_argument("--segmentor_config", required=True,
                     help="train config file path")
+parser.add_argument("--finetune", action="store_true",
+                    help="fine tune whole networks")
 parser.add_argument("--test_only", action="store_true",
-                    help="")
+                    help="test a model only (to be done)")
 
 
 parser.add_argument("--work_dir", default="./work-dir",
                     help="the dir to save logs and models")
 parser.add_argument("--resume_path", type=str,
                     help="load model from previous epoch")
-#parser.add_argument("--ckpt_path", type=str,
-#                    help="load the checkpoint for evaluation")
+
 
 parser.add_argument("--seed", default=0, type=int,
-                    help="")
+                    help="random seed")
 parser.add_argument("--num_workers", default=8, type=int,
                     help="number of data loading workers")
 parser.add_argument("--batch_size", default=8, type=int,
@@ -60,17 +61,17 @@ parser.add_argument("--wd", default=0.05, type=int,
                     help="weight decay")
 
 parser.add_argument("--fp16", action="store_true",
-                    help="")
+                    help="use float16 for mixed precision training")
 parser.add_argument("--bf16", action="store_true",
-                    help="")
+                    help="use bfloat16 for mixed precision training")
 
 
 parser.add_argument("--ckpt_interval", default=20, type=int,
-                    help="")
+                    help="checkpoint interval in epochs")
 parser.add_argument("--eval_interval", default=5, type=int,
-                    help="")
+                    help="evaluate interval in epochs")
 parser.add_argument("--log_interval", default=10, type=int,
-                    help="")
+                    help="log interval in iterations")
 
 
 parser.add_argument('--rank', default=-1,
@@ -164,7 +165,7 @@ if __name__ == "__main__":
         logger.warning("Incompatible parameters:\n" + "\n".join("%s: expected %s but found %s" % (k, v[0], v[1]) for k, v in sorted(incompatible_shape.items())))
 
     # prepare the segmentor
-    model = SEGMENTOR_REGISTRY.get(segmentor_cfg['segmentor_name'])(encoder, segmentor_cfg).to(device)
+    model = SEGMENTOR_REGISTRY.get(segmentor_cfg['segmentor_name'])(args, segmentor_cfg, encoder).to(device)
     model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.local_rank], output_device=args.local_rank)
     logger.info("Built {} for with {} encoder.".format(model.module.model_name, encoder.model_name))
 

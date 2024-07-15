@@ -33,9 +33,9 @@ class Sen1Floods11(torch.utils.data.Dataset):
         self.split_mapping = {'train': 'train', 'val': 'valid', 'test': 'test'}
 
 
-        split_file = os.path.join(self.root_path, f"splits/flood_handlabeled/flood_{self.split_mapping[split]}_data.csv")
-        metadata_file = os.path.join(self.root_path, "Sen1Floods11_Metadata.geojson")
-        data_root = os.path.join(self.root_path, "data/flood_events/HandLabeled/")
+        split_file = os.path.join(self.root_path, f"v1.1/splits/flood_handlabeled/flood_{self.split_mapping[split]}_data.csv")
+        metadata_file = os.path.join(self.root_path, "v1.1/Sen1Floods11_Metadata.geojson")
+        data_root = os.path.join(self.root_path, "v1.1/data/flood_events/HandLabeled/")
 
         self.metadata = geopandas.read_file(metadata_file)
 
@@ -44,7 +44,7 @@ class Sen1Floods11(torch.utils.data.Dataset):
 
         file_list = [f.rstrip().split(",") for f in file_list]
 
-        self.image_list = [os.path.join(data_root, 'S2Hand', f[0].replace('S1Hand', 'S2Hand')) for f in file_list]
+        self.image_list = [os.path.join(data_root,  'S2Hand', f[0].replace('S1Hand', 'S2Hand')) for f in file_list]
         self.target_list = [os.path.join(data_root, 'LabelHand', f[1]) for f in file_list]
 
         self.transform = T.Compose([

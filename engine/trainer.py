@@ -20,16 +20,19 @@ class Trainer():
         self.model = model
         self.preprocessor = preprocessor
         self.train_loader = train_loader
+        self.batch_per_epoch = len(self.train_loader)
         self.optimizer = optimizer
         self.lr_scheduler = lr_scheduler
         self.evaluator = evaluator
         self.logger = logger
-        self.training_stats = {name: RunningAverageMeter(length=100) for name in ['loss', 'data_time', 'batch_time', 'eval_time']}
+        self.training_stats = {name: RunningAverageMeter(length=self.batch_per_epoch) for name in ['loss', 'data_time', 'batch_time', 'eval_time']}
         self.training_metrics ={}
         self.exp_dir = exp_dir
         self.device = device
 
         self.enable_mixed_precision = args.fp16 or args.bf16#train_cfg["mixed_precision"]
+        if args.fp16 and args.bf16:
+            self.logger.warning("Detecting both fp16 and bf16 are enabled, use fp16 by default")
         self.precision = torch.float16 if args.fp16 else torch.bfloat16
         self.scaler = GradScaler(enabled=self.enable_mixed_precision)
 
@@ -40,6 +43,7 @@ class Trainer():
 
 
     def train(self):
+        #end_time = time.time()
         for epoch in range(self.start_epoch, self.epochs):
             # train the network for one epoch
             if epoch % self.args.ckpt_interval == 0 and epoch != self.start_epoch:
@@ -50,6 +54,7 @@ class Trainer():
 
             self.logger.info("============ Starting epoch %i ... ============" % epoch)
             # set sampler
+            self.t = time.time()
             self.train_loader.sampler.set_epoch(epoch)
             self.train_one_epoch(epoch)
 
@@ -62,6 +67,7 @@ class Trainer():
 
         end_time = time.time()
         for batch_idx, data in enumerate(self.train_loader):
+            #print(batch_idx, time.time()-end_time)
             image, target = self.preprocessor(data)
             image = {k: v.to(self.device) for k, v in image.items()}
             target = target.to(self.device)
@@ -83,7 +89,7 @@ class Trainer():
             if (batch_idx + 1) % self.args.log_interval == 0:
                 self.log(batch_idx + 1, epoch)
             self.training_stats['batch_time'].update(time.time() - end_time)
-
+            #print(self.training_stats['batch_time'].val, self.training_stats['batch_time'].avg)
             end_time = time.time()
 
 
@@ -128,9 +134,9 @@ class Trainer():
     def log(self, batch_idx, epoch):
 
         #TO DO: upload to wandb
-        left_batch_this_epoch = len(self.train_loader) - batch_idx
-        left_batch_all = len(self.train_loader) * (self.epochs - epoch - 1) + left_batch_this_epoch
-        left_eval_times = (self.epochs - 0.5) // self.args.eval_interval - self.training_stats['eval_time'].count
+        left_batch_this_epoch = self.batch_per_epoch - batch_idx
+        left_batch_all = self.batch_per_epoch * (self.epochs - epoch - 1) + left_batch_this_epoch
+        left_eval_times = (self.epochs + 0.5) // self.args.eval_interval - self.training_stats['eval_time'].count
         left_time_this_epoch = sec_to_hm(left_batch_this_epoch * self.training_stats['batch_time'].avg)
         left_time_all = sec_to_hm(left_batch_all * self.training_stats['batch_time'].avg
                                   + left_eval_times * self.training_stats['eval_time'].avg)

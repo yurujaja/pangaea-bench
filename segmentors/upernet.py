@@ -23,15 +23,18 @@ class UPerNet(nn.Module):
             Module applied on the last feature. Default: (1, 2, 3, 6).
     """
 
-    def __init__(self, encoder, cfg, pool_scales=(1, 2, 3, 6)):
+    def __init__(self, args, cfg, encoder, pool_scales=(1, 2, 3, 6)):
         super().__init__()
 
         # self.frozen_backbone = frozen_backbone
 
         self.model_name = 'UPerNet'
         self.encoder = encoder
-        for param in self.encoder.parameters():
-            param.requires_grad = False
+        self.finetune = args.finetune
+
+        if not self.finetune:
+            for param in self.encoder.parameters():
+                param.requires_grad = False
         #
         # if frozen_backbone:
         #     for param in self.backbone.parameters():
@@ -39,9 +42,6 @@ class UPerNet(nn.Module):
 
         self.neck = Feature2Pyramid(embed_dim=cfg['in_channels'], rescales=[4, 2, 1, 0.5])
 
-        self.conv_cfg = None
-        self.norm_cfg = dict(type='SyncBN', requires_grad=True)
-        self.act_cfg = None
         self.align_corners = False
 
         self.in_channels = [cfg['in_channels'] for _ in range(4)]
@@ -53,9 +53,6 @@ class UPerNet(nn.Module):
             pool_scales,
             self.in_channels[-1],
             self.channels,
-            conv_cfg=self.conv_cfg,
-            norm_cfg=self.norm_cfg,
-            act_cfg=self.act_cfg,
             align_corners=self.align_corners)
 
         self.bottleneck = nn.Sequential(
@@ -171,8 +168,10 @@ class UPerNet(nn.Module):
         #     with torch.no_grad():
         #         feat = self.backbone(img)
         # else:
-
-        with torch.no_grad():
+        if not self.finetune:
+            with torch.no_grad():
+                feat = self.encoder(img)
+        else:
             feat = self.encoder(img)
         #print(feat)
 
@@ -196,22 +195,15 @@ class PPM(nn.ModuleList):
             Module.
         in_channels (int): Input channels.
         channels (int): Channels after modules, before conv_seg.
-        conv_cfg (dict|None): Config of conv layers.
-        norm_cfg (dict|None): Config of norm layers.
-        act_cfg (dict): Config of activation layers.
         align_corners (bool): align_corners argument of F.interpolate.
     """
 
-    def __init__(self, pool_scales, in_channels, channels, conv_cfg, norm_cfg,
-                 act_cfg, align_corners, **kwargs):
+    def __init__(self, pool_scales, in_channels, channels, align_corners, **kwargs):
         super().__init__()
         self.pool_scales = pool_scales
         self.align_corners = align_corners
         self.in_channels = in_channels
         self.channels = channels
-        self.conv_cfg = conv_cfg
-        self.norm_cfg = norm_cfg
-        self.act_cfg = act_cfg
         for pool_scale in pool_scales:
             self.append(
                 nn.Sequential(
