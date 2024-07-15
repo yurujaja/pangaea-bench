@@ -4,28 +4,28 @@ In general, the architecture of the whole codebase is refactored and a few bugs 
 
 ### engines
 In engines, basic modules in the training pipeline are defined including data_preprocessor, trainer and evaluator.
-data_preprocessor replaced the previous adaptation.py, i.e., selects the bands needed by an encoder and pads unavailable bands with zeros.
-trainer now support mixed precision/distributed training and print training stats and metrics in real time.
-evaluator can be called independently and evaluate a model also in distributed way and compute per class metrics (Only IoU currently).
-see run.py for how to assemble these modules and concatenate them
+1. data_preprocessor replaced the previous adaptation.py, i.e., selects the bands needed by an encoder and pads unavailable bands with zeros.
+2. trainer now support mixed precision/distributed training and print training stats and metrics in real time.
+3. evaluator can be called independently and evaluate a model also in distributed way and compute per class metrics (Only IoU currently).
+4. see run.py for how to assemble these modules and concatenate them
 
 
 ### datasets
-The implementations are simplified and standardized (I try my best).
-Dataset metas are read from configs, including newly added classes (name), ignore_index, and so on.
-Only mados, sen1floods, hlsburnscars are supported by this branch currently. Others are to be completed.
-To add (register) a new dataset implementation, use the decorator @DATASET_REGISTRY.register().
+1. The implementations are simplified and standardized (I try my best).
+2. Dataset metas are read from configs, including newly added classes (name), ignore_index, and so on.
+3. Only mados, sen1floods, hlsburnscars are supported by this branch currently. Others are to be completed.
+4. To add (register) a new dataset implementation, use the decorator @DATASET_REGISTRY.register().
 
 ### foundation_models
-Remove all irrelevant modules and functions used in pre-training. Only keep the essential modules in encoders for extracting features.
-Support multi-stage output that may be needed by segmentors, specified by output layers in encoder config.
-Only Prithvi, ScaleMAE, RemoteCLIP, CROMA are supported by this branch currently. Others are to be completed.
-To add (register) a new encoder implementation, use the decorator @ENCODER_REGISTRY.register().
+1. Remove all irrelevant modules and functions used in pre-training. Only keep the essential modules in encoders for extracting features.
+2. Support multi-stage output that may be needed by segmentors, specified by output layers in encoder config.
+3. Only Prithvi, ScaleMAE, RemoteCLIP, CROMA are supported by this branch currently. Others are to be completed.
+4. To add (register) a new encoder implementation, use the decorator @ENCODER_REGISTRY.register().
 
 ### segmentors
-Now the UperNet implementation is based on mmsegmentation: https://github.com/open-mmlab/mmsegmentation/tree/main
-We can copypaste more segmentors later.
-To add (register) a new encoder implementation, use the decorator @SEGMENTOR_REGISTRY.register().
+1. Now the UperNet implementation is based on mmsegmentation, which is more likely correct: https://github.com/open-mmlab/mmsegmentation/tree/main
+2. We can copypaste more segmentors later.
+3. To add (register) a new encoder implementation, use the decorator @SEGMENTOR_REGISTRY.register().
 
 ## What is still missing
 1. Add the other datasets and foundation models following the existing examples in this codebase. Meanwhile, check the correctness of the original datasets before copypasting. 
