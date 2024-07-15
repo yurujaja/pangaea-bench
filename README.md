@@ -60,6 +60,12 @@ To use mixed precision training, specify either --fp16 for float16 and or --bf16
 
 For fine-tuning instead of linear probing, specify --finetune.
 
-## Some Numbers
+## Some numbers
+
+| Encoder | Dataset      | Epochs | mIoU   |
+|---------|--------------|--------|--------|
+| Prithvi | MADOS        | 80     | 53.455 |
+| Prithvi | HLSBurnScars | 80     | 86.208 |
+| Prithvi | Sen1Floods11 | 80     | 87.217 |
 
 
