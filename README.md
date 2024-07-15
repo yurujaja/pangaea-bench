@@ -53,12 +53,12 @@ torchrun --nnodes=1 --nproc_per_node=1 run.py  \
 --num_workers 4 --eval_interval 1
 ```
 
-To use more gpus or nodes, set and --nnodes and --nproc_per_node correspondingly, see:
+To use more gpus or nodes, set `--nnodes` and `--nproc_per_node` correspondingly, see:
 https://pytorch.org/docs/stable/elastic/run.html
 
-To use mixed precision training, specify either --fp16 for float16 and or --bf16 for bfloat16
+To use mixed precision training, specify either `--fp16` for float16 and or `--bf16` for bfloat16
 
-For fine-tuning instead of linear probing, specify --finetune.
+For fine-tuning instead of linear probing, specify `--finetune`.
 
 ## Some numbers
 
