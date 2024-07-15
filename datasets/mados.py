@@ -27,17 +27,6 @@ from utils.registry import DATASET_REGISTRY
 import matplotlib.pyplot as plt
 
 
-# Pixel-Level class distribution (total sum equals 1.0)
-class_distr = torch.Tensor([0.00336, 0.00241, 0.00336, 0.00142, 0.00775, 0.18452,
-                            0.34775, 0.20638, 0.00062, 0.1169, 0.09188, 0.01309, 0.00917, 0.00176, 0.00963])
-
-bands_mean = torch.Tensor([0.0582676, 0.05223386, 0.04381474, 0.0357083, 0.03412902, 0.03680401,
-                           0.03999107, 0.03566642, 0.03965081, 0.0267993, 0.01978944])
-
-bands_std = torch.Tensor([0.03240627, 0.03432253, 0.0354812, 0.0375769, 0.03785412, 0.04992323,
-                          0.05884482, 0.05545856, 0.06423746, 0.04211187, 0.03019115])
-
-
 ###############################################################
 # MADOS DATASET                                               #
 ###############################################################
@@ -53,10 +42,6 @@ class MADOS(torch.utils.data.Dataset):
         self.class_num = len(self.classes)
         self.split = split
         self.is_train = is_train
-
-        #self.height = 224
-        #self.width = 224
-
 
         self.ROIs_split = np.genfromtxt(os.path.join(self.root_path, 'splits', f'{split}_X.txt'), dtype='str')
 

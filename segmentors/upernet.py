@@ -9,11 +9,6 @@ import torch.nn as nn
 import os
 import math
 
-#from .ltae import LTAE2d
-
-from mmcv.cnn import ConvModule
-from mmcv.cnn import build_norm_layer
-
 from utils.registry import SEGMENTOR_REGISTRY
 
 @SEGMENTOR_REGISTRY.register()
@@ -62,46 +57,49 @@ class UPerNet(nn.Module):
             norm_cfg=self.norm_cfg,
             act_cfg=self.act_cfg,
             align_corners=self.align_corners)
-        self.bottleneck = ConvModule(
-            self.in_channels[-1] + len(pool_scales) * self.channels,
-            self.channels,
-            3,
-            padding=1,
-            conv_cfg=self.conv_cfg,
-            norm_cfg=self.norm_cfg,
-            act_cfg=self.act_cfg)
+
+        self.bottleneck = nn.Sequential(
+            nn.Conv2d(in_channels=self.in_channels[-1] + len(pool_scales) * self.channels,
+                      out_channels=self.channels,
+                      kernel_size=3,
+                      padding=1),
+            nn.SyncBatchNorm(self.channels),
+            nn.ReLU(inplace=True)
+        )
+
         # FPN Module
         self.lateral_convs = nn.ModuleList()
         self.fpn_convs = nn.ModuleList()
         for in_channels in self.in_channels[:-1]:  # skip the top layer
-            l_conv = ConvModule(
-                in_channels,
-                self.channels,
-                1,
-                conv_cfg=self.conv_cfg,
-                norm_cfg=self.norm_cfg,
-                act_cfg=self.act_cfg,
-                inplace=False)
-            fpn_conv = ConvModule(
-                self.channels,
-                self.channels,
-                3,
-                padding=1,
-                conv_cfg=self.conv_cfg,
-                norm_cfg=self.norm_cfg,
-                act_cfg=self.act_cfg,
-                inplace=False)
+            l_conv = nn.Sequential(
+                nn.Conv2d(in_channels=in_channels,
+                          out_channels=self.channels,
+                          kernel_size=1,
+                          padding=0),
+                nn.SyncBatchNorm(self.channels),
+                nn.ReLU(inplace=False)
+            )
+            fpn_conv = nn.Sequential(
+                nn.Conv2d(in_channels=self.channels,
+                          out_channels=self.channels,
+                          kernel_size=3,
+                          padding=1),
+                nn.SyncBatchNorm(self.channels),
+                nn.ReLU(inplace=False)
+            )
+
             self.lateral_convs.append(l_conv)
             self.fpn_convs.append(fpn_conv)
 
-        self.fpn_bottleneck = ConvModule(
-            len(self.in_channels) * self.channels,
-            self.channels,
-            3,
-            padding=1,
-            conv_cfg=self.conv_cfg,
-            norm_cfg=self.norm_cfg,
-            act_cfg=self.act_cfg)
+
+        self.fpn_bottleneck = nn.Sequential(
+                nn.Conv2d(in_channels=len(self.in_channels) * self.channels,
+                          out_channels=self.channels,
+                          kernel_size=3,
+                          padding=1),
+                nn.SyncBatchNorm(self.channels),
+                nn.ReLU(inplace=True)
+        )
 
         self.conv_seg = nn.Conv2d(self.channels, self.num_classes, kernel_size=1)
         self.dropout = nn.Dropout2d(0.1)
@@ -218,14 +216,14 @@ class PPM(nn.ModuleList):
             self.append(
                 nn.Sequential(
                     nn.AdaptiveAvgPool2d(pool_scale),
-                    ConvModule(
-                        self.in_channels,
-                        self.channels,
-                        1,
-                        conv_cfg=self.conv_cfg,
-                        norm_cfg=self.norm_cfg,
-                        act_cfg=self.act_cfg,
-                        **kwargs)))
+                    nn.Conv2d(in_channels=self.in_channels,
+                              out_channels=self.channels,
+                              kernel_size=1,
+                              padding=0),
+                    nn.SyncBatchNorm(self.channels),
+                    nn.ReLU(inplace=True)
+                    ))
+
 
     def forward(self, x):
         """Forward function."""
@@ -265,7 +263,7 @@ class Feature2Pyramid(nn.Module):
                 self.upsample_4x = nn.Sequential(
                     nn.ConvTranspose2d(
                         embed_dim, embed_dim, kernel_size=2, stride=2),
-                    build_norm_layer(norm_cfg, embed_dim)[1],
+                    nn.SyncBatchNorm(embed_dim),
                     nn.GELU(),
                     nn.ConvTranspose2d(
                         embed_dim, embed_dim, kernel_size=2, stride=2),

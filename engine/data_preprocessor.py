@@ -11,8 +11,6 @@ class DataPreprocessor():
     def __call__(self, data):
         pass
 
-        #return image, target
-
 
 
 class SegPreprocessor(DataPreprocessor):
