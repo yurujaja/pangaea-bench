@@ -1,6 +1,8 @@
 dataset_name: MADOS
 root_path: ./data/MADOS
 download_url: https://zenodo.org/records/10664073/files/MADOS.zip?download=1
+auto_download: True
+
 img_size: 240
 multi_temporal: false
 multi_modal: false

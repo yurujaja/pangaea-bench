@@ -1,4 +1,4 @@
 from .upernet import UPerNet
-from .unet import UNet
+#from .unet import UNet
 
-all = ['UPerNet', 'UNet']
+all = ['UPerNet']

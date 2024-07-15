@@ -23,58 +23,38 @@ from torch.utils.data import Dataset
 from .utils import download_bucket_concurrently
 from utils.registry import DATASET_REGISTRY
 
-def filter_valid_files(
-    files, valid_files: Optional[Iterator[str]] = None, ignore_extensions: bool = False, allow_substring: bool = True
-):
-    if valid_files is None:
-        return sorted(files)
-    valid_files = list(valid_files)
-    if ignore_extensions:
-        valid_files = [os.path.splitext(sub)[0] for sub in valid_files]
-    filter_function = partial(
-        _split_filter_function,
-        valid_files=valid_files,
-        ignore_extensions=ignore_extensions,
-        allow_substring=allow_substring,
-    )
-    # TODO fix this
-    filtered = filter(filter_function, files)
 
-    return sorted(filtered)
-
-
-def _split_filter_function(file_name, valid_files: list[str], ignore_extensions=False, allow_substring=True):
-    base_name = os.path.basename(file_name)
-    if ignore_extensions:
-        base_name = os.path.splitext(base_name)[0]
-    if not allow_substring:
-        return base_name in valid_files
-
-    for valid_file in valid_files:
-        if valid_file in base_name:
-            return True
-    return False
 
 @DATASET_REGISTRY.register()
 class Sen1Floods11(Dataset):
     """NonGeo dataset implementation for fire scars."""
 
-    def __init__(self, data_root: str, split="train", bands: Optional[List[int]] = None) -> None:
+    def __init__(self, cfg, split, is_train=True) -> None:
         super().__init__()
-        if split not in ["train", "test", "val"]:
-            msg = "Split must be one of train, test, val."
-            raise Exception(msg)
-        if split == "val":
-            split = "valid"
+        #if split not in ["train", "test", "val"]:
+        #    msg = "Split must be one of train, test, val."
+        #    raise Exception(msg)
+        #if split == "val":
+        #    split = "valid"
+        self.root_path = cfg['root_path']
+        self.data_mean = cfg['data_mean']
+        self.data_std = cfg['data_std']
+        self.classes = cfg['classes']
+        self.class_num = len(self.classes)
+        self.split = split
+        self.is_train = is_train
 
-        self.bands = bands
-        data_root = Path(data_root)
+        self.split_mapping = {'train': 'train', 'val': 'valid', 'test': 'test'}
+
+        #self.bands = bands
+        data_root = Path(self.root_path)
         data_directory = data_root / "data/flood_events/HandLabeled/"
         input_directory = data_directory / "S2Hand"
         label_directory = data_directory / "LabelHand"
 
-        split_file = data_root / f"splits/flood_handlabeled/flood_{split}_data.txt"
+        split_file = data_root / f"splits/flood_handlabeled/flood_{split}_data.csv"
         metadata_file = data_root / "Sen1Floods11_Metadata.geojson"
+
         self.metadata = geopandas.read_file(metadata_file)
 
         self.image_files = sorted(glob.glob(os.path.join(input_directory, "*.tif")))
@@ -82,6 +62,11 @@ class Sen1Floods11(Dataset):
 
         with open(split_file) as f:
             split = f.readlines()
+
+        print(len(split), len(self.image_files))
+        print(split[0], self.image_files[0])
+        print(xx)
+
         valid_files = {rf"{substring.strip()}" for substring in split}
         self.image_files = filter_valid_files(
             self.image_files,
@@ -122,7 +107,7 @@ class Sen1Floods11(Dataset):
 
         output = {
             'image': {
-                'optical':image,
+                'optical': image,
             },
             'target': self._load_file(self.segmentation_mask_files[index]).astype(np.int64),
             'metadata': {
@@ -168,6 +153,41 @@ class Sen1Floods11(Dataset):
         )
 
     @staticmethod
+    def filter_valid_files(
+            files, valid_files: Optional[Iterator[str]] = None, ignore_extensions: bool = False,
+            allow_substring: bool = True
+    ):
+        if valid_files is None:
+            return sorted(files)
+        valid_files = list(valid_files)
+        if ignore_extensions:
+            valid_files = [os.path.splitext(sub)[0] for sub in valid_files]
+        filter_function = partial(
+            _split_filter_function,
+            valid_files=valid_files,
+            ignore_extensions=ignore_extensions,
+            allow_substring=allow_substring,
+        )
+        # TODO fix this
+        filtered = filter(filter_function, files)
+
+        return sorted(filtered)
+
+    @staticmethod
+    def _split_filter_function(file_name, valid_files: list[str], ignore_extensions=False, allow_substring=True):
+        base_name = os.path.basename(file_name)
+        if ignore_extensions:
+            base_name = os.path.splitext(base_name)[0]
+        if not allow_substring:
+            return base_name in valid_files
+
+        for valid_file in valid_files:
+            if valid_file in base_name:
+                return True
+        return False
+
+
+    @staticmethod
     def _plot_sample(image, label, num_classes=3, prediction=None, suptitle=None, class_names=None):
         num_images = 5 if prediction else 4
         fig, ax = plt.subplots(1, num_images, figsize=(8, 6))
@@ -208,18 +228,18 @@ class Sen1Floods11(Dataset):
 
     @staticmethod
     def get_splits(dataset_config):
-        dataset_train = Sen1Floods11(data_root=dataset_config["data_path"], split="train")
-        dataset_val = Sen1Floods11(data_root=dataset_config["data_path"], split="val")
-        dataset_test = Sen1Floods11(data_root=dataset_config["data_path"], split="test")
+        dataset_train = Sen1Floods11(dataset_config, split="train")
+        dataset_val = Sen1Floods11(dataset_config, split="val")
+        dataset_test = Sen1Floods11(dataset_config, split="test")
         return dataset_train, dataset_val, dataset_test
     
     @staticmethod
     def download(dataset_config:dict, silent=False):
-        if os.path.exists(dataset_config["data_path"]):
+        if os.path.exists(dataset_config["root_path"]):
             if not silent:
                 print("Sen1Floods11 Dataset folder exists, skipping downloading dataset.")
             return
-        download_bucket_concurrently(dataset_config["gcs_bucket"], dataset_config["data_path"])
+        download_bucket_concurrently(dataset_config["gcs_bucket"], dataset_config["root_path"])
 
 if __name__ == "__main__":
     import pdb

@@ -32,7 +32,6 @@ class HLSBurnScars(torch.utils.data.Dataset):
         self.image_list = sorted(glob(os.path.join(self.root_path, self.split_mapping[self.split], '*merged.tif')))
         self.target_list = sorted(glob(os.path.join(self.root_path, self.split_mapping[self.split], '*mask.tif')))
 
-        print(self.data_mean['optical'])
         self.transform = T.Compose([
             # T.Resize((self.height, self.height), antialias=False),
             T.Normalize(mean=self.data_mean['optical'], std=self.data_std['optical'])
@@ -65,41 +64,6 @@ class HLSBurnScars(torch.utils.data.Dataset):
         
         return output
 
-
-    # def load_raster(self, path):
-    #     with rasterio.open(path) as src:
-    #         img = src.read()
-    #
-    #         # Load specified bands
-    #         bands_data = [img[self.BAND_INDICES[band] - 1] for band in self.bands]
-    #
-    #         img = np.stack(bands_data)
-    #
-    #         img = np.where(img == NO_DATA, NO_DATA_FLOAT, img)
-    #         #print(img.shape)
-    #
-    #         #if self.crop:
-    #         #    img = img[:, 144:-144, 144:-144]
-    #         #print(img.shape)
-    #
-    #
-    #     return img
-
-    # def load_mask(self, path):
-    #     with rasterio.open(path) as src:
-    #         mask = src.read(1)
-    #         #if self.crop:
-    #         #    mask = mask[144:-144, 144:-144]
-    #     return mask
-
-    # def preprocess_image(self, image):
-    #     means = np.array([self.BAND_STATS[band]['mean'] for band in self.bands]).reshape(-1, 1, 1)
-    #     stds = np.array([self.BAND_STATS[band]['std'] for band in self.bands]).reshape(-1, 1, 1)
-    #
-    #     # Normalize image
-    #     normalized = ((image - means) / stds)
-    #     normalized = torch.from_numpy(normalized).to(torch.float32)
-    #     return normalized
     
     @staticmethod
     def get_splits(dataset_config):

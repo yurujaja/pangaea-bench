@@ -135,7 +135,7 @@ class MADOS(torch.utils.data.Dataset):
 
     @staticmethod
     def download(dataset_config: dict, silent=False):
-        output_path = pathlib.Path(dataset_config["data_path"])
+        output_path = pathlib.Path(dataset_config["root_path"])
         url = dataset_config["download_url"]
 
         existing_dirs = list(output_path.glob("Scene_*"))

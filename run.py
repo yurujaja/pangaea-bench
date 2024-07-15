@@ -13,9 +13,6 @@ import datasets
 import segmentors
 from engine import SegPreprocessor, SegEvaluator, SegTrainer
 from foundation_models.utils import download_model
-#from segmentors import UPerNet, UNet
-
-#from datasets.utils import make_dataset
 
 
 from utils.seed import fix_seed, get_generator, seed_worker
@@ -59,7 +56,7 @@ parser.add_argument("--lr", default=1e-4, type=int,
                     help="base learning rate")
 parser.add_argument("--lr_milestones", default=[0.6, 0.9], type=float, nargs="+",
                     help="milestones in lr schedule")
-parser.add_argument("--wd", default=1e-4, type=int,
+parser.add_argument("--wd", default=0.05, type=int,
                     help="weight decay")
 
 parser.add_argument("--fp16", action="store_true",
@@ -126,7 +123,7 @@ if __name__ == "__main__":
 
     # get datasets
     dataset = DATASET_REGISTRY.get(dataset_cfg['dataset_name'])
-    #dataset.download(dataset_cfg, silent=True)
+    dataset.download(dataset_cfg, silent=False)
     train_dataset, val_dataset, test_dataset = dataset.get_splits(dataset_cfg)
 
     # get train val data loaders
@@ -172,8 +169,11 @@ if __name__ == "__main__":
     logger.info("Built {} for with {} encoder.".format(model.module.model_name, encoder.model_name))
 
     # build optimizer
-    optimizer = torch.optim.Adam(
-        model.parameters(), lr=args.lr, weight_decay=args.wd)
+    optimizer = torch.optim.AdamW(
+            model.parameters(),
+            lr=args.lr,
+            betas=(0.9, 0.999),
+            weight_decay=args.wd)
     logger.info("Built {} optimizer.".format(str(type(optimizer))))
 
     # build scheduler
