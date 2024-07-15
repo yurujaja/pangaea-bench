@@ -31,9 +31,10 @@ In engines, basic modules in the training pipeline are defined including data_pr
 1. Add the other datasets and foundation models following the existing examples in this codebase. Meanwhile, check the correctness of the original datasets before copypasting. 
 2. Data augmentation need to be done. We can wrap the dataset class by a configurable augmentor to perform both data preprocessing and augmentation. In this way we avoid preprocessing data in the main process, which is slow.
 3. The structure of all the config files should be discussed and standardized. The way to load them can be improved as well.
-4. Add more options of optimizer, scheduler and so on. Add more evaluation metrics.  
-5. Implement test only mode.
-6. Possibly we will add an option of using wandb, which help track all the experiments and share numbers.
+4. Other useful features in the old code should be added (e.g. multi-temporal LTAE).
+5. Add more options of optimizer, scheduler and so on. Add more evaluation metrics.  
+6. Implement test only mode.
+7. Possibly we will add an option of using wandb, which help track all the experiments and share numbers.
 Any other suggestions will be highly appreciated
 
 
