@@ -24,9 +24,9 @@ input_bands:
     - B2
     - B3
     - B4
-    - B5
-    - B6
-    - B7
+    - B8A
+    - B11
+    - B12
 
 output_layers:
   - 3

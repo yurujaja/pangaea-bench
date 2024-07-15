@@ -4,8 +4,8 @@ download_url: https://zenodo.org/records/10664073/files/MADOS.zip?download=1
 auto_download: True
 
 img_size: 240
-multi_temporal: false
-multi_modal: false
+multi_temporal: False
+multi_modal: True
 
 # classes
 ignore_index: -1
@@ -54,7 +54,7 @@ bands:
     - B6
     - B7
     - B8
-    - B8a
+    - B8A
     - B11
     - B12
 data_mean:

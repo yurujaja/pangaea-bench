@@ -3,8 +3,8 @@ root_path: ./data/hlsburnscars
 download_url: https://huggingface.co/datasets/ibm-nasa-geospatial/hls_burn_scars/resolve/main/hls_burn_scars.tar.gz?download=true
 auto_download: True
 img_size: 224
-multi_temporal: false
-multi_modal: false
+multi_temporal: False
+multi_modal: True
 
 # classes
 ignore_index: -1
@@ -22,7 +22,7 @@ bands:
     - B2
     - B3
     - B4
-    - B8a
+    - B8A
     - B11
     - B12
 data_mean:
