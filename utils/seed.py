@@ -10,7 +10,7 @@ def seed_worker(worker_id):
 
 def get_generator(seed):
     g = torch.Generator()
-    g.manual_seed(0)
+    g.manual_seed(seed)
     return g
 
 def fix_seed(seed):
