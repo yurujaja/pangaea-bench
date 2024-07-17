@@ -59,13 +59,46 @@ class OpticalPreprocessor():
 
 
     def __call__(self, optical_image):
+<<<<<<< HEAD
         padded_image = torch.cat([torch.zeros_like(optical_image[:, 0: 1]), optical_image], dim=1)
         optical_image = padded_image[:, self.avail_bands_indices + 1]
+=======
+        # padded_image = torch.cat([torch.zeros_like(optical_image[:, 0: 1]), optical_image], dim=1)
+        # optical_image = padded_image[:, self.avail_bands_indices + 1]
 
-        optical_image = F.interpolate(optical_image, (self.input_size, self.input_size), mode='bilinear', align_corners=False)
+        # optical_image = F.interpolate(optical_image, (self.input_size, self.input_size), mode='bilinear', align_corners=False)
+>>>>>>> 50160b7bde65e0c82d26b2a0bc06668338e8d67c
 
-        if self.temporal_input and len(optical_image.shape) == 4:
+        # if self.temporal_input and len(optical_image.shape) == 4:
+        #     optical_image = optical_image.unsqueeze(2)
+
+        # return optical_image
+
+
+
+        dtype = optical_image.dtype
+        device = optical_image.device
+
+        if self.temporal_input and optical_image.dim() == 4:
             optical_image = optical_image.unsqueeze(2)
 
+<<<<<<< HEAD
         return optical_image
+=======
+        if optical_image.dim() == 4:
+            B, _, H, W = optical_image.shape
+            zero_tensor = torch.zeros(B, 1, H, W, dtype=dtype, device=device)
+        elif optical_image.dim() == 5:  # For tensors of shape (B, C, T, H, W)
+            B, _, T, H, W = optical_image.shape
+            zero_tensor = torch.zeros(B, 1, T, H, W, dtype=dtype, device=device)
+        else:
+            raise ValueError("Unsupported tensor shape")
+
+        out_tensors = [optical_image[:, [i], ...] if i is not None else zero_tensor for i in self.avail_bands_indices]   
+        out_tensors = torch.concat(out_tensors, dim=1).to(device)
+
+        out_tensors = F.interpolate(out_tensors, (self.input_size, self.input_size), mode='bilinear', align_corners=False)
+
+        return out_tensors
+>>>>>>> 50160b7bde65e0c82d26b2a0bc06668338e8d67c
 

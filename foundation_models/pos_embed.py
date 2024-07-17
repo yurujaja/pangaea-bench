@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-''' 
-Adapted from: https://github.com/facebookresearch/mae
-Modifications: minimal modifications
-Authors: Yuru Jia, Valerio Marsocci
-'''
-
 import numpy as np
 import torch
 
