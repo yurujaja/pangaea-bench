@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 ''' 
 Adapted from: https://github.com/gkakogeorgiou/mados
 '''
@@ -9,11 +8,11 @@ import pathlib
 import urllib.request
 import urllib.error
 import zipfile
-import tqdm
+
 from glob import glob
 import rasterio
 import numpy as np
-from osgeo import gdal
+
 import warnings
 
 warnings.filterwarnings("ignore", category=rasterio.errors.NotGeoreferencedWarning)

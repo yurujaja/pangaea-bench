@@ -1,13 +1,7 @@
-# -*- coding: utf-8 -*-
-''' 
-Adapted from: https://github.com/ChenDelong1999/RemoteCLIP
-Modifications: modifications of 'pool_type' config for compatibility with the benchmark
-Authors: Yuru Jia
-'''
 from collections import OrderedDict
 import math
-from typing import Callable, List, Optional, Sequence, Tuple, Union
-from functools import partial
+from typing import Callable, Optional
+
 
 import torch
 import torch.nn as nn

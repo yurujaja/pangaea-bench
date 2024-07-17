@@ -1,20 +1,8 @@
-# -*- coding: utf-8 -*-
-'''
-Adapted from: https://huggingface.co/ibm-nasa-geospatial/Prithvi-100M/blob/main/Prithvi.py
-Modifications: modifications for compatibility with the benchmark
-Authors: Yuru Jia, Valerio Marsocci
-'''
-
-from functools import partial
-
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 from timm.models.vision_transformer import Block
 from timm.layers import to_2tuple
-
-import numpy as np
 
 from .pos_embed import get_3d_sincos_pos_embed
 from utils.registry import ENCODER_REGISTRY
