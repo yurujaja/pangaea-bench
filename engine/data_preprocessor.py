@@ -2,6 +2,7 @@ import torch
 import torch.nn.functional as F
 
 import numpy as np
+import pdb
 
 class DataPreprocessor():
     def __init__(self, args, encoder_cfg, dataset_cfg, logger):
@@ -45,9 +46,7 @@ class OpticalPreprocessor():
         self.used_bands_mask = torch.tensor([b in self.input_bands for b in self.dataset_bands], dtype=torch.bool)
         self.avail_bands_mask = torch.tensor([b in self.dataset_bands for b in self.input_bands], dtype=torch.bool)
         # self.used_bands_indices = torch.tensor([self.dataset_bands.index(b) if b in self.input_bands else -1 for b in self.dataset_bands], dtype=torch.long)
-        self.avail_bands_indices = torch.tensor(
-            [self.dataset_bands.index(b) if b in self.dataset_bands else -1 for b in self.input_bands],
-            dtype=torch.long)
+        self.avail_bands_indices = [self.dataset_bands.index(b) if b in self.dataset_bands else None for b in self.input_bands]
         self.need_padded = self.avail_bands_mask.sum() < len(self.input_bands)
 
         self.logger = logger
@@ -60,7 +59,6 @@ class OpticalPreprocessor():
 
 
     def __call__(self, optical_image):
-
         padded_image = torch.cat([torch.zeros_like(optical_image[:, 0: 1]), optical_image], dim=1)
         optical_image = padded_image[:, self.avail_bands_indices + 1]
 
@@ -70,9 +68,4 @@ class OpticalPreprocessor():
             optical_image = optical_image.unsqueeze(2)
 
         return optical_image
-
-
-
-
-
 
