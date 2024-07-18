@@ -7,11 +7,12 @@ from timm.models.vision_transformer import DropPath, Mlp
 from timm.layers import to_2tuple
 
 from .pos_embed import interpolate_pos_embed
+from .base import Base_Encoder
 from utils.registry import ENCODER_REGISTRY
 
 
 @ENCODER_REGISTRY.register()
-class SpectralGPT_Encoder(nn.Module):
+class SpectralGPT_Encoder(Base_Encoder):
     def __init__(self, 
                  cfg,
                  in_chans,
@@ -104,18 +105,6 @@ class SpectralGPT_Encoder(nn.Module):
                 missing[name] = param.shape
             elif pretrained_model[name].shape != param.shape:
                 incompatible_shape[name] = (param.shape, pretrained_model[name].shape)
-                # if name in [
-                #     "patch_embed.0.proj.weight",
-                #     "patch_embed.1.proj.weight",
-                #     "patch_embed.2.proj.weight",
-                #     "patch_embed.2.proj.bias",
-                #     "head.weight",
-                #     "head.bias",
-                #     "pos_embed_spatial",
-                #     "pos_embed_temporal",
-                # ]:
-                #     print(f"Removing key {name} from pretrained checkpoint")
-                #     del pretrained_model[name]
             else:
                 pretrained_encoder[name] = pretrained_model[name]
 
@@ -123,11 +112,6 @@ class SpectralGPT_Encoder(nn.Module):
 
         return missing, incompatible_shape
 
-
-    def freeze(self, image):
-       for param in self.parameters():
-           param.requires_grad = False
-    
     def forward(self, image):
 
         x = image['optical']
