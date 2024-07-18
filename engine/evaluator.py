@@ -6,10 +6,9 @@ from tqdm import tqdm
 import numpy as np
 
 class Evaluator():
-    def __init__(self, args, preprocessor, val_loader, logger, exp_dir, device):
+    def __init__(self, args, val_loader, logger, exp_dir, device):
 
         self.args = args
-        self.preprocessor = preprocessor
         self.val_loader = val_loader
         self.logger = logger
         self.exp_dir = exp_dir
@@ -31,8 +30,8 @@ class Evaluator():
 
 
 class SegEvaluator(Evaluator):
-    def __init__(self, args, preprocessor, val_loader, logger, exp_dir, device):
-        super().__init__(args, preprocessor, val_loader, logger, exp_dir, device)
+    def __init__(self, args, val_loader, logger, exp_dir, device):
+        super().__init__(args, val_loader, logger, exp_dir, device)
 
     @torch.no_grad()
     def evaluate(self, model, model_name='model'):
@@ -44,7 +43,7 @@ class SegEvaluator(Evaluator):
         confusion_matrix = torch.zeros((self.num_classes, self.num_classes), device=self.device)
 
         for batch_idx, data in enumerate(tqdm(self.val_loader, desc=tag)):
-            image, target = self.preprocessor(data)
+            image, target = data # TODO make this consistent with how data is passed around before the preprocessor
             image = {k: v.to(self.device) for k, v in image.items()}
             target = target.to(self.device)
 

@@ -10,7 +10,7 @@ from utils.logger import AverageMeter, RunningAverageMeter, sec_to_hm
 
 
 class Trainer():
-    def __init__(self, args, model, preprocessor, train_loader, optimizer, lr_scheduler, evaluator, logger, exp_dir, device):
+    def __init__(self, args, model, train_loader, optimizer, lr_scheduler, evaluator, logger, exp_dir, device):
         #torch.set_num_threads(1)
 
         self.args = args
@@ -18,7 +18,6 @@ class Trainer():
         #self.train_cfg = train_cfg
         #self.dataset_cfg = dataset_cfg
         self.model = model
-        self.preprocessor = preprocessor
         self.train_loader = train_loader
         self.batch_per_epoch = len(self.train_loader)
         self.optimizer = optimizer
@@ -67,8 +66,7 @@ class Trainer():
 
         end_time = time.time()
         for batch_idx, data in enumerate(self.train_loader):
-            #print(batch_idx, time.time()-end_time)
-            image, target = self.preprocessor(data)
+            image, target = data
             image = {k: v.to(self.device) for k, v in image.items()}
             target = target.to(self.device)
             self.training_stats['data_time'].update(time.time() - end_time)
@@ -174,8 +172,8 @@ class Trainer():
 
 
 class SegTrainer(Trainer):
-    def __init__(self, args, model, preprocessor, train_loader, optimizer, scheduler, evaluator, logger, exp_dir, device):
-        super().__init__(args, model, preprocessor, train_loader, optimizer, scheduler, evaluator, logger, exp_dir, device)
+    def __init__(self, args, model, train_loader, optimizer, scheduler, evaluator, logger, exp_dir, device):
+        super().__init__(args, model, train_loader, optimizer, scheduler, evaluator, logger, exp_dir, device)
 
         self.training_metrics = {name: RunningAverageMeter(length=100) for name in ['Acc', 'mAcc', 'mIoU']}
 

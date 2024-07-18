@@ -4,27 +4,38 @@ import torch.nn.functional as F
 import numpy as np
 import pdb
 
-class DataPreprocessor():
-    def __init__(self, args, encoder_cfg, dataset_cfg, logger):
 
-        pass
+class DataPreprocessor(torch.utils.data.Dataset):
+    def __init__(self, dataset, args, encoder_cfg, dataset_cfg, logger):
+        self.dataset = dataset
+        self.encoder_config = encoder_cfg
+        self.data_config = dataset_cfg
+        self.root_path = dataset_cfg['root_path']
+        self.data_mean = dataset_cfg['data_mean']
+        self.data_std = dataset_cfg['data_std']
+        self.classes = dataset_cfg['classes']
+        self.class_num = len(self.classes)
+        self.split = dataset.split
 
-    def __call__(self, data):
-        pass
+    def __getitem__(self, index):
+        return self.dataset[index]
 
+    def __len__(self):
+        return len(self.dataset)
 
 
 class SegPreprocessor(DataPreprocessor):
 
-    def __init__(self, args, encoder_cfg, dataset_cfg, logger):
-        super().__init__(args, encoder_cfg, dataset_cfg, logger)
+    def __init__(self, dataset, args, encoder_cfg, dataset_cfg, logger):
+        super().__init__(dataset, args, encoder_cfg, dataset_cfg, logger)
 
         self.preprocessor = {}
-        self.preprocessor['optical'] = OpticalPreprocessor(args, encoder_cfg, dataset_cfg, logger)
+        self.preprocessor['optical'] = OpticalShapeAdaptor(args, encoder_cfg, dataset_cfg, logger)
         # TO DO: other modalities
 
 
-    def __call__(self, data):
+    def __getitem__(self, index):
+        data = self.dataset[index]
         image = {}
 
         for k, v in data['image'].items():
@@ -35,7 +46,7 @@ class SegPreprocessor(DataPreprocessor):
         return image, target
 
 
-class OpticalPreprocessor():
+class OpticalShapeAdaptor():
     def __init__(self, args, encoder_cfg, dataset_cfg, logger):
         self.dataset_bands = dataset_cfg["bands"]['optical']
         self.input_bands = encoder_cfg["input_bands"]['optical']
@@ -60,13 +71,13 @@ class OpticalPreprocessor():
 
 
     def __call__(self, optical_image):
-        padded_image = torch.cat([torch.zeros_like(optical_image[:, 0: 1]), optical_image], dim=1)
-        optical_image = padded_image[:, self.avail_bands_indices + 1]
+        padded_image = torch.cat([torch.zeros_like(optical_image[0: 1]), optical_image], dim=0)
+        optical_image = padded_image[self.avail_bands_indices + 1]
+        optical_image = F.interpolate(optical_image.unsqueeze(0), (self.input_size, self.input_size), mode='bilinear', align_corners=False)
+        optical_image = optical_image.squeeze(0)
 
-        optical_image = F.interpolate(optical_image, (self.input_size, self.input_size), mode='bilinear', align_corners=False)
-
-        if self.temporal_input and len(optical_image.shape) == 4:
-            optical_image = optical_image.unsqueeze(2)
+        if self.temporal_input and len(optical_image.shape) == 3:
+            optical_image = optical_image.unsqueeze(1)
 
         return optical_image
 
