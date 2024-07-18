@@ -14,3 +14,4 @@ data/mados/splits/*
 !data/mados/splits/tiny_X.txt
 
 .vscode
+.idea
