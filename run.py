@@ -87,9 +87,7 @@ parser.add_argument('--local_world_size', default=1,
 parser.add_argument('--init_method', default='tcp://localhost:10111',
                     help="url for distributed training")
 
-
-
-if __name__ == "__main__":
+def main():
     args = parser.parse_args()
 
     # fix all random seeds
@@ -234,9 +232,5 @@ if __name__ == "__main__":
     test_evaluator.evaluate(model, 'final model')
 
 
-
-
-
-
-
-
+if __name__ == "__main__":
+    main()
