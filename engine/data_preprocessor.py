@@ -39,14 +39,15 @@ class OpticalPreprocessor():
     def __init__(self, args, encoder_cfg, dataset_cfg, logger):
         self.dataset_bands = dataset_cfg["bands"]['optical']
         self.input_bands = encoder_cfg["input_bands"]['optical']
-
         self.input_size = encoder_cfg["input_size"]
         self.temporal_input = encoder_cfg["temporal_input"]
 
         self.used_bands_mask = torch.tensor([b in self.input_bands for b in self.dataset_bands], dtype=torch.bool)
         self.avail_bands_mask = torch.tensor([b in self.dataset_bands for b in self.input_bands], dtype=torch.bool)
         # self.used_bands_indices = torch.tensor([self.dataset_bands.index(b) if b in self.input_bands else -1 for b in self.dataset_bands], dtype=torch.long)
-        self.avail_bands_indices = torch.tensor([self.dataset_bands.index(b) if b in self.dataset_bands else None for b in self.input_bands])
+        # self.avail_bands_indices = torch.tensor([self.dataset_bands.index(b) if b in self.dataset_bands else None for b in self.input_bands])
+        self.avail_bands_indices = torch.tensor([self.dataset_bands.index(b) if b in self.dataset_bands else -1 for b in self.input_bands], dtype=torch.long)
+                
         self.need_padded = self.avail_bands_mask.sum() < len(self.input_bands)
 
         self.logger = logger

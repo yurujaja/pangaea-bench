@@ -16,7 +16,6 @@ distribution:
   - 0.88889
   - 0.11111
 
-
 bands:
   optical:
     - B2
