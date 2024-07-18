@@ -1,0 +1,40 @@
+encoder_name: DOFA_Encoder
+foundation_model_name: dofa_vit_base_patch16
+encoder_weights: ./pretrained_models/DOFA_ViT_base_e100.pth
+download_url: https://huggingface.co/XShadow/DOFA/resolve/main/DOFA_ViT_base_e100.pth
+temporal_input: False
+
+num_layers: 12
+embed_dim: 768
+input_size: 224
+
+encoder_model_args:
+  img_size: 224
+  embed_dim: 768
+  patch_size: 16
+  depth: 12
+  num_heads: 12
+  mlp_ratio: 4
+  use_norm: False
+ 
+wave_list:
+  optical:
+    B1: 0.44
+    B2: 0.49
+    B3: 0.56
+    B4: 0.665
+    B5: 0.705
+    B6: 0.74
+    B7: 0.783
+    B8: 0.832
+    B8A: 0.864
+    B9: 0.945
+    B10: 1.373
+    B11: 1.61
+    B12: 2.20
+
+output_layers:
+  - 3
+  - 5
+  - 7
+  - 11

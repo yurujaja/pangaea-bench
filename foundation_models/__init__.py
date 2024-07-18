@@ -18,6 +18,7 @@ from .remoteclip_encoder import RemoteCLIP_Encoder
 from .scalemae_encoder import ScaleMAE_Encoder
 from .croma_encoder import CROMA_OPTICAL_Encoder, CROMA_SAR_Encoder, CROMA_JOINT_Encoder
 from .spectralgpt_encoder import SpectralGPT_Encoder
+from .dofa_encoder import DOFA_Encoder
 #
 # spectral_gpt_vit_base = vit_spectral_gpt
 # prithvi_vit_base = MaskedAutoencoderViT

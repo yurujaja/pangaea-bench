@@ -18,6 +18,10 @@ def load_config(args):
     segmentor_config['num_classes'] = dataset_config['num_classes']
     segmentor_config['in_channels'] = encoder_config['embed_dim']
 
+    # the encoder can handle any number of input channels, e.g., DOFA
+    if not encoder_config.get("input_bands"):
+        encoder_config["input_bands"] = dataset_config['bands']
+
     # Add task_config parameters from dataset
     # if dataset_config.get("num_classes"):
     #     task_config["num_classes"] = dataset_config["num_classes"]
