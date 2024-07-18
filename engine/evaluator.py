@@ -4,13 +4,14 @@ import torch.nn.functional as F
 import time
 from tqdm import tqdm
 import numpy as np
+import logging
 
 class Evaluator():
-    def __init__(self, args, val_loader, logger, exp_dir, device):
+    def __init__(self, args, val_loader, exp_dir, device):
 
         self.args = args
         self.val_loader = val_loader
-        self.logger = logger
+        self.logger = logging.getLogger()
         self.exp_dir = exp_dir
         self.device = device
         #self.cls_name
@@ -30,8 +31,8 @@ class Evaluator():
 
 
 class SegEvaluator(Evaluator):
-    def __init__(self, args, val_loader, logger, exp_dir, device):
-        super().__init__(args, val_loader, logger, exp_dir, device)
+    def __init__(self, args, val_loader, exp_dir, device):
+        super().__init__(args, val_loader, exp_dir, device)
 
     @torch.no_grad()
     def evaluate(self, model, model_name='model'):

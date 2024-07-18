@@ -8,9 +8,10 @@ from torch.cuda.amp import GradScaler
 
 from utils.logger import AverageMeter, RunningAverageMeter, sec_to_hm
 
+import logging
 
 class Trainer():
-    def __init__(self, args, model, train_loader, optimizer, lr_scheduler, evaluator, logger, exp_dir, device):
+    def __init__(self, args, model, train_loader, optimizer, lr_scheduler, evaluator, exp_dir, device):
         #torch.set_num_threads(1)
 
         self.args = args
@@ -23,7 +24,7 @@ class Trainer():
         self.optimizer = optimizer
         self.lr_scheduler = lr_scheduler
         self.evaluator = evaluator
-        self.logger = logger
+        self.logger = logging.getLogger()
         self.training_stats = {name: RunningAverageMeter(length=self.batch_per_epoch) for name in ['loss', 'data_time', 'batch_time', 'eval_time']}
         self.training_metrics ={}
         self.exp_dir = exp_dir
@@ -172,8 +173,8 @@ class Trainer():
 
 
 class SegTrainer(Trainer):
-    def __init__(self, args, model, train_loader, optimizer, scheduler, evaluator, logger, exp_dir, device):
-        super().__init__(args, model, train_loader, optimizer, scheduler, evaluator, logger, exp_dir, device)
+    def __init__(self, args, model, train_loader, optimizer, scheduler, evaluator, exp_dir, device):
+        super().__init__(args, model, train_loader, optimizer, scheduler, evaluator, exp_dir, device)
 
         self.training_metrics = {name: RunningAverageMeter(length=100) for name in ['Acc', 'mAcc', 'mIoU']}
 

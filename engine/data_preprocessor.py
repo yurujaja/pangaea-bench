@@ -3,10 +3,11 @@ import torch.nn.functional as F
 
 import numpy as np
 import pdb
+import logging
 
 
 class DataPreprocessor(torch.utils.data.Dataset):
-    def __init__(self, dataset, args, encoder_cfg, dataset_cfg, logger):
+    def __init__(self, dataset, args, encoder_cfg, dataset_cfg):
         self.dataset = dataset
         self.encoder_config = encoder_cfg
         self.data_config = dataset_cfg
@@ -26,11 +27,11 @@ class DataPreprocessor(torch.utils.data.Dataset):
 
 class SegPreprocessor(DataPreprocessor):
 
-    def __init__(self, dataset, args, encoder_cfg, dataset_cfg, logger):
-        super().__init__(dataset, args, encoder_cfg, dataset_cfg, logger)
+    def __init__(self, dataset, args, encoder_cfg, dataset_cfg):
+        super().__init__(dataset, args, encoder_cfg, dataset_cfg)
 
         self.preprocessor = {}
-        self.preprocessor['optical'] = OpticalShapeAdaptor(args, encoder_cfg, dataset_cfg, logger)
+        self.preprocessor['optical'] = OpticalShapeAdaptor(args, encoder_cfg, dataset_cfg)
         # TO DO: other modalities
 
 
@@ -47,7 +48,7 @@ class SegPreprocessor(DataPreprocessor):
 
 
 class OpticalShapeAdaptor():
-    def __init__(self, args, encoder_cfg, dataset_cfg, logger):
+    def __init__(self, args, encoder_cfg, dataset_cfg):
         self.dataset_bands = dataset_cfg["bands"]['optical']
         self.input_bands = encoder_cfg["input_bands"]['optical']
         self.input_size = encoder_cfg["input_size"]
@@ -61,7 +62,7 @@ class OpticalShapeAdaptor():
                 
         self.need_padded = self.avail_bands_mask.sum() < len(self.input_bands)
 
-        self.logger = logger
+        self.logger = logging.getLogger()
 
         self.logger.info("Available bands in dataset: {}".format(' '.join(str(b) for b in self.dataset_bands)))
         self.logger.info("Required bands in encoder: {}".format(' '.join(str(b) for b in self.input_bands)))
