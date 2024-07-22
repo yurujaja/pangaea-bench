@@ -126,6 +126,11 @@ if __name__ == "__main__":
     dataset = DATASET_REGISTRY.get(dataset_cfg['dataset_name'])
     dataset.download(dataset_cfg, silent=False)
     train_dataset, val_dataset, test_dataset = dataset.get_splits(dataset_cfg)
+    
+    # Apply data processing to the datasets
+    train_dataset = SegPreprocessor(train_dataset, args, encoder_cfg, dataset_cfg)
+    val_dataset = SegPreprocessor(val_dataset, args, encoder_cfg, dataset_cfg)
+    test_dataset = SegPreprocessor(test_dataset, args, encoder_cfg, dataset_cfg)
 
     # get train val data loaders
     train_loader = DataLoader(
@@ -184,9 +189,8 @@ if __name__ == "__main__":
     logger.info("Built {} scheduler.".format(str(type(scheduler))))
 
     # training: put all components into engines
-    preprocessor = SegPreprocessor(args, encoder_cfg, dataset_cfg, logger)
-    val_evaluator = SegEvaluator(args, preprocessor, val_loader, logger, exp_dir, device)
-    trainer = SegTrainer(args, model, preprocessor, train_loader, optimizer, scheduler, val_evaluator, logger, exp_dir, device)
+    val_evaluator = SegEvaluator(args, val_loader, exp_dir, device)
+    trainer = SegTrainer(args, model, train_loader, optimizer, scheduler, val_evaluator, exp_dir, device)
     trainer.train()
 
     # testing
@@ -200,7 +204,7 @@ if __name__ == "__main__":
         drop_last=False,
     )
 
-    test_evaluator = SegEvaluator(args, preprocessor, test_loader, logger, exp_dir, device)
+    test_evaluator = SegEvaluator(args, test_loader, exp_dir, device)
     test_evaluator.evaluate(model, 'final model')
 
 
