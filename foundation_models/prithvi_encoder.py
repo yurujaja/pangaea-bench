@@ -13,7 +13,7 @@ class Prithvi_Encoder(nn.Module):
     """ Masked Autoencoder with VisionTransformer backbone
     """
     def __init__(self, cfg, img_size=224, patch_size=16,
-                 num_frames=3, tubelet_size=1,
+                 tubelet_size=1,
                  in_chans=3, embed_dim=1024, depth=24, num_heads=16,
                  mlp_ratio=4., norm_layer=nn.LayerNorm):
         super().__init__()
@@ -22,11 +22,13 @@ class Prithvi_Encoder(nn.Module):
         self.output_layers = cfg['output_layers']
         self.model_name = 'Prithvi'
         self.img_size = img_size
+        self.num_frames = cfg['multi_temporal'] if cfg['multi_temporal'] else 1
+        # print(self.num_frames)
 
         self.embed_dim = embed_dim
         self.patch_size = patch_size
         self.in_chans = in_chans
-        self.patch_embed = PatchEmbed(img_size, patch_size, num_frames, tubelet_size, in_chans, embed_dim)
+        self.patch_embed = PatchEmbed(img_size, patch_size, self.num_frames, tubelet_size, in_chans, embed_dim)
         num_patches = self.patch_embed.num_patches
 
         self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
@@ -90,6 +92,7 @@ class Prithvi_Encoder(nn.Module):
 
     def forward(self, image):
         # embed patches
+        # print("prithvi encoder", image.keys())
         x = image['optical']
         x = self.patch_embed(x)
 
@@ -105,7 +108,8 @@ class Prithvi_Encoder(nn.Module):
             x = blk(x)
             if i in self.output_layers:
                 #out = self.norm(x) if i == 11 else x
-                out = x[:, 1:].permute(0, 2, 1).view(x.shape[0], -1, self.img_size // self.patch_size, self.img_size // self.patch_size).contiguous()
+                # print(x.shape)
+                out = x[:, 1:, :].permute(0, 2, 1).view(x.shape[0], -1, self.num_frames, self.img_size // self.patch_size, self.img_size // self.patch_size).squeeze(2).contiguous()
                 output.append(out)
 
         return output

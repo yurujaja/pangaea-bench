@@ -72,3 +72,6 @@ class Registry():
 ENCODER_REGISTRY = Registry('encoder')
 SEGMENTOR_REGISTRY = Registry('segmentor')
 DATASET_REGISTRY = Registry('dataset')
+LOSS_REGISTRY = Registry('loss')
+OPTIMIZER_REGISTRY = Registry('optimizer')
+SCHEDULER_REGISTRY = Registry('scheduler')

@@ -1,7 +1,7 @@
 import os
 import time
 import argparse
-
+import ptflops
 
 import torch
 from torch.utils.data import DataLoader
@@ -14,12 +14,13 @@ import segmentors
 from engine import SegPreprocessor, SegEvaluator, SegTrainer
 from foundation_models.utils import download_model
 
-
-from utils.seed import fix_seed, get_generator, seed_worker
+import utils.optimizers
+import utils.schedulers 
+import utils.losses
+from utils.utils import fix_seed, get_generator, seed_worker, prepare_input
 from utils.logger import init_logger
 from utils.configs import load_config
-from utils.registry import ENCODER_REGISTRY, SEGMENTOR_REGISTRY, DATASET_REGISTRY
-
+from utils.registry import ENCODER_REGISTRY, SEGMENTOR_REGISTRY, DATASET_REGISTRY, OPTIMIZER_REGISTRY, SCHEDULER_REGISTRY, LOSS_REGISTRY
 
 parser = argparse.ArgumentParser(description="Train a downstreamtask with geospatial foundation models.")
 
@@ -53,12 +54,12 @@ parser.add_argument("--batch_size", default=8, type=int,
 
 parser.add_argument("--epochs", default=80, type=int,
                     help="number of data loading workers")
-parser.add_argument("--lr", default=1e-4, type=int,
-                    help="base learning rate")
-parser.add_argument("--lr_milestones", default=[0.6, 0.9], type=float, nargs="+",
-                    help="milestones in lr schedule")
-parser.add_argument("--wd", default=0.05, type=int,
-                    help="weight decay")
+# parser.add_argument("--lr", default=1e-4, type=int,
+#                     help="base learning rate")
+# parser.add_argument("--lr_milestones", default=[0.6, 0.9], type=float, nargs="+",
+#                     help="milestones in lr schedule")
+# parser.add_argument("--wd", default=0.05, type=int,
+#                     help="weight decay")
 
 parser.add_argument("--fp16", action="store_true",
                     help="use float16 for mixed precision training")
@@ -174,23 +175,29 @@ if __name__ == "__main__":
     model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.local_rank], output_device=args.local_rank)
     logger.info("Built {} for with {} encoder.".format(model.module.model_name, encoder.model_name))
 
+    # flops calculator TO DO: make it not hard coded
+    train_features, _ = next(iter(train_loader))
+    input_res = tuple(train_features["optical"].size())
+    macs, params = ptflops.get_model_complexity_info(model=model, input_res=input_res, input_constructor=prepare_input, as_strings=True, backend='pytorch', verbose=True)
+    logger.info(f"Model MACs: {macs}")
+    logger.info(f"Model Params: {params}")
+
+    # build loss
+    criterion = LOSS_REGISTRY.get(segmentor_cfg['loss']['loss_name'])(segmentor_cfg['loss'])
+    logger.info("Built {} loss.".format(str(type(criterion))))
+
     # build optimizer
-    optimizer = torch.optim.AdamW(
-            model.parameters(),
-            lr=args.lr,
-            betas=(0.9, 0.999),
-            weight_decay=args.wd)
+    optimizer = OPTIMIZER_REGISTRY.get(segmentor_cfg['optimizer']['optimizer_name'])(model, segmentor_cfg['optimizer'])
     logger.info("Built {} optimizer.".format(str(type(optimizer))))
 
     # build scheduler
     total_iters = args.epochs * len(train_loader)
-    scheduler = torch.optim.lr_scheduler.MultiStepLR(
-        optimizer, [total_iters * r for r in args.lr_milestones], gamma=0.1)
+    scheduler = SCHEDULER_REGISTRY.get(segmentor_cfg['scheduler']['scheduler_name'])(optimizer, total_iters, segmentor_cfg['scheduler'])
     logger.info("Built {} scheduler.".format(str(type(scheduler))))
 
     # training: put all components into engines
     val_evaluator = SegEvaluator(args, val_loader, exp_dir, device)
-    trainer = SegTrainer(args, model, train_loader, optimizer, scheduler, val_evaluator, exp_dir, device)
+    trainer = SegTrainer(args, model, train_loader, criterion, optimizer, scheduler, val_evaluator, exp_dir, device)
     trainer.train()
 
     # testing

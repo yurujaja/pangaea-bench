@@ -1,6 +1,5 @@
-segmentor_name: UPerNet
-task_name: semantic-segmentation
-# time_frames: 2
+segmentor_name: UPerNetCD
+task_name: change-detection
 #task_model_args:
   #num_frames: 1
   #mt_strategy: "ltae" #activated only when if num_frames > 1
@@ -21,4 +20,10 @@ optimizer:
 scheduler:
   scheduler_name: MultiStepLR
   lr_milestones: [0.6, 0.9]
+
+
+
+
+
+
 

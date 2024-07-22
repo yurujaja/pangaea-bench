@@ -1,0 +1,59 @@
+dataset_name: xView2
+root_path: /geomatics/gpuserver-0/vmarsocci/xview2_test
+download_url: #https://huggingface.co/datasets/ibm-nasa-geospatial/hls_burn_scars/resolve/main/hls_burn_scars.tar.gz?download=true
+auto_download: False
+img_size: 1024
+multi_temporal: 2
+multi_modal: False
+
+# classes
+ignore_index: -1
+num_classes: 5
+classes:
+  - Not burned
+  - Burn scar
+  - C
+  - D
+  - E
+distribution:
+  - 0.2
+  - 0.2
+  - 0.2
+  - 0.2
+  - 0.2
+
+bands:
+  optical:
+    - B4
+    - B3
+    - B2
+data_mean:
+  optical:
+    - 66.7703
+    - 88.4452
+    - 85.1047
+data_std:
+  optical:
+    - 48.3066
+    - 51.9129
+    - 62.7612
+
+#     dataset: datasets.xView2.xView2
+# data_path: ./data/xView2
+# num_classes: 5
+# img_size: 1024 
+# multi_temporal: true
+# multi_modal: false
+# bands:
+#   optical: 
+
+# data_mean:
+
+# data_std:
+
+# data_loader:
+#   batch: 2
+#   num_workers: 0
+#   pin_memory: False
+#   prefetch_factor: null
+#   persistent_workers: False

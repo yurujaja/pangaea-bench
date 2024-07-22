@@ -1,6 +1,6 @@
 encoder_name: SSL4EO_DINO_Encoder
 foundation_model_name: ssl4eo_dino_vit_small_patch16
-encoder_weights: ./pretrained_models/B13_vits16_dino_0099.pth
+encoder_weights: /geomatics/gpuserver-0/vmarsocci/pretrained_models/B13_vits16_dino_0099.pth
 download_url: https://drive.google.com/uc?id=1CseO5vvMReGlAulm5o4ZgbjUgj8VlAH7&export=download&confirm=yes
 
 temporal_input: False

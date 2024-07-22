@@ -1,8 +1,8 @@
 encoder_name: ScaleMAE_Encoder
 foundation_model_name: scalemae-vitlarge-800
-encoder_weights: ./pretrained_models/scalemae-vitlarge-800.pth
+encoder_weights: /geomatics/gpuserver-0/vmarsocci/pretrained_models/scalemae-vitlarge-800.pth
 download_url: https://github.com/bair-climate-initiative/scale-mae/releases/download/base-800/scalemae-vitlarge-800.pth
-temporal_input: False
+# temporal_input: True
 
 num_layers: 24
 embed_dim: 1024

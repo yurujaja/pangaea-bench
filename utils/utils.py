@@ -21,3 +21,10 @@ def fix_seed(seed):
     random.seed(seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
+
+#to make flops calculator work
+def prepare_input(input_res):
+    image = {}
+    x1 = torch.FloatTensor(*input_res)
+    image["optical"] = x1
+    return dict(img = image)

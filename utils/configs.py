@@ -17,6 +17,9 @@ def load_config(args):
 
     segmentor_config['num_classes'] = dataset_config['num_classes']
     segmentor_config['in_channels'] = encoder_config['embed_dim']
+    segmentor_config['multi_temporal'] = encoder_config['multi_temporal'] = dataset_config['multi_temporal']
+    # if encoder_config['encoder_name'] == "Prithvi_Encoder":
+    # ['num_frames'] = dataset_config['multi_temporal'] if dataset_config['multi_temporal'] else 1
 
     # the encoder can handle any number of input channels, e.g., DOFA
     if not encoder_config.get("input_bands"):

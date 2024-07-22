@@ -46,13 +46,13 @@ class SegPreprocessor(DataPreprocessor):
 
         return image, target
 
-
 class OpticalShapeAdaptor():
     def __init__(self, args, encoder_cfg, dataset_cfg):
         self.dataset_bands = dataset_cfg["bands"]['optical']
         self.input_bands = encoder_cfg["input_bands"]['optical']
         self.input_size = encoder_cfg["input_size"]
-        self.temporal_input = encoder_cfg["temporal_input"]
+        self.multi_temporal = dataset_cfg["multi_temporal"]
+        self.encoder_name = encoder_cfg['encoder_name']
 
         self.used_bands_mask = torch.tensor([b in self.input_bands for b in self.dataset_bands], dtype=torch.bool)
         self.avail_bands_mask = torch.tensor([b in self.dataset_bands for b in self.input_bands], dtype=torch.bool)
@@ -71,14 +71,24 @@ class OpticalShapeAdaptor():
                 ' '.join(str(b) for b in np.array(self.input_bands)[self.avail_bands_mask.logical_not()])))
 
 
-    def __call__(self, optical_image):
+    def preprocess_single_timeframe(self, optical_image):
         padded_image = torch.cat([torch.zeros_like(optical_image[0: 1]), optical_image], dim=0)
         optical_image = padded_image[self.avail_bands_indices + 1]
         optical_image = F.interpolate(optical_image.unsqueeze(0), (self.input_size, self.input_size), mode='bilinear', align_corners=False)
         optical_image = optical_image.squeeze(0)
+        return optical_image
 
-        if self.temporal_input and len(optical_image.shape) == 3:
-            optical_image = optical_image.unsqueeze(1)
+    def __call__(self, optical_image):
+
+        if self.multi_temporal:
+            final_image = []
+            for i in range(optical_image.shape[1]):
+                final_image.append(self.preprocess_single_timeframe(optical_image[:,i,:,:]))
+            optical_image = torch.stack(final_image, dim = 1)
+        else:
+            optical_image = self.preprocess_single_timeframe(optical_image)
+            if (self.encoder_name == "Prithvi_Encoder") and (len(optical_image.shape) == 3):
+                optical_image = optical_image.unsqueeze(1)
 
         return optical_image
 

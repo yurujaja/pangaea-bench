@@ -80,9 +80,3 @@ class SegEvaluator(Evaluator):
         iou = '\n'.join(c.ljust(self.max_name_len, ' ') + '\t{:>7}'.format('%.3f' % num) for c, num in zip(self.classes, metrics['IoU'])) + '\n'
         miou = "-------------------\n" + 'Mean'.ljust(self.max_name_len, ' ') + '\t{:>7}'.format('%.3f' % metrics['mIoU'])
         self.logger.info(header+iou+miou)
-
-
-
-
-
-

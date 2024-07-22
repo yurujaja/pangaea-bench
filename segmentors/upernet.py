@@ -9,6 +9,8 @@ import torch.nn as nn
 import os
 import math
 
+from .ltae import LTAE2d
+
 from utils.registry import SEGMENTOR_REGISTRY
 
 @SEGMENTOR_REGISTRY.register()
@@ -180,12 +182,109 @@ class UPerNet(nn.Module):
         feat = self.dropout(feat)
         output = self.conv_seg(feat)
 
+        #fixed bug just for optical single modality
         if output_shape is None:
-            output_shape = img.shape[-2:]
+            output_shape = img[list(img.keys())[0]].shape[-2:]
         output = F.interpolate(output, size=output_shape, mode='bilinear')
 
         return output
 
+@SEGMENTOR_REGISTRY.register()
+class MTUPerNet(UPerNet):
+    def __init__(self, args, cfg, encoder, pool_scales=(1, 2, 3, 6)):
+        super().__init__(args, cfg, encoder, pool_scales=(1, 2, 3, 6))   
+
+        self.multi_temporal = cfg["multi_temporal"]
+        self.multi_temporal_strategy = cfg["multi_temporal_strategy"]
+        if self.multi_temporal_strategy == "ltae":
+            self.tmap = LTAE2d(positional_encoding=False, in_channels=self.encoder.embed_dim, 
+                                        mlp=[self.encoder.embed_dim, self.encoder.embed_dim], d_model=self.encoder.embed_dim)
+        elif self.multi_temporal_strategy == "linear":
+            self.tmap = nn.Linear(self.multi_temporal, 1)
+
+    def forward(self, img, output_shape=None):
+        """Forward function for change detection."""
+
+        if self.encoder.model_name != "Prithvi":
+            feats = []
+            for i in range(self.multi_temporal):
+                if not self.finetune:
+                    with torch.no_grad():
+                        feats.append(self.encoder({k: v[:,:,i,:,:] for k, v in img.items()}))
+                else:
+                    feats.append(self.encoder({k: v[:,:,i,:,:] for k, v in img.items()}))   
+
+            feats = [list(i) for i in zip(*feats)]                
+            feats = [torch.stack(feat_layers, dim = 2) for feat_layers in feats] 
+        else:
+            if not self.finetune:
+                with torch.no_grad():
+                    feats = self.encoder(img)
+            else:
+                feats = self.encoder(img)
+
+        for i in range(len(feats)):
+            if self.multi_temporal_strategy == "ltae":
+                feats[i] = self.tmap(feats[i])
+            elif self.multi_temporal_strategy == "linear":
+                feats[i] = self.tmap(feats[i].permute(0,1,3,4,2)).squeeze(-1)
+        
+        feat = self.neck(feats)
+        feat = self._forward_feature(feat)
+        feat = self.dropout(feat)
+        output = self.conv_seg(feat)
+
+        if output_shape is None:
+            output_shape = img[list(img.keys())[0]].shape[-2:]
+        output = F.interpolate(output, size=output_shape, mode='bilinear')
+
+        return output
+    
+@SEGMENTOR_REGISTRY.register()
+class UPerNetCD(UPerNet):
+    def __init__(self, args, cfg, encoder, pool_scales=(1, 2, 3, 6)):
+        super().__init__(args, cfg, encoder, pool_scales=(1, 2, 3, 6))   
+
+    def forward(self, img, output_shape=None):
+        """Forward function for change detection."""
+
+        if self.encoder.model_name != "Prithvi":
+            img1 = {k: v[:,:,0,:,:] for k, v in img.items()}
+            img2 = {k: v[:,:,1,:,:] for k, v in img.items()}
+
+            if not self.finetune:
+                with torch.no_grad():
+                    feat1 = self.encoder(img1)
+                    feat2 = self.encoder(img2)
+            else:
+                feat1 = self.encoder(img1)
+                feat2= self.encoder(img2)
+
+        else:
+            if not self.finetune:
+                with torch.no_grad():
+                    feats = self.encoder(img)
+            else:
+                feats = self.encoder(img)
+        
+            feat1 = []
+            feat2 = []
+            for i in range(len(feats)):
+                feat1.append(feats[i][:,:,0, :, :].squeeze(2))
+                feat2.append(feats[i][:,:,1, :, :].squeeze(2))
+ 
+        feat = [f2 - f1 for f2, f1 in zip(feat1, feat2)]
+
+        feat = self.neck(feat)
+        feat = self._forward_feature(feat)
+        feat = self.dropout(feat)
+        output = self.conv_seg(feat)
+
+        if output_shape is None:
+            output_shape = img[list(img.keys())[0]].shape[-2:]
+        output = F.interpolate(output, size=output_shape, mode='bilinear')
+
+        return output
 
 class PPM(nn.ModuleList):
     """Pooling Pyramid Module used in PSPNet.
