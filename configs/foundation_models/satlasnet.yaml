@@ -1,0 +1,28 @@
+encoder_name: SatlasNet_Encoder
+foundation_model_name: satlaspretrain
+encoder_weights: null
+temporal_input: False
+
+input_size: 224
+embed_dim: 1024
+
+encoder_model_args:
+  model_identifier: Sentinel2_SwinB_SI_RGB   # Sentinel2_SwinB_MI_MS
+  fpn: False
+  
+input_bands:
+  optical:
+    - B4
+    - B3
+    - B2
+
+    #MS Bands 
+    # - B2
+    # - B3
+    # - B4
+    # - B5
+    # - B6
+    # - B7
+    # - B8
+    # - B11
+    # - B12
