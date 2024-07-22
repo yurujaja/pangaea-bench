@@ -32,6 +32,7 @@ class SegPreprocessor(DataPreprocessor):
 
         self.preprocessor = {}
         self.preprocessor['optical'] = OpticalShapeAdaptor(args, encoder_cfg, dataset_cfg)
+        self.preprocessor['sar'] = OpticalShapeAdaptor(args, encoder_cfg, dataset_cfg) #TO DO: change it 
         # TO DO: other modalities
 
 
@@ -43,6 +44,28 @@ class SegPreprocessor(DataPreprocessor):
             image[k] = self.preprocessor[k](v)
 
         target = data['target'].long()
+
+        return image, target
+    
+class RegPreprocessor(DataPreprocessor):
+
+    def __init__(self, dataset, args, encoder_cfg, dataset_cfg):
+        super().__init__(dataset, args, encoder_cfg, dataset_cfg)
+
+        self.preprocessor = {}
+        self.preprocessor['optical'] = OpticalShapeAdaptor(args, encoder_cfg, dataset_cfg)
+        self.preprocessor['sar'] = OpticalShapeAdaptor(args, encoder_cfg, dataset_cfg) #TO DO: change it 
+        # TO DO: other modalities
+
+
+    def __getitem__(self, index):
+        data = self.dataset[index]
+        image = {}
+
+        for k, v in data['image'].items():
+            image[k] = self.preprocessor[k](v)
+
+        target = data['target'].float()
 
         return image, target
 

@@ -11,7 +11,7 @@ from torch.utils.data.distributed import DistributedSampler
 import foundation_models
 import datasets
 import segmentors
-from engine import SegPreprocessor, SegEvaluator, SegTrainer
+from engine import SegPreprocessor, SegEvaluator, SegTrainer, RegEvaluator, RegTrainer, RegPreprocessor
 from foundation_models.utils import download_model
 
 import utils.optimizers
@@ -129,9 +129,14 @@ if __name__ == "__main__":
     train_dataset, val_dataset, test_dataset = dataset.get_splits(dataset_cfg)
     
     # Apply data processing to the datasets
-    train_dataset = SegPreprocessor(train_dataset, args, encoder_cfg, dataset_cfg)
-    val_dataset = SegPreprocessor(val_dataset, args, encoder_cfg, dataset_cfg)
-    test_dataset = SegPreprocessor(test_dataset, args, encoder_cfg, dataset_cfg)
+    if task_name == "regression":
+        train_dataset = RegPreprocessor(train_dataset, args, encoder_cfg, dataset_cfg)
+        val_dataset = RegPreprocessor(val_dataset, args, encoder_cfg, dataset_cfg)
+        test_dataset = RegPreprocessor(test_dataset, args, encoder_cfg, dataset_cfg)
+    else:
+        train_dataset = SegPreprocessor(train_dataset, args, encoder_cfg, dataset_cfg)
+        val_dataset = SegPreprocessor(val_dataset, args, encoder_cfg, dataset_cfg)
+        test_dataset = SegPreprocessor(test_dataset, args, encoder_cfg, dataset_cfg)
 
     # get train val data loaders
     train_loader = DataLoader(
@@ -196,8 +201,12 @@ if __name__ == "__main__":
     logger.info("Built {} scheduler.".format(str(type(scheduler))))
 
     # training: put all components into engines
-    val_evaluator = SegEvaluator(args, val_loader, exp_dir, device)
-    trainer = SegTrainer(args, model, train_loader, criterion, optimizer, scheduler, val_evaluator, exp_dir, device)
+    if task_name == "regression":
+        val_evaluator = RegEvaluator(args, val_loader, exp_dir, device)
+        trainer = RegTrainer(args, model, train_loader, criterion, optimizer, scheduler, val_evaluator, exp_dir, device)
+    else:
+        val_evaluator = SegEvaluator(args, val_loader, exp_dir, device)
+        trainer = SegTrainer(args, model, train_loader, criterion, optimizer, scheduler, val_evaluator, exp_dir, device)
     trainer.train()
 
     # testing
@@ -211,7 +220,10 @@ if __name__ == "__main__":
         drop_last=False,
     )
 
-    test_evaluator = SegEvaluator(args, test_loader, exp_dir, device)
+    if task_name == "regression":
+        val_evaluator = RegEvaluator(args, val_loader, exp_dir, device)
+    else:
+        test_evaluator = RegEvaluator(args, test_loader, exp_dir, device)
     test_evaluator.evaluate(model, 'final model')
 
 

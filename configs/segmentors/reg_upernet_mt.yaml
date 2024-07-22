@@ -1,0 +1,25 @@
+segmentor_name: MTUPerNet
+task_name: regression
+multi_temporal_strategy: linear
+# time_frames: 2
+#task_model_args:
+  #num_frames: 1
+  #mt_strategy: "ltae" #activated only when if num_frames > 1
+  #num_classes - task parameter passed from the dataset config
+  #wave_list - task parameter passed from the dataset config
+
+channels: 512
+
+loss: 
+  loss_name: MSELoss
+  ignore_index: -1
+
+optimizer:
+  optimizer_name: AdamW
+  lr: 0.0001
+  weight_decay: 0.05
+
+scheduler:
+  scheduler_name: MultiStepLR
+  lr_milestones: [0.6, 0.9]
+
