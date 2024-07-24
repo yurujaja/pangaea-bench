@@ -332,6 +332,8 @@ class AggregationBackbone(torch.nn.Module):
         self.aggregation_op = 'max'
 
     def forward(self, x):
+        B, C, T, H, W = x.shape
+        x = x.reshape(B, C*T, H, W)
         # First get features of each image.
         all_features = []
         for i in range(0, x.shape[1], self.image_channels):
@@ -419,15 +421,6 @@ class SatlasNet_Encoder(Base_Encoder):
         if self.multi_image:
             backbone = AggregationBackbone(num_channels, backbone)
         
-        prefix, prefix_allowed_count = None, None
-        if backbone_arch in [Backbone.RESNET50, Backbone.RESNET152]:
-            prefix_allowed_count = 0
-        elif multi_image:
-            backbone = AggregationBackbone(num_channels, backbone)
-            prefix_allowed_count = 2
-        else:
-            prefix_allowed_count = 1
-
         return backbone
 
 

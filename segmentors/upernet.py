@@ -196,16 +196,20 @@ class MTUPerNet(UPerNet):
 
         self.multi_temporal = cfg["multi_temporal"]
         self.multi_temporal_strategy = cfg["multi_temporal_strategy"]
+        if self.encoder.model_name in ["satlas_pretrain"]:
+            self.multi_temporal_strategy = None
         if self.multi_temporal_strategy == "ltae":
             self.tmap = LTAE2d(positional_encoding=False, in_channels=self.encoder.embed_dim, 
                                         mlp=[self.encoder.embed_dim, self.encoder.embed_dim], d_model=self.encoder.embed_dim)
         elif self.multi_temporal_strategy == "linear":
             self.tmap = nn.Linear(self.multi_temporal, 1)
+        else:
+            self.tmap = None
 
     def forward(self, img, output_shape=None):
         """Forward function for change detection."""
 
-        if self.encoder.model_name != "Prithvi":
+        if self.encoder.model_name not in ["Prithvi", "satlas_pretrain"]:
             feats = []
             for i in range(self.multi_temporal):
                 if not self.finetune:
@@ -223,11 +227,12 @@ class MTUPerNet(UPerNet):
             else:
                 feats = self.encoder(img)
 
-        for i in range(len(feats)):
-            if self.multi_temporal_strategy == "ltae":
-                feats[i] = self.tmap(feats[i])
-            elif self.multi_temporal_strategy == "linear":
-                feats[i] = self.tmap(feats[i].permute(0,1,3,4,2)).squeeze(-1)
+        if self.encoder.model_name not in ["satlas_pretrain"]:
+            for i in range(len(feats)):
+                if self.multi_temporal_strategy == "ltae":
+                    feats[i] = self.tmap(feats[i])
+                elif self.multi_temporal_strategy == "linear":
+                    feats[i] = self.tmap(feats[i].permute(0,1,3,4,2)).squeeze(-1)
         
         feat = self.neck(feats)
         feat = self._forward_feature(feat)
