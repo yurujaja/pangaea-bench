@@ -1,5 +1,5 @@
 dataset_name: Sen1Floods11
-root_path: /geomatics/gpuserver-0/yjia/datasets/sen1floods11_v1.1
+root_path: ./datasets/sen1floods11_v1.1
 gcs_bucket: sen1floods11
 auto_download: True
 

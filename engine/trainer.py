@@ -3,10 +3,9 @@ import time
 
 import torch
 from torch.nn import functional as F
-from torch.cuda.amp import autocast
 from torch.cuda.amp import GradScaler
 
-from utils.logger import AverageMeter, RunningAverageMeter, sec_to_hm
+from utils.logger import RunningAverageMeter, sec_to_hm
 
 import logging
 
@@ -27,7 +26,8 @@ class Trainer():
         self.evaluator = evaluator
         self.logger = logging.getLogger()
         self.training_stats = {name: RunningAverageMeter(length=self.batch_per_epoch) for name in ['loss', 'data_time', 'batch_time', 'eval_time']}
-        self.training_metrics ={}
+        self.training_metrics = {}
+        self.best_ckpt = None
         self.exp_dir = exp_dir
         self.device = device
 
@@ -46,9 +46,7 @@ class Trainer():
     def train(self):
         #end_time = time.time()
         for epoch in range(self.start_epoch, self.epochs):
-            # train the network for one epoch
-            if epoch % self.args.ckpt_interval == 0 and epoch != self.start_epoch:
-                self.save_model(epoch)
+            # train the network for one epoch     
             if epoch % self.args.eval_interval == 0:
                 _, used_time = self.evaluator(self.model, f'epoch {epoch}')
                 self.training_stats['eval_time'].update(used_time)
@@ -58,8 +56,16 @@ class Trainer():
             self.t = time.time()
             self.train_loader.sampler.set_epoch(epoch)
             self.train_one_epoch(epoch)
+            if epoch % self.args.ckpt_interval == 0 and epoch != self.start_epoch:
+                self.save_model(epoch)
 
+        # save last model
         self.save_model(self.epochs, is_final=True)
+        
+        # save best model
+        if self.best_ckpt:
+            self.save_model(self.best_ckpt["epoch"], is_best=True, checkpoint=self.best_ckpt)
+        
         self.evaluator(self.model, 'final model')
 
 
@@ -93,9 +99,7 @@ class Trainer():
             end_time = time.time()
 
 
-    def save_model(self, epoch, is_final=False):
-        if self.rank != 0:
-            return
+    def get_checkpoint(self, epoch):
         checkpoint = {
             "model": self.model.module.state_dict(),
             "optimizer": self.optimizer.state_dict(),
@@ -104,11 +108,20 @@ class Trainer():
             "epoch": epoch,
             "args": self.args,
         }
-        checkpoint_path = os.path.join(self.exp_dir, "checkpoint_{}.pth".format('final' if is_final else f'epoch{epoch}'))
+        return checkpoint
+    
+
+    def save_model(self, epoch, is_final=False, is_best=False, checkpoint=None):
+        if self.rank != 0:
+            return
+        checkpoint = self.get_checkpoint(epoch) if checkpoint is None else checkpoint
+        suffix = '_best' if is_best else '_final' if is_final else ''
+        checkpoint_path = os.path.join(self.exp_dir, f"checkpoint_{epoch}{suffix}.pth")
         torch.save(checkpoint, checkpoint_path)
         self.logger.info(f"Epoch {epoch} | Training checkpoint saved at {checkpoint_path}")
 
-
+    
+    
     def load_model(self, resume_path):
 
         model_dict = torch.load(resume_path, map_location=self.device)
@@ -178,7 +191,14 @@ class SegTrainer(Trainer):
         super().__init__(args, model, train_loader, criterion, optimizer, scheduler, evaluator, exp_dir, device)
 
         self.training_metrics = {name: RunningAverageMeter(length=100) for name in ['Acc', 'mAcc', 'mIoU']}
+        self.best_metric = float('-inf')
 
+    def train_one_epoch(self, epoch):
+        super().train_one_epoch(epoch)
+
+        if self.training_metrics['mIoU'].avg > self.best_metric:
+            self.best_metric = self.training_metrics['mIoU'].avg
+            self.best_ckpt = self.get_checkpoint(epoch)
 
     def compute_loss(self, logits, target):
         loss = self.criterion(logits, target)
@@ -218,8 +238,16 @@ class RegTrainer(Trainer):
         super().__init__(args, model, train_loader, criterion, optimizer, scheduler, evaluator, exp_dir, device)
 
         self.training_metrics = {name: RunningAverageMeter(length=100) for name in ['MSE']}
+        self.best_metric = float('inf')
 
+    def train_one_epoch(self, epoch):
+        super().train_one_epoch(epoch)
 
+        if self.training_metrics['MSE'].avg < self.best_metric:
+            self.best_metric = self.training_metrics['mIoU'].avg
+            self.best_ckpt = self.get_checkpoint(epoch)
+
+            
     def compute_loss(self, logits, target):
         loss = self.criterion(logits.squeeze(dim=1), target)
 
