@@ -5,7 +5,7 @@ auto_download: True
 
 img_size: 512
 multi_temporal: False
-multi_modal: True
+multi_modal: False
 
 ignore_index: -2
 num_classes: 2

@@ -251,12 +251,3 @@ class ScaledDotProductAttention(nn.Module):
             return output, attn, comp
         else:
             return output, attn
-        
-
-if __name__ == '__main__':
-    x = torch.rand(2, 5, 512, 64, 64)
-    pos = torch.rand(2, 5)
-    # model = LTAE2d(positional_encoding=True, mlp=[128, 128], d_model=128)
-    model = LTAE2d(positional_encoding=True, in_channels=512, mlp=[512, 512], d_model=512)
-    out = model(x, pos)
-    print(out.shape)

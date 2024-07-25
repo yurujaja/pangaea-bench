@@ -1,5 +1,5 @@
 dataset_name: xView2
-root_path: /geomatics/gpuserver-0/vmarsocci/xview2_test
+root_path: ./data/xview2_test
 download_url: #https://huggingface.co/datasets/ibm-nasa-geospatial/hls_burn_scars/resolve/main/hls_burn_scars.tar.gz?download=true
 auto_download: False
 img_size: 1024

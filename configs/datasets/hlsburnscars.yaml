@@ -4,7 +4,7 @@ download_url: https://huggingface.co/datasets/ibm-nasa-geospatial/hls_burn_scars
 auto_download: True
 img_size: 224
 multi_temporal: False
-multi_modal: True
+multi_modal: False
 
 # classes
 ignore_index: -1

@@ -1,4 +1,4 @@
-name: geofm-bench3
+name: gfm-bench8
 channels:
   - pytorch
   - conda-forge
@@ -22,5 +22,5 @@ dependencies:
   - pytorch-cuda=11.8
   - gdown
   - ptflops
-  - opencv
+  #  - opencv
   - google-cloud-storage

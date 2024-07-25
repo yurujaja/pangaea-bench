@@ -1,5 +1,6 @@
-segmentor_name: UPerNet
-task_name: semantic-segmentation
+segmentor_name: MTUPerNet
+task_name: regression
+multi_temporal_strategy: linear
 # time_frames: 2
 #task_model_args:
   #num_frames: 1
@@ -10,7 +11,7 @@ task_name: semantic-segmentation
 channels: 512
 
 loss: 
-  loss_name: CrossEntropy # CrossEntropy
+  loss_name: MSELoss
   ignore_index: -1
 
 optimizer:

@@ -2,17 +2,15 @@
 # - https://github.com/PaulBorneP/Xview2_Strong_Baseline/blob/master/datasets/base_dataset.py
 # - https://github.com/PaulBorneP/Xview2_Strong_Baseline/blob/master/datasets/supervised_dataset.py
 
-from typing import Sequence, Dict, Any, Union, Literal, Tuple, Optional
-
-import cv2
+from typing import Sequence, Dict, Any, Union, Literal, Tuple
+import time
 import numpy as np
 import torch
 from torch.utils.data import Dataset
 import os
 import pathlib
 from sklearn.model_selection import train_test_split
-
-import pathlib
+import cv2
 import urllib
 import tarfile
 from .utils import DownloadProgressBar

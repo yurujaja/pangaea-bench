@@ -2,7 +2,7 @@ import time
 from tqdm import tqdm
 import logging
 import torch
-
+import torch.nn.functional as F
 
 class Evaluator():
     def __init__(self, args, val_loader, exp_dir, device):
@@ -125,3 +125,57 @@ class SegEvaluator(Evaluator):
         self.logger.info(precision_str)
         self.logger.info(recall_str)
         self.logger.info(macc_str)
+
+
+class RegEvaluator(Evaluator):
+    def __init__(self, args, val_loader, exp_dir, device):
+        super().__init__(args, val_loader, exp_dir, device)
+
+    @torch.no_grad()
+    def evaluate(self, model, model_name='model'):
+        t = time.time()
+
+        model.eval()
+
+        tag = f'Evaluating {model_name} on {self.split} set'
+        # confusion_matrix = torch.zeros((self.num_classes, self.num_classes), device=self.device)
+
+        for batch_idx, data in enumerate(tqdm(self.val_loader, desc=tag)):
+            image, target = data # TODO make this consistent with how data is passed around before the preprocessor
+            image = {k: v.to(self.device) for k, v in image.items()}
+            target = target.to(self.device)
+
+            logits = model(image, output_shape=target.shape[-2:]).squeeze(dim=1)
+            mse = F.mse_loss(logits, target)
+            # pred = torch.argmax(logits, dim=1)
+            # valid_mask = target != -1
+            # pred, target = pred[valid_mask], target[valid_mask]
+            # count = torch.bincount((pred * self.num_classes + target), minlength=self.num_classes ** 2)
+            # confusion_matrix += count.view(self.num_classes, self.num_classes)
+
+        # torch.distributed.all_reduce(confusion_matrix, op=torch.distributed.ReduceOp.SUM)
+        metrics = {"MSE" : mse.item, "RMSE" : torch.sqrt(mse).item}
+        self.log_metrics(metrics)
+
+        used_time = time.time() - t
+
+        return metrics, used_time
+
+    @torch.no_grad()
+    def __call__(self, model, model_name='model'):
+        return self.evaluate(model, model_name)
+
+
+    # def compute_metrics(self, confusion_matrix):
+    #     iou = torch.diag(confusion_matrix) / (confusion_matrix.sum(dim=1) + confusion_matrix.sum(dim=0) - torch.diag(confusion_matrix)) * 100
+    #     iou = iou.cpu()
+    #     metrics = {'IoU': [iou[i].item() for i in range(self.num_classes)], 'mIoU': iou.mean().item()}
+
+    #     return metrics
+
+    def log_metrics(self, metrics):
+        header = "------- MSE and RMSE --------\n"
+        # iou = '\n'.join(c.ljust(self.max_name_len, ' ') + '\t{:>7}'.format('%.3f' % num) for c, num in zip(self.classes, metrics['MSE'])) + '\n'
+        mse = "-------------------\n" + 'MSE \t{:>7}'.format('%.3f' % metrics['MSE'])+'\n'
+        rmse = "-------------------\n" + 'RMSE \t{:>7}'.format('%.3f' % metrics['RMSE'])
+        self.logger.info(header+mse+rmse)

@@ -6,7 +6,6 @@ import torch
 import torch.nn
 import collections
 
-import torch.nn.functional as F
 import torchvision
 from enum import Enum, auto
 import requests
