@@ -174,8 +174,8 @@ class CROMA_JOINT_Encoder(nn.Module):
         combined_state_dict = {}
         for prefix, module in pretrained_model.items():
             for k, v in module.items():
-                combined_state_dict[prefix + '.' + k] = v
-
+                combined_state_dict[prefix.replace("joint_encoder", "cross_encoder") + '.' + k] = v
+                
         pretrained_model = combined_state_dict
 
         k = pretrained_model.keys()

@@ -1,5 +1,5 @@
 dataset_name: Sen1Floods11
-root_path: ./data/Sen1Floods11
+root_path: /geomatics/gpuserver-0/yjia/datasets/sen1floods11_v1.1
 gcs_bucket: sen1floods11
 auto_download: True
 
@@ -31,6 +31,9 @@ bands:
     - B10
     - B11
     - B12
+  sar:
+    - VV
+    - VH
 data_mean:
   optical:
     - 1626.91600224
