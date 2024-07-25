@@ -22,9 +22,14 @@ def fix_seed(seed):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
-#to make flops calculator work
+# to make flops calculator work
 def prepare_input(input_res):
     image = {}
     x1 = torch.FloatTensor(*input_res)
+    # input_res[-2] = 2
+    input_res = list(input_res)
+    input_res[-3] = 2
+    x2 = torch.FloatTensor(*tuple(input_res))
     image["optical"] = x1
+    image["sar"] = x2
     return dict(img = image)

@@ -13,8 +13,8 @@ classes:
   - Not Water
   - Water
 distribution:
-  - ?
-  - ?
+  - 0.3
+  - 0.7
 
 bands:
   optical:

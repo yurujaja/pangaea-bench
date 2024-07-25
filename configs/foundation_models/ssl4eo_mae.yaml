@@ -1,18 +1,18 @@
-encoder_name: SSL4EO_MAE_Encoder
+encoder_name: SSL4EO_MAE_SAR_Encoder
 foundation_model_name: ssl4eo_mae_vit_small_patch16
-encoder_weights: ./pretrained_models/B13_vits16_mae_0099.pth
+encoder_weights: /geomatics/gpuserver-0/vmarsocci/pretrained_models/B2_vitb16_mae_ep99.pth
 download_url: https://drive.google.com/uc?id=1QTBKl1asxgQCNd6bO2azXZNPfoQ3Sazv&export=download&confirm=yes
 
 temporal_input: False
 
 num_layers: 12
-embed_dim: 384
+embed_dim: 768
 input_size: 224
 
 encoder_model_args:
   img_size: 224
-  in_chans: 13
-  embed_dim: 384
+  in_chans: 2
+  embed_dim: 768
   patch_size: 16
   num_heads: 6
   depth: 12
@@ -33,6 +33,9 @@ input_bands:
     - B10
     - B11
     - B12
+  sar:
+    - VV
+    - VH
 
 output_layers:
   - 3

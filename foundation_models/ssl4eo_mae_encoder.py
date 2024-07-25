@@ -13,7 +13,7 @@ from utils.registry import ENCODER_REGISTRY
 
 
 @ENCODER_REGISTRY.register()
-class SSL4EO_MAE_Encoder(Base_Encoder):
+class SSL4EO_MAE_OPTICAL_Encoder(Base_Encoder):
     """ Masked Autoencoder with VisionTransformer backbone
     """
     def __init__(self, 
@@ -114,4 +114,53 @@ class SSL4EO_MAE_Encoder(Base_Encoder):
         msg = self.load_state_dict(pretrained_encoder, strict=False)
 
         return missing, incompatible_shape
+
+@ENCODER_REGISTRY.register()
+class SSL4EO_MAE_SAR_Encoder(SSL4EO_MAE_OPTICAL_Encoder):
+    """ Masked Autoencoder with VisionTransformer backbone
+    """
+    def __init__(self, cfg, img_size=224, patch_size=16, in_chans=2,embed_dim=1024, depth=24, num_heads=16, mlp_ratio=4., norm_layer=partial(nn.LayerNorm, eps=1e-6)):
+        super().__init__(cfg, img_size, patch_size, in_chans,embed_dim, depth, num_heads, mlp_ratio, norm_layer)
+
+        
+    def forward(self, image):
+        # embed patches
+        x = image['sar']
+        x = self.patch_embed(x)
+
+        # append cls token
+        cls_tokens = self.cls_token.expand(x.shape[0], -1, -1)
+        x = torch.cat((cls_tokens, x), dim=1)
+        x = x + self.pos_embed
+
+        # apply Transformer blocks
+        output = []
+        for i, blk in enumerate(self.blocks):
+            x = blk(x)
+            if i in self.output_layers:
+                #out = self.norm(x) if i == 11 else x
+                out = x[:, 1:].permute(0, 2, 1).view(x.shape[0], -1, self.img_size // self.patch_size, self.img_size // self.patch_size).contiguous()
+                output.append(out)
+
+        return output
+    
+    # def load_encoder_weights(self, pretrained_path):
+    #     checkpoint= torch.load(pretrained_path, map_location="cpu")
+    #     pretrained_model = checkpoint["model"]
+        
+    #     k = pretrained_model.keys()
+    #     pretrained_encoder = {}
+    #     incompatible_shape = {}
+    #     missing = {}
+    #     for name, param in self.named_parameters():
+    #         if name not in k:
+    #             missing[name] = param.shape
+    #         elif pretrained_model[name].shape != param.shape:
+    #             incompatible_shape[name] = (param.shape, pretrained_model[name].shape)
+    #         else:
+    #             pretrained_encoder[name] = pretrained_model[name]
+
+    #     msg = self.load_state_dict(pretrained_encoder, strict=False)
+
+    #     return missing, incompatible_shape
 

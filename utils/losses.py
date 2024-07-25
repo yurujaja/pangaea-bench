@@ -5,8 +5,14 @@ from torch.nn import functional as F
 
 @LOSS_REGISTRY.register()
 def CrossEntropy(cfg):
-    return torch.nn.CrossEntropyLoss(ignore_index = cfg["ignore_index"])
+    # if cfg["use_weights"]:
+    return torch.nn.CrossEntropyLoss(ignore_index = cfg["ignore_index"]) #, weights = )
 
+@LOSS_REGISTRY.register()
+def WeightedCrossEntropy(cfg):
+    weights = [1/w for w in cfg["distribution"]]
+    loss_weights = torch.Tensor(weights).to("cuda")
+    return torch.nn.CrossEntropyLoss(ignore_index = cfg["ignore_index"], weight = loss_weights)
 
 @LOSS_REGISTRY.register()
 def MSELoss(cfg):

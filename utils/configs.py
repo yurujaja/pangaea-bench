@@ -25,6 +25,8 @@ def load_config(args):
     if not encoder_config.get("input_bands"):
         encoder_config["input_bands"] = dataset_config['bands']
 
+    # print("\n\n\ DATASET DISTRIBUTION", dataset_config['distribution'])
+    segmentor_config["loss"]['distribution'] = dataset_config['distribution']
     # Add task_config parameters from dataset
     # if dataset_config.get("num_classes"):
     #     task_config["num_classes"] = dataset_config["num_classes"]
