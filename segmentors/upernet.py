@@ -5,10 +5,14 @@ import torch.nn.functional as F
 import torch
 import torch.nn as nn
 
-
 import os
+import sys
 import math
 
+from adapters.adapters import add_adapter
+from utils.embeddings.patch_embed import RandomPatchEmbed, hyper_embedding
+from adapters.mae import MaeEncoder
+from adapters.adapter_layers import AdapterLayers
 from utils.registry import SEGMENTOR_REGISTRY
 
 @SEGMENTOR_REGISTRY.register()
@@ -32,13 +36,63 @@ class UPerNet(nn.Module):
         self.encoder = encoder
         self.finetune = args.finetune
 
-        if not self.finetune:
+        
+        for param in self.encoder.parameters():
+            param.requires_grad = False
+        # else:
+        if self.finetune == "norm_tuning":
+            for n, p in self.encoder.named_parameters():
+                if "norm" in n:
+                    p.requires_grad = True
+        elif self.finetune == "bias_tuning":
+            for n, p in self.encoder.named_parameters():
+                if "bias" in n:
+                    p.requires_grad = True
+        elif self.finetune == "full_finetuning":
             for param in self.encoder.parameters():
-                param.requires_grad = False
-        #
-        # if frozen_backbone:
-        #     for param in self.backbone.parameters():
-        #         param.requires_grad = False
+                param.requires_grad = True
+        elif self.finetune == "patch_embed":
+            for p in self.encoder.patch_embed.parameters():
+                p.requires_grad = True
+        elif self.finetune == "lora":
+            self.encoder = add_adapter(
+                self.encoder,
+                hidden_dim = 16,
+                type="lora"
+            )
+        elif self.finetune == "lora_patch_embed":
+            self.encoder = add_adapter(
+                self.encoder,
+                patch_embed_adapter = True,
+                hidden_dim = 16,
+                type="lora",
+             )
+        elif self.finetune == "low-rank-scaling":
+            self.encoder = add_adapter(
+                self.encoder, 
+                type = "low-rank-scaling",
+                shared = False,
+                scale = 2.0,
+                hidden_dim=16,
+            )
+        elif self.finetune == "low-rank-scaling-patch-embed":
+            self.encoder = add_adapter(
+                self.encoder, 
+                type = "low-rank-scaling",
+                patch_embed_adapter = True,
+                shared = False,
+                scale = 2.0,
+                hidden_dim=16,
+            )
+        elif self.finetune == "ia3":
+            self.encoder = add_adapter(
+                self.encoder,
+                type="ia3"
+            )
+
+        # else:
+        #     sys.exit("Error, your method is not available (yet)")
+        
 
         self.neck = Feature2Pyramid(embed_dim=cfg['in_channels'], rescales=[4, 2, 1, 0.5])
 
@@ -173,7 +227,83 @@ class UPerNet(nn.Module):
                 feat = self.encoder(img)
         else:
             feat = self.encoder(img)
-        #print(feat)
+        # print(feat.shape)
+
+        feat = self.neck(feat)
+        feat = self._forward_feature(feat)
+        feat = self.dropout(feat)
+        output = self.conv_seg(feat)
+
+        #bug fixed adding "optical"
+        if output_shape is None:
+            output_shape = img["optical"].shape[-2:]
+        output = F.interpolate(output, size=output_shape, mode='bilinear')
+
+        return output
+
+@SEGMENTOR_REGISTRY.register()
+class UPerNetAdapt(UPerNet):
+    def __init__(self, args, cfg, encoder, pool_scales=(1, 2, 3, 6)):
+        super().__init__(args, cfg, encoder, pool_scales=(1, 2, 3, 6))   
+
+        self.spectral_patch_embed = RandomPatchEmbed(img_size=self.encoder.img_size, patch_size=self.encoder.patch_size)
+        # print("CHANNELS", cfg.bands)
+        # print(cfg)
+        self.mae_encoder = MaeEncoder(n_bands=cfg["adaptation"]["bands"], embed_dim=self.encoder.embed_dim, checkpoint=cfg["adaptation"]["pretrained_mae_path"])
+
+        # Adapter Layers
+        self.adapter_layers = AdapterLayers(
+            img_size=self.encoder.img_size,
+            patch_size=self.encoder.patch_size,
+            # n_bands=self.encoder.in_chans,
+            pretrained_backbone=self.encoder,
+            embed_dim=self.encoder.embed_dim,
+            # decoder_embed_dim=scale_mae_config['decoder_embed_dim'],
+            num_heads=16,
+            depth=24
+            )#.to(args.device)
+        # adapter_layers = adapter_layers
+
+        # self.adapter_layers 
+
+        self.avg_pool = nn.AvgPool1d(8)
+
+        blocks = [self.encoder.blocks[i] for i in range(1, len(self.encoder.blocks))]
+        # print(blocks)
+        self.blocks = torch.nn.ModuleList(blocks)
+
+    def forward(self, img, output_shape=None):
+        rgb_patch, hyper_patch = img["rgb"], img["optical"]
+
+        # print(image.keys())
+
+        rgb_data = self.encoder.patch_embed(rgb_patch)
+        # print("HERE! RGB EMBEDDER OK")
+        hyper_data = hyper_embedding(hyper_patch, self.spectral_patch_embed, self.mae_encoder, None)
+        # print("HERE! HYPER EMBEDDER OK")
+        # print(rgb_data.shape)
+        # print(hyper_data.shape)
+        # REVIEW!!
+        # hyper_data = self.avg_pool(hyper_data)
+        # print(hyper_data.shape)
+
+        features, rgb_norm, spectral_norm, d_loss, d_norm, rgb_d_norm = self.adapter_layers(rgb_data, hyper_data, None)
+        # print("HERE! ADAPTER LAYER OK")
+
+        # for blk in self.blocks:
+        #     features = blk(features)
+
+        # print(features.shape)
+        #TOKEN ALREADY REMOVED CHECK
+        feat = []
+        for i, blk in enumerate(self.blocks):
+            features = blk(features)
+            if i+1 in self.encoder.output_layers:
+                out = features.permute(0, 2, 1).view(features.shape[0], -1, self.encoder.img_size // self.encoder.patch_size,self.encoder.img_size // self.encoder.patch_size).contiguous()
+                feat.append(out)
+        # x = self.norm(x)
+        # print(features.shape)
+        # print(len(feat))
 
         feat = self.neck(feat)
         feat = self._forward_feature(feat)
@@ -181,7 +311,38 @@ class UPerNet(nn.Module):
         output = self.conv_seg(feat)
 
         if output_shape is None:
-            output_shape = img.shape[-2:]
+            output_shape = rgb_patch.shape[-2:]
+        output = F.interpolate(output, size=output_shape, mode='bilinear')
+
+        return output, [rgb_norm, spectral_norm, d_loss, d_norm, rgb_d_norm]
+
+@SEGMENTOR_REGISTRY.register()
+class UPerNetCD(UPerNet):
+    def __init__(self, args, cfg, encoder, pool_scales=(1, 2, 3, 6)):
+        super().__init__(args, cfg, encoder, pool_scales=(1, 2, 3, 6))   
+
+    def forward(self, image, output_shape=None):
+        """Forward function for change detection."""
+        img1, img2 = image["t0"], image["t1"]
+
+        if not self.finetune:
+            with torch.no_grad():
+                feat1 = self.encoder(img1)
+                feat2 = self.encoder(img2)
+        else:
+            feat1 = self.encoder(img1)
+            feat2 = self.encoder(img2)
+        #print(feat)
+
+        feat = feat2-feat1 
+
+        feat = self.neck(feat)
+        feat = self._forward_feature(feat)
+        feat = self.dropout(feat)
+        output = self.conv_seg(feat)
+
+        if output_shape is None:
+            output_shape = img1.shape[-2:]
         output = F.interpolate(output, size=output_shape, mode='bilinear')
 
         return output

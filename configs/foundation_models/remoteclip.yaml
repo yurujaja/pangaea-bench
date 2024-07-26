@@ -1,6 +1,6 @@
 encoder_name: RemoteCLIP_Encoder
 foundation_model_name: RemoteCLIP-ViT-B-32
-encoder_weights: ./pretrained_models/RemoteCLIP-ViT-B-32.pt
+encoder_weights: /geomatics/gpuserver-0/vmarsocci/pretrained_models/RemoteCLIP-ViT-B-32.pt
 download_url: https://huggingface.co/chendelong/RemoteCLIP/resolve/main/RemoteCLIP-ViT-B-32.pt
 temporal_input: False
 
@@ -15,10 +15,21 @@ encoder_model_args:
   head_width: 64
   patch_size: 32
   mlp_ratio: 4.0
+  embed_dim: 768
   #check if to add other parameters (so far is useless)
 
 input_bands:
   optical:
+    # - B4
+    # - B3
+    # - B2
+      - B2
+      - B3
+      - B4
+      - B8A
+      - B11
+      - B12
+  rgb:
     - B4
     - B3
     - B2

@@ -1,5 +1,5 @@
 dataset_name: HLSBurnScars
-root_path: ./data/hlsburnscars
+root_path: /geomatics/gpuserver-0/vmarsocci/hlsburnscars
 download_url: https://huggingface.co/datasets/ibm-nasa-geospatial/hls_burn_scars/resolve/main/hls_burn_scars.tar.gz?download=true
 auto_download: True
 img_size: 224

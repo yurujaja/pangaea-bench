@@ -49,7 +49,7 @@ parser.add_argument("--seed", default=0, type=int,
                     help="random seed")
 parser.add_argument("--num_workers", default=8, type=int,
                     help="number of data loading workers")
-parser.add_argument("--batch_size", default=4, type=int,
+parser.add_argument("--batch_size", default=8, type=int,
                     help="batch_size")
 
 
@@ -68,7 +68,7 @@ parser.add_argument("--bf16", action="store_true",
                     help="use bfloat16 for mixed precision training")
 
 
-parser.add_argument("--ckpt_interval", default=40, type=int,
+parser.add_argument("--ckpt_interval", default=20, type=int,
                     help="checkpoint interval in epochs")
 parser.add_argument("--eval_interval", default=5, type=int,
                     help="evaluate interval in epochs")
@@ -176,26 +176,28 @@ if __name__ == "__main__":
     model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.local_rank], output_device=args.local_rank)
     logger.info("Built {} for with {} encoder.".format(model.module.model_name, encoder.model_name))
 
-    #flops calculator
+
+    # compute FLOPs and MACs
     train_features, _ = next(iter(train_loader))
-    # print(tuple(train_features["optical"].size()))
+    # print(train_features.keys())
+    # print(train_features["optical"].size())
+    # flops, macs, params = calculate_flops(model=model, 
+    #                                       kwargs = train_features)
+    #                                 #   input_shape=input_shape)
     def prepare_input(input_res):
-        # print(input_res)
+        x1 = torch.FloatTensor(1, 3, 224, 224)
+        x2 = torch.FloatTensor(1, 6, 224, 224)
         image = {}
-        if task_name == "adapt-sem-seg":
-            input_res_rgb = list(input_res)
-            input_res_rgb[1] = 3
-            x1 = torch.FloatTensor(*tuple(input_res_rgb))
-            image["rgb"] = x1
-        x2 = torch.FloatTensor(*input_res)
+        image["rgb"] = x1
         image["optical"] = x2
-        return dict(img = image)
-        # else:
-        #     return dict(img = torch.FloatTensor(*input_res))
+        return dict(image = image)
     
-    macs, params = ptflops.get_model_complexity_info(model=model, input_res=tuple(train_features["optical"].size()), input_constructor=prepare_input, as_strings=True, backend='pytorch', verbose=True)
+    macs, params = ptflops.get_model_complexity_info(model=model, input_res=(1, 224, 224), input_constructor=prepare_input, as_strings=True, backend='pytorch', verbose=True)
     logger.info(f"Model MACs: {macs}")
     logger.info(f"Model Params: {params}")
+
+    # print(f"Model MACs:{macs}")
+    # print(f"Model Params:{params}")
 
     # build optimizer
     optimizer = torch.optim.AdamW(
@@ -212,12 +214,8 @@ if __name__ == "__main__":
     logger.info("Built {} scheduler.".format(str(type(scheduler))))
 
     # training: put all components into engines
-    if task_name == "semantic-segmentation":
-        val_evaluator = SegEvaluator(args, val_loader, exp_dir, device)
-        trainer = SegTrainer(args, model, train_loader, optimizer, scheduler, val_evaluator, exp_dir, device)
-    elif task_name == "adapt-sem-seg":
-        val_evaluator = AdaptEvaluator(args, val_loader, exp_dir, device)
-        trainer = AdaptTrainer(args, model, train_loader, optimizer, scheduler, val_evaluator, exp_dir, device)
+    val_evaluator = AdaptEvaluator(args, val_loader, exp_dir, device)
+    trainer = AdaptTrainer(args, model, train_loader, optimizer, scheduler, val_evaluator, exp_dir, device)
     trainer.train()
 
     # testing
@@ -230,11 +228,8 @@ if __name__ == "__main__":
         persistent_workers=False,
         drop_last=False,
     )
-    if task_name == "semantic-segmentation":
-        test_evaluator = SegEvaluator(args, test_loader, exp_dir, device)
-    elif task_name == "adapt-sem-seg":
-        test_evaluator = AdaptEvaluator(args, test_loader, exp_dir, device)
-    
+
+    test_evaluator = SegEvaluator(args, test_loader, exp_dir, device)
     test_evaluator.evaluate(model, 'final model')
 
 

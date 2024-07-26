@@ -1,0 +1,39 @@
+segmentor_name: UPerNetAdapt
+task_name: adapt-sem-seg
+#task_model_args:
+  #num_frames: 1
+  #mt_strategy: "ltae" #activated only when if num_frames > 1
+  #num_classes - task parameter passed from the dataset config
+  #wave_list - task parameter passed from the dataset config
+
+channels: 512
+
+loss: cross_entropy
+
+adaptation:
+    bands: 6
+    pretrained_mae_path: False
+    # freeze_backbone: True
+    # pretrained: True
+    # fixed_output_size: 0
+    # use_mask_token: True
+    # adapter: True
+    # adapter_trainable: True
+    # norm_trainable: True
+    # only_bias_trainable: False
+    # only_scaler_trainable: False
+    # adapter_type: "low-rank-scaling"
+    # adapter_scale: 1.0
+    # adapter_hidden_dim: 16
+    # adapter_shared: False
+    # train_patch_embed: False
+    # patch_embed_adapter: True
+    # patch_embed_adapter_scale: 1
+    # train_all_params: False
+    # loss_on_all_patches: True 
+
+
+
+
+
+

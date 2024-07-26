@@ -171,7 +171,6 @@ class Trainer():
         for v in self.training_metrics.values():
             v.reset()
 
-
 class SegTrainer(Trainer):
     def __init__(self, args, model, train_loader, optimizer, scheduler, evaluator, exp_dir, device):
         super().__init__(args, model, train_loader, optimizer, scheduler, evaluator, exp_dir, device)
@@ -211,6 +210,75 @@ class SegTrainer(Trainer):
         self.training_metrics['mAcc'].update(macc.item())
         self.training_metrics['mIoU'].update(miou.item())
 
+class AdaptTrainer(Trainer):
+    def __init__(self, args, model, train_loader, optimizer, scheduler, evaluator, exp_dir, device):
+        super().__init__(args, model, train_loader, optimizer, scheduler, evaluator, exp_dir, device)
+
+        self.training_metrics = {name: RunningAverageMeter(length=100) for name in ['Acc', 'mAcc', 'mIoU']}
+
+    def train_one_epoch(self, epoch):
+        self.model.train()
+
+        end_time = time.time()
+        for batch_idx, data in enumerate(self.train_loader):
+            image, target = data
+            image = {k: v.to(self.device) for k, v in image.items()}
+            target = target.to(self.device)
+            self.training_stats['data_time'].update(time.time() - end_time)
+
+            with torch.cuda.amp.autocast(enabled=self.enable_mixed_precision, dtype=self.precision):
+                logits, info = self.model(image, output_shape=target.shape[-2:])
+                rgb_norm, spectral_norm, d_loss, d_norm, rgb_d_norm = info
+                seg_loss = self.compute_loss(logits, target)
+                loss = seg_loss + d_loss
+                self.compute_logging_metrics(logits.detach().clone(), target.detach().clone())
+
+            self.optimizer.zero_grad()
+
+            self.scaler.scale(loss).backward()
+            self.scaler.step(self.optimizer)
+            self.scaler.update()
+            self.lr_scheduler.step()
+
+            self.training_stats['loss'].update(loss.item())
+            if (batch_idx + 1) % self.args.log_interval == 0:
+                self.log(batch_idx + 1, epoch)
+            self.training_stats['batch_time'].update(time.time() - end_time)
+            #print(self.training_stats['batch_time'].val, self.training_stats['batch_time'].avg)
+            end_time = time.time()
+
+
+    def compute_loss(self, logits, target):
+        loss = F.cross_entropy(logits, target, ignore_index=-1)
+
+        return loss
+
+    @torch.no_grad()
+    def compute_logging_metrics(self, logits, target):
+        #logits = F.interpolate(logits, size=target.shape[1:], mode='bilinear')
+        pred = torch.argmax(logits, dim=1, keepdim=True)
+        target = target.unsqueeze(1)
+        ignore_mask = target == -1
+        target[ignore_mask] = 0
+        ignore_mask = ignore_mask.expand(-1, logits.shape[1], -1, -1)
+
+        binary_pred = torch.zeros(logits.shape, dtype=bool, device=self.device)
+        binary_target = torch.zeros(logits.shape, dtype=bool, device=self.device)
+        binary_pred.scatter_(dim=1, index=pred, src=torch.ones_like(binary_pred))
+        binary_target.scatter_(dim=1, index=target, src=torch.ones_like(binary_target))
+        binary_pred[ignore_mask] = 0
+        binary_target[ignore_mask] = 0
+
+        intersection = torch.logical_and(binary_pred, binary_target)
+        union = torch.logical_or(binary_pred, binary_target)
+
+        acc = intersection.sum() / binary_target.sum() * 100
+        macc = torch.nanmean(intersection.sum(dim=(0, 2, 3)) / binary_target.sum(dim=(0, 2, 3))) * 100
+        miou = torch.nanmean(intersection.sum(dim=(0, 2, 3)) / union.sum(dim=(0, 2, 3))) * 100
+
+        self.training_metrics['Acc'].update(acc.item())
+        self.training_metrics['mAcc'].update(macc.item())
+        self.training_metrics['mIoU'].update(miou.item())
 
 
 

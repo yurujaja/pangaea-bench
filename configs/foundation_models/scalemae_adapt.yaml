@@ -20,15 +20,15 @@ encoder_model_args:
 
 input_bands:
   optical:
-    - B4
-    - B3
-    - B2
-    # - B2
-    # - B3
     # - B4
-    # - B8A
-    # - B11
-    # - B12
+    # - B3
+    # - B2
+    - B2
+    - B3
+    - B4
+    - B8A
+    - B11
+    - B12
   rgb:
     - B4
     - B3

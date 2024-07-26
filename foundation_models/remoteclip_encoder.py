@@ -288,6 +288,7 @@ class RemoteCLIP_Encoder(nn.Module):
             cfg,
             img_size: int,
             patch_size: int,
+            embed_dim: int,
             width: int,
             head_width: int,
             layers: int,
@@ -306,6 +307,8 @@ class RemoteCLIP_Encoder(nn.Module):
         self.model_name = 'RemoteCLIP'
 
         image_height, image_width = self.image_size = (img_size, img_size)
+        self.img_size = img_size #FOR ADAPTATION
+        self.embed_dim = embed_dim
         patch_height, patch_width = self.patch_size = (patch_size, patch_size)
         self.grid_size = (image_height // patch_height, image_width // patch_width)
         self.width = width

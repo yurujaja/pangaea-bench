@@ -90,7 +90,12 @@ class Prithvi_Encoder(nn.Module):
 
     def forward(self, image):
         # embed patches
+        #to deal with flop calculator, to be fixed
+        # try:
         x = image['optical']
+        # except IndexError:
+        #     x = image
+        # x = image['optical']
         x = self.patch_embed(x)
 
         cls_tokens = self.cls_token.expand(x.shape[0], -1, -1)

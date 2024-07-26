@@ -48,6 +48,7 @@ class ScaleMAE_Encoder(nn.Module):
         self.input_bands = cfg['input_bands']
         self.output_layers = cfg['output_layers']
         self.model_name = 'ScaleMAE'
+        self.in_chans = in_chans
 
         # --------------------------------------------------------------------------
         # MAE encoder specifics
@@ -107,6 +108,18 @@ class ScaleMAE_Encoder(nn.Module):
 
     def load_encoder_weights(self, pretrained_path):
         pretrained_model = torch.load(pretrained_path, map_location="cpu")['model']
+
+        ckpt_patch_embed_weight = pretrained_model["patch_embed.proj.weight"]
+        if self.in_chans % ckpt_patch_embed_weight.shape[1] == 0:
+            print(
+                f"Rescaling pretrained patch_embed weight to fit new {self.in_chans=}"
+            )
+            new_pe_weight = upscale_patch_embed(
+                self.in_chans,
+                ckpt_patch_embed_weight,
+            )
+            pretrained_model["patch_embed.proj.weight"] = new_pe_weight
+
         k = pretrained_model.keys()
         pretrained_encoder = {}
         incompatible_shape = {}
@@ -125,6 +138,8 @@ class ScaleMAE_Encoder(nn.Module):
 
 
     def forward(self, image):
+        # embed patches
+        #to deal with flop calculator, to be fixed
         x = image['optical']
         B, _, h, w = x.shape
         x = self.patch_embed(x)
@@ -155,3 +170,12 @@ class ScaleMAE_Encoder(nn.Module):
 
         return output
 
+
+def upscale_patch_embed(target_chans, weight):
+    """change pre-trained 3-channel patch embed weight
+    to, e.g., 12 channes
+    """
+    assert target_chans % weight.shape[1] == 0
+    factor = target_chans // weight.shape[1]
+
+    return torch.concat([weight] * factor, axis=1)

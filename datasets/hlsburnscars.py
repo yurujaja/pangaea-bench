@@ -57,6 +57,7 @@ class HLSBurnScars(torch.utils.data.Dataset):
         output = {
             'image': {
                 'optical': image,
+                'rgb' : image, 
             },
             'target': target,
             'metadata': {}

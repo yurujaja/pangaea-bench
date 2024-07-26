@@ -1,6 +1,6 @@
-from .trainer import SegTrainer
-from .evaluator import SegEvaluator
+from .trainer import SegTrainer, AdaptTrainer
+from .evaluator import SegEvaluator, AdaptEvaluator
 from .data_preprocessor import SegPreprocessor
 
 
-all = ['SegTrainer', 'SegEvaluator', 'SegPreprocessor']
+all = ['SegTrainer', 'SegEvaluator', 'SegPreprocessor', 'AdaptTrainer', 'AdaptEvaluator']
