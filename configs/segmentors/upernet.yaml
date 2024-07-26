@@ -10,7 +10,7 @@ task_name: semantic-segmentation
 channels: 512
 
 loss: 
-  loss_name: WeightedCrossEntropy # CrossEntropy
+  loss_name: CrossEntropy # WeightedCrossEntropy
   ignore_index: -1
 
 optimizer:
