@@ -1,6 +1,6 @@
 encoder_name: SSL4EO_MAE_SAR_Encoder
 foundation_model_name: ssl4eo_mae_vit_small_patch16
-encoder_weights: /geomatics/gpuserver-0/vmarsocci/pretrained_models/B2_vitb16_mae_ep99.pth
+encoder_weights: ./pretrained_models/B2_vitb16_mae_ep99.pth
 download_url: https://drive.google.com/uc?id=1QTBKl1asxgQCNd6bO2azXZNPfoQ3Sazv&export=download&confirm=yes
 
 temporal_input: False
