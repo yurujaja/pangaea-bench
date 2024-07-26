@@ -2,9 +2,10 @@ import os
 import time
 import argparse
 import ptflops
+import random
 
 import torch
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Subset
 from torch.utils.data.distributed import DistributedSampler
 
 
@@ -137,6 +138,12 @@ if __name__ == "__main__":
         train_dataset = SegPreprocessor(train_dataset, args, encoder_cfg, dataset_cfg)
         val_dataset = SegPreprocessor(val_dataset, args, encoder_cfg, dataset_cfg)
         test_dataset = SegPreprocessor(test_dataset, args, encoder_cfg, dataset_cfg)
+
+    if (dataset_cfg["limited_label"]):
+        indices = random.sample(range(train_dataset.__len__()), int(train_dataset.__len__()*dataset_cfg["limited_label"]))
+        train_dataset = Subset(train_dataset, indices)
+        perc = dataset_cfg["limited_label"]*100
+        logger.info(f"Created a subset of the train dataset, with {perc}% of the labels available")
 
     # get train val data loaders
     train_loader = DataLoader(

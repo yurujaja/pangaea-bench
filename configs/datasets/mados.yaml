@@ -1,11 +1,12 @@
 dataset_name: MADOS
-root_path: /geomatics/gpuserver-0/vmarsocci/MADOS
+root_path: ./data/MADOS
 download_url: https://zenodo.org/records/10664073/files/MADOS.zip?download=1
 auto_download: True
 
 img_size: 240
 multi_temporal: False
 multi_modal: False
+limited_label: False
 
 # classes
 ignore_index: -1

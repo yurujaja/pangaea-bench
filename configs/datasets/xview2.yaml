@@ -5,6 +5,7 @@ auto_download: False
 img_size: 1024
 multi_temporal: 2
 multi_modal: False
+limited_label: False
 
 # classes
 ignore_index: -1
