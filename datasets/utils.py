@@ -1,7 +1,7 @@
 import os
 import tqdm
-import importlib
-import logging
+import rasterio
+import pathlib
 import concurrent.futures
 from google.cloud.storage import Client
 
@@ -52,14 +52,6 @@ def download_bucket_concurrently(bucket_name, destination_directory=""):
     blobs = list(bucket.list_blobs())
     print(f"Downloading {len(blobs)} files from GSC...")
 
-    # results = transfer_manager.download_many_to_path(
-    #     bucket,
-    #     blob_names,
-    #     destination_directory=destination_directory,
-    #     max_workers=workers,
-    #     raise_exception=True
-    # )
-
     blob_file_pairs = []
 
     for blob in blobs:
@@ -80,10 +72,6 @@ def download_bucket_concurrently(bucket_name, destination_directory=""):
                 results.append(future.result())
                 pbar.update(1)
 
-    # for blob, path in tqdm.tqdm(blob_file_pairs):
-    #     result = blob.download_to_filename(path)
-    #     results.append(result)
-
     for blob, result in zip(blobs, results):
         # The results list is either `None` or an exception for each blob in
         # the input list, in order.
@@ -93,16 +81,14 @@ def download_bucket_concurrently(bucket_name, destination_directory=""):
         else:
             print("Downloaded {} to {}.".format(name, destination_directory + name))
 
+def read_tif(file: pathlib.Path):
+    with rasterio.open(file) as dataset:
+        arr = dataset.read()  # (bands X height X width)
+    return arr.transpose((1, 2, 0))
 
-# def make_dataset(dataset_config):
-#     dataset = load_class(dataset_config['dataset'])
-#
-#     if hasattr(dataset, 'download') and callable(dataset.download):
-#         dataset.download(dataset_config, silent=True)
-#     else:
-#         logging.getLogger().warning(f"Dataset {dataset_config['dataset']} doesn't implement autodownload, you might have to download it manually.")
-#
-#     if hasattr(dataset, 'get_splits') and callable(dataset.get_splits):
-#         return dataset.get_splits(dataset_config)
-#     else:
-#         raise TypeError(f"Please make sure your dataset {dataset_config['dataset']} implements a get_splits method.")
+def read_tif_with_metadata(file: pathlib.Path):
+    with rasterio.open(file) as dataset:
+        arr = dataset.read()  # (bands X height X width)
+        transform = dataset.transform
+        crs = dataset.crs
+    return arr.transpose((1, 2, 0)), transform, crs

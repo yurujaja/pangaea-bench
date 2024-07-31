@@ -243,3 +243,6 @@ def main():
 
     if args.use_wandb and args.rank == 0:
         wandb.finish()
+
+if __name__ == "__main__":
+    main()

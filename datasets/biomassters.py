@@ -1,10 +1,8 @@
-import random
-import os
-import cv2
 import numpy as np
 import torch
 import pandas as pd
-from skimage import io
+import pathlib
+from .utils import read_tif
 from utils.registry import DATASET_REGISTRY
 
 s1_min = np.array([-25 , -62 , -25, -60], dtype="float32")
@@ -19,17 +17,17 @@ s2_max = np.array(
 IMG_SIZE = (256, 256)
 
 
-def read_imgs(chip_id, data_dir):
+def read_imgs(chip_id: str, data_dir: pathlib.Path):
     imgs, imgs_s1, imgs_s2, mask = [], [], [], []
     for month in range(12):
-        img_s1 = io.imread(os.path.join(data_dir, f"{chip_id}_S1_{month:0>2}.tif"))
+        img_s1 = read_tif(data_dir.joinpath(f"{chip_id}_S1_{month:0>2}.tif"))
         m = img_s1 == -9999
         img_s1 = img_s1.astype("float32")
         img_s1 = (img_s1 - s1_min) / s1_mm
         img_s1 = np.where(m, 0, img_s1)
-        filepath = os.path.join(data_dir, f"{chip_id}_S2_{month:0>2}.tif")
-        if os.path.exists(filepath):
-            img_s2 = io.imread(filepath)
+        filepath = data_dir.joinpath(f"{chip_id}_S2_{month:0>2}.tif")
+        if filepath.exists():
+            img_s2 = read_tif(filepath)
             img_s2 = img_s2.astype("float32")
             img_s2 = img_s2 / s2_max
         else:
@@ -52,11 +50,11 @@ def read_imgs(chip_id, data_dir):
 @DATASET_REGISTRY.register()
 class BioMassters(torch.utils.data.Dataset):
     def __init__(self, cfg, split): #, augs=False):
-        df_path = os.path.join(cfg["root_path"], "The_BioMassters_-_features_metadata.csv.csv")
-        df: pd.DataFrame = pd.read_csv(df_path)
+        df_path = pathlib.Path(cfg["root_path"]).joinpath("The_BioMassters_-_features_metadata.csv.csv")
+        df: pd.DataFrame = pd.read_csv(str(df_path))
         self.df = df[df.split == split].copy()
-        self.dir_features = os.path.join(cfg["root_path"], f"{split}_features")
-        self.dir_labels = os.path.join(cfg["root_path"], f"{split}_agbm")
+        self.dir_features = pathlib.Path(cfg["root_path"]).joinpath(f"{split}_features")
+        self.dir_labels = pathlib.Path(cfg["root_path"]).joinpath( f"{split}_agbm")
         self.split = split
         # self.augs = augs
 
@@ -71,7 +69,7 @@ class BioMassters(torch.utils.data.Dataset):
 
         imgs_s1, imgs_s2, mask = read_imgs(item.chip_id, self.dir_features)
         if self.dir_labels is not None:
-            target = io.imread(os.path.join(self.dir_labels, f'{item.chip_id}_agbm.tif'))
+            target = read_tif(self.dir_labels.joinpath(f'{item.chip_id}_agbm.tif'))
         else:
             target = item.chip_id
 
