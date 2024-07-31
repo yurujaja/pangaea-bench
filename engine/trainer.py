@@ -9,6 +9,8 @@ from utils.logger import RunningAverageMeter, sec_to_hm
 
 import logging
 
+import wandb
+
 class Trainer():
     def __init__(self, args, model, train_loader, criterion, optimizer, lr_scheduler, evaluator, exp_dir, device):
         #torch.set_num_threads(1)
@@ -41,6 +43,8 @@ class Trainer():
         self.epochs = args.epochs
         if args.resume_path is not None:
             self.load_model(args.resume_path)
+
+        self.use_wandb = args.use_wandb
 
 
     def train(self):
@@ -98,6 +102,19 @@ class Trainer():
             #print(self.training_stats['batch_time'].val, self.training_stats['batch_time'].avg)
             end_time = time.time()
 
+            if self.use_wandb and self.rank == 0:
+                wandb.log(
+                    {
+                        "train_loss": loss.item(),
+                        "learning_rate": self.optimizer.param_groups[0]["lr"],
+                        "epoch": epoch,
+                        **{
+                            f"train_{k}": v.avg
+                            for k, v in self.training_metrics.items()
+                        },
+                    },
+                    step=epoch * len(self.train_loader) + batch_idx,
+                )
 
     def get_checkpoint(self, epoch):
         checkpoint = {

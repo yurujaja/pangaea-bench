@@ -4,6 +4,8 @@ import logging
 import torch
 import torch.nn.functional as F
 
+import wandb
+
 class Evaluator():
     def __init__(self, args, val_loader, exp_dir, device):
 
@@ -126,6 +128,24 @@ class SegEvaluator(Evaluator):
         self.logger.info(recall_str)
         self.logger.info(macc_str)
 
+        if self.args.use_wandb and self.args.rank == 0:
+            wandb.log(
+                {
+                    "val_mIoU": metrics["mIoU"],
+                    "val_mF1": metrics["mF1"],
+                    "val_mAcc": metrics["mAcc"],
+                    **{f"val_IoU_{c}": v for c, v in zip(self.classes, metrics["IoU"])},
+                    **{f"val_F1_{c}": v for c, v in zip(self.classes, metrics["F1"])},
+                    **{
+                        f"val_Precision_{c}": v
+                        for c, v in zip(self.classes, metrics["Precision"])
+                    },
+                    **{
+                        f"val_Recall_{c}": v
+                        for c, v in zip(self.classes, metrics["Recall"])
+                    },
+                }
+            )
 
 class RegEvaluator(Evaluator):
     def __init__(self, args, val_loader, exp_dir, device):
@@ -179,3 +199,6 @@ class RegEvaluator(Evaluator):
         mse = "-------------------\n" + 'MSE \t{:>7}'.format('%.3f' % metrics['MSE'])+'\n'
         rmse = "-------------------\n" + 'RMSE \t{:>7}'.format('%.3f' % metrics['RMSE'])
         self.logger.info(header+mse+rmse)
+
+        if self.args.use_wandb and self.args.rank == 0:
+            wandb.log({"val_MSE": metrics["MSE"], "val_RMSE": metrics["RMSE"]})

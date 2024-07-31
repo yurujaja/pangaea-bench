@@ -8,6 +8,7 @@ import torch
 from torch.utils.data import DataLoader, Subset
 from torch.utils.data.distributed import DistributedSampler
 
+import wandb
 
 import foundation_models
 import datasets
@@ -38,6 +39,7 @@ parser.add_argument("--finetune", action="store_true",
 parser.add_argument("--test_only", action="store_true",
                     help="test a model only (to be done)")
 
+parser.add_argument("--use_wandb", action="store_true", help="use wandb for logging")
 
 parser.add_argument("--work_dir", default="./work-dir",
                     help="the dir to save logs and models")
@@ -87,9 +89,7 @@ parser.add_argument('--local_world_size', default=1,
 parser.add_argument('--init_method', default='tcp://localhost:10111',
                     help="url for distributed training")
 
-
-
-if __name__ == "__main__":
+def main():
     args = parser.parse_args()
 
     # fix all random seeds
@@ -123,6 +123,14 @@ if __name__ == "__main__":
     logger.info("\n".join("%s: %s" % (k, str(v)) for k, v in sorted(dict(vars(args)).items())))
     logger.info("The experiment will be stored in %s\n" % exp_dir)
     logger.info(f"Device used: {device}")
+
+    # init wandb
+    if args.use_wandb and args.rank == 0:
+        wandb.init(
+            project="geofm-bench",
+            name=exp_name,
+            config={**vars(args), **encoder_cfg, **dataset_cfg, **segmentor_cfg},
+        )
 
     # get datasets
     dataset = DATASET_REGISTRY.get(dataset_cfg['dataset_name'])
@@ -233,10 +241,5 @@ if __name__ == "__main__":
         test_evaluator = RegEvaluator(args, test_loader, exp_dir, device)
     test_evaluator.evaluate(model, 'final model')
 
-
-
-
-
-
-
-
+    if args.use_wandb and args.rank == 0:
+        wandb.finish()
