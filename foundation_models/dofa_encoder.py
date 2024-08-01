@@ -193,11 +193,9 @@ class DOFA_Encoder(Base_Encoder):
 
     def forward(self, image):
         # embed patches
-        # x = image['optical']
         x = [image[m] for m in self.input_bands.keys()]
         x = torch.cat(x, dim=1)
         wavelist = torch.tensor(self.wv_list, device=x.device).float()
-        # import pdb; pdb.set_trace()
         self.waves = wavelist
 
         x, _ = self.patch_embed(x, self.waves)
