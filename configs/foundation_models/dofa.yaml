@@ -32,6 +32,14 @@ wave_list:
     B10: 1.373
     B11: 1.61
     B12: 2.20
+  sar:
+    VV: 3.75
+    VH: 3.75
+    ASC_VV: 3.75
+    ASC_VH: 3.75
+    DSC_VV: 3.75
+    DSC_VH: 3.75
+  
 
 output_layers:
   - 3

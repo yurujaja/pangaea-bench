@@ -4,6 +4,7 @@ old_files/
 pretrained/
 pretrained_models/
 work-dir/
+wandb/
 data/*
 # Scenes for mados tiny
 # Wow gitignore pattern mathcing is a mess
