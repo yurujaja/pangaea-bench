@@ -7,11 +7,11 @@ temporal_input: False
 
 num_layers: 24
 embed_dim: 1024
-input_size: 120
+input_size: 224  # the paper uses 120
 
 encoder_model_args:
   size: 'large'
-  image_resolution: 120
+  image_resolution: 224
 
 input_bands:
   optical:
@@ -23,7 +23,7 @@ input_bands:
     - B6
     - B7
     - B8
-    - B8a
+    - B8A
     - B9
     - B11
     - B12
