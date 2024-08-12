@@ -41,8 +41,6 @@ class Trainer():
 
         self.start_epoch = 0
         self.epochs = args.epochs
-        if args.resume_path is not None:
-            self.load_model(args.resume_path)
 
         self.use_wandb = args.use_wandb
 

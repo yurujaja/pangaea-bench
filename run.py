@@ -38,14 +38,13 @@ parser.add_argument("--finetune", action="store_true",
                     help="fine tune whole networks")
 parser.add_argument("--test_only", action="store_true",
                     help="test a model only (to be done)")
+parser.add_argument("--model_checkpoint", type=str,
+                    help="the path to the model checkpoint to either test or resume training")
 
 parser.add_argument("--use_wandb", action="store_true", help="use wandb for logging")
 
 parser.add_argument("--work_dir", default="./work-dir",
                     help="the dir to save logs and models")
-parser.add_argument("--resume_path", type=str,
-                    help="load model from previous epoch")
-
 
 parser.add_argument("--seed", default=0, type=int,
                     help="random seed")
@@ -112,16 +111,25 @@ def main():
     task_name = segmentor_cfg["task_name"]
     segmentor_name = segmentor_cfg["segmentor_name"]
 
+    # check if the model checkpoint is provided for testing
+    assert not args.test_only or (args.test_only and args.model_checkpoint is not None), "Please provide a model checkpoint for testing"
+    
     # setup a work directory and logger
     timestamp = time.strftime("%Y%m%d_%H%M%S", time.localtime())
-    exp_name = f"{timestamp}-{encoder_name}-{segmentor_name}-{dataset_name}-{task_name}"
-    exp_dir = os.path.join(args.work_dir, exp_name)
-    os.makedirs(exp_dir, exist_ok=True)
-    logger = init_logger(os.path.join(exp_dir, "train.log"), rank=args.rank)
-
+    
+    if not args.test_only:
+        exp_name = f"{timestamp}-{encoder_name}-{segmentor_name}-{dataset_name}-{task_name}"
+        exp_dir = os.path.join(args.work_dir, exp_name)
+        os.makedirs(exp_dir, exist_ok=True)
+        logger_path = os.path.join(exp_dir, "train.log")
+    else:
+        exp_dir = os.path.dirname(args.model_checkpoint)
+        logger_path = os.path.join(exp_dir, "test.log")
+    
+    logger = init_logger(logger_path, rank=args.rank)
     logger.info("============ Initialized logger ============")
     logger.info("\n".join("%s: %s" % (k, str(v)) for k, v in sorted(dict(vars(args)).items())))
-    logger.info("The experiment will be stored in %s\n" % exp_dir)
+    logger.info("The experiment is stored in %s\n" % exp_dir)
     logger.info(f"Device used: {device}")
 
     # init wandb
@@ -131,7 +139,7 @@ def main():
             name=exp_name,
             config={**vars(args), **encoder_cfg, **dataset_cfg, **segmentor_cfg},
         )
-
+    
     # get datasets
     dataset = DATASET_REGISTRY.get(dataset_cfg['dataset_name'])
     dataset.download(dataset_cfg, silent=False)
@@ -146,38 +154,7 @@ def main():
         train_dataset = SegPreprocessor(train_dataset, args, encoder_cfg, dataset_cfg)
         val_dataset = SegPreprocessor(val_dataset, args, encoder_cfg, dataset_cfg)
         test_dataset = SegPreprocessor(test_dataset, args, encoder_cfg, dataset_cfg)
-
-    if (dataset_cfg["limited_label"]):
-        indices = random.sample(range(train_dataset.__len__()), int(train_dataset.__len__()*dataset_cfg["limited_label"]))
-        train_dataset = Subset(train_dataset, indices)
-        perc = dataset_cfg["limited_label"]*100
-        logger.info(f"Created a subset of the train dataset, with {perc}% of the labels available")
-
-    # get train val data loaders
-    train_loader = DataLoader(
-        train_dataset,
-        sampler=DistributedSampler(train_dataset),
-        batch_size=args.batch_size,#dataset_cfg["batch"],
-        num_workers=args.num_workers,
-        pin_memory=True,
-        persistent_workers=True,
-        worker_init_fn=seed_worker,
-        generator=get_generator(args.seed),
-        drop_last=True,
-    )
-    val_loader = DataLoader(
-        val_dataset,
-        sampler=DistributedSampler(val_dataset),
-        batch_size=args.batch_size,
-        num_workers=args.num_workers,
-        pin_memory=True,
-        persistent_workers=False,
-        #worker_init_fn=seed_worker,
-        #generator=g,
-        drop_last=False,
-    )
-
-    logger.info("Built {} dataset.".format(dataset_name))
+    
 
     # prepare the foundation model
     download_model(encoder_cfg)
@@ -195,51 +172,96 @@ def main():
     model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.local_rank], output_device=args.local_rank)
     logger.info("Built {} for with {} encoder.".format(model.module.model_name, encoder.model_name))
 
-    # flops calculator TO DO: make it not hard coded
-    train_features, _ = next(iter(train_loader))
-    input_res = tuple(train_features["optical"].size())
-    macs, params = ptflops.get_model_complexity_info(model=model, input_res=input_res, input_constructor=prepare_input, as_strings=True, backend='pytorch', verbose=True)
-    logger.info(f"Model MACs: {macs}")
-    logger.info(f"Model Params: {params}")
+    # training 
+    if not args.test_only:
+        
+        if (dataset_cfg["limited_label"]):
+            indices = random.sample(range(train_dataset.__len__()), int(train_dataset.__len__()*dataset_cfg["limited_label"]))
+            train_dataset = Subset(train_dataset, indices)
+            perc = dataset_cfg["limited_label"]*100
+            logger.info(f"Created a subset of the train dataset, with {perc}% of the labels available")
 
-    # build loss
-    criterion = LOSS_REGISTRY.get(segmentor_cfg['loss']['loss_name'])(segmentor_cfg['loss'])
-    logger.info("Built {} loss.".format(str(type(criterion))))
+        # get train val data loaders
+        train_loader = DataLoader(
+            train_dataset,
+            sampler=DistributedSampler(train_dataset),
+            batch_size=args.batch_size,#dataset_cfg["batch"],
+            num_workers=args.num_workers,
+            pin_memory=True,
+            persistent_workers=True,
+            worker_init_fn=seed_worker,
+            generator=get_generator(args.seed),
+            drop_last=True,
+        )
+        val_loader = DataLoader(
+            val_dataset,
+            sampler=DistributedSampler(val_dataset),
+            batch_size=args.batch_size,
+            num_workers=args.num_workers,
+            pin_memory=True,
+            persistent_workers=False,
+            #worker_init_fn=seed_worker,
+            #generator=g,
+            drop_last=False,
+        )
 
-    # build optimizer
-    optimizer = OPTIMIZER_REGISTRY.get(segmentor_cfg['optimizer']['optimizer_name'])(model, segmentor_cfg['optimizer'])
-    logger.info("Built {} optimizer.".format(str(type(optimizer))))
+        logger.info("Built {} dataset for training and evaluation.".format(dataset_name))
 
-    # build scheduler
-    total_iters = args.epochs * len(train_loader)
-    scheduler = SCHEDULER_REGISTRY.get(segmentor_cfg['scheduler']['scheduler_name'])(optimizer, total_iters, segmentor_cfg['scheduler'])
-    logger.info("Built {} scheduler.".format(str(type(scheduler))))
+        # flops calculator TO DO: make it not hard coded
+        train_features, _ = next(iter(train_loader))
+        input_res = tuple(train_features["optical"].size())
+        macs, params = ptflops.get_model_complexity_info(model=model, input_res=input_res, input_constructor=prepare_input, as_strings=True, backend='pytorch', verbose=True)
+        logger.info(f"Model MACs: {macs}")
+        logger.info(f"Model Params: {params}")
 
-    # training: put all components into engines
-    if task_name == "regression":
-        val_evaluator = RegEvaluator(args, val_loader, exp_dir, device)
-        trainer = RegTrainer(args, model, train_loader, criterion, optimizer, scheduler, val_evaluator, exp_dir, device)
-    else:
-        val_evaluator = SegEvaluator(args, val_loader, exp_dir, device)
-        trainer = SegTrainer(args, model, train_loader, criterion, optimizer, scheduler, val_evaluator, exp_dir, device)
-    trainer.train()
+        # build loss
+        criterion = LOSS_REGISTRY.get(segmentor_cfg['loss']['loss_name'])(segmentor_cfg['loss'])
+        logger.info("Built {} loss.".format(str(type(criterion))))
 
+        # build optimizer
+        optimizer = OPTIMIZER_REGISTRY.get(segmentor_cfg['optimizer']['optimizer_name'])(model, segmentor_cfg['optimizer'])
+        logger.info("Built {} optimizer.".format(str(type(optimizer))))
+
+        # build scheduler
+        total_iters = args.epochs * len(train_loader)
+        scheduler = SCHEDULER_REGISTRY.get(segmentor_cfg['scheduler']['scheduler_name'])(optimizer, total_iters, segmentor_cfg['scheduler'])
+        logger.info("Built {} scheduler.".format(str(type(scheduler))))
+
+
+        # training: put all components into engines
+        if task_name == "regression":
+            val_evaluator = RegEvaluator(args, val_loader, exp_dir, device)
+            trainer = RegTrainer(args, model, train_loader, criterion, optimizer, scheduler, val_evaluator, exp_dir, device)
+        else:
+            val_evaluator = SegEvaluator(args, val_loader, exp_dir, device)
+            trainer = SegTrainer(args, model, train_loader, criterion, optimizer, scheduler, val_evaluator, exp_dir, device)
+        
+        # resume training if model_checkpoint is provided
+        if args.model_checkpoint is not None:
+            trainer.load_model(args.model_checkpoint)
+
+        trainer.train()
+    
     # testing
-    test_loader = DataLoader(
-        test_dataset,
-        sampler=DistributedSampler(test_dataset),
-        batch_size=args.batch_size,
-        num_workers=args.num_workers,
-        pin_memory=True,
-        persistent_workers=False,
-        drop_last=False,
-    )
-
-    if task_name == "regression":
-        val_evaluator = RegEvaluator(args, val_loader, exp_dir, device)
     else:
-        test_evaluator = RegEvaluator(args, test_loader, exp_dir, device)
-    test_evaluator.evaluate(model, 'final model')
+        test_loader = DataLoader(
+            test_dataset,
+            sampler=DistributedSampler(test_dataset),
+            batch_size=args.batch_size,                       
+            num_workers=args.num_workers,
+            pin_memory=True,
+            persistent_workers=False,
+            drop_last=False,
+        )
+
+        logger.info("Built {} dataset for testing.".format(dataset_name))
+
+        if task_name == "regression":
+            test_evaluator = RegEvaluator(args, test_loader, exp_dir, device)
+        else:
+            test_evaluator = SegEvaluator(args, test_loader, exp_dir, device)
+
+        test_evaluator.evaluate(model, 'final model', args.model_checkpoint)
 
     if args.use_wandb and args.rank == 0:
         wandb.finish()
