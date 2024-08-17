@@ -21,25 +21,26 @@ import utils.schedulers
 import utils.losses
 from utils.utils import fix_seed, get_generator, seed_worker, prepare_input
 from utils.logger import init_logger
-from utils.configs import load_config
+from utils.configs import load_config, write_config
 from utils.registry import ENCODER_REGISTRY, SEGMENTOR_REGISTRY, DATASET_REGISTRY, OPTIMIZER_REGISTRY, SCHEDULER_REGISTRY, LOSS_REGISTRY
 
 parser = argparse.ArgumentParser(description="Train a downstreamtask with geospatial foundation models.")
 
 
 
-parser.add_argument("--dataset_config", required=True,
+parser.add_argument("--dataset_config", required=False,
                     help="train config file path")
-parser.add_argument("--encoder_config", required=True,
+parser.add_argument("--encoder_config", required=False,
                     help="train config file path")
-parser.add_argument("--segmentor_config", required=True,
+parser.add_argument("--segmentor_config", required=False,
                     help="train config file path")
 parser.add_argument("--finetune", action="store_true",
                     help="fine tune whole networks")
-parser.add_argument("--test_only", action="store_true",
-                    help="test a model only (to be done)")
-parser.add_argument("--model_checkpoint", type=str,
-                    help="the path to the model checkpoint to either test or resume training")
+parser.add_argument("--test_only", required=False,
+                    type=str, default=None,
+                    help="the work dir path to test the model")
+parser.add_argument("--resume_from", type=str,
+                    help="the path to the model to resume training")
 
 parser.add_argument("--use_wandb", action="store_true", help="use wandb for logging")
 
@@ -111,9 +112,7 @@ def main():
     task_name = segmentor_cfg["task_name"]
     segmentor_name = segmentor_cfg["segmentor_name"]
 
-    # check if the model checkpoint is provided for testing
-    assert not args.test_only or (args.test_only and args.model_checkpoint is not None), "Please provide a model checkpoint for testing"
-    
+        
     # setup a work directory and logger
     timestamp = time.strftime("%Y%m%d_%H%M%S", time.localtime())
     
@@ -122,10 +121,17 @@ def main():
         exp_dir = os.path.join(args.work_dir, exp_name)
         os.makedirs(exp_dir, exist_ok=True)
         logger_path = os.path.join(exp_dir, "train.log")
+
+        config_log_dir = os.path.join(exp_dir, 'configs')
+        os.makedirs(config_log_dir, exist_ok=True)
+        write_config(encoder_cfg, os.path.join(config_log_dir, 'encoder_config.yaml'))
+        write_config(dataset_cfg, os.path.join(config_log_dir, 'dataset_config.yaml'))
+        write_config(segmentor_cfg, os.path.join(config_log_dir, 'segmentor_config.yaml'))
     else:
-        exp_dir = os.path.dirname(args.model_checkpoint)
+        exp_dir = args.test_only
         logger_path = os.path.join(exp_dir, "test.log")
     
+
     logger = init_logger(logger_path, rank=args.rank)
     logger.info("============ Initialized logger ============")
     logger.info("\n".join("%s: %s" % (k, str(v)) for k, v in sorted(dict(vars(args)).items())))
@@ -237,8 +243,8 @@ def main():
             trainer = SegTrainer(args, model, train_loader, criterion, optimizer, scheduler, val_evaluator, exp_dir, device)
         
         # resume training if model_checkpoint is provided
-        if args.model_checkpoint is not None:
-            trainer.load_model(args.model_checkpoint)
+        if args.resume_from is not None:
+            trainer.load_model(args.resume_from)
 
         trainer.train()
     
@@ -261,7 +267,8 @@ def main():
         else:
             test_evaluator = SegEvaluator(args, test_loader, exp_dir, device)
 
-        test_evaluator.evaluate(model, 'final model', args.model_checkpoint)
+        model_ckpt_path = os.path.join(exp_dir, next(f for f in os.listdir(exp_dir) if f.endswith('_final.pth')))
+        test_evaluator.evaluate(model, 'final model', model_ckpt_path)
 
     if args.use_wandb and args.rank == 0:
         wandb.finish()
