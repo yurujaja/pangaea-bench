@@ -2,19 +2,19 @@ import torch
 import torch.nn.functional as F
 
 import numpy as np
-import pdb
 import logging
 
 
 class DataPreprocessor(torch.utils.data.Dataset):
-    def __init__(self, dataset, args, encoder_cfg, dataset_cfg):
+    def __init__(self, dataset, cfg):
         self.dataset = dataset
-        self.encoder_config = encoder_cfg
-        self.data_config = dataset_cfg
-        self.root_path = dataset_cfg['root_path']
-        self.data_mean = dataset_cfg['data_mean']
-        self.data_std = dataset_cfg['data_std']
-        self.classes = dataset_cfg['classes']
+        # self.config = cfg.augmentation
+        self.encoder_config = cfg.encoder
+        self.data_config = cfg.dataset
+        self.root_path = cfg.dataset.root_path
+        self.data_mean = cfg.dataset.data_mean
+        self.data_std = cfg.dataset.data_std
+        self.classes = cfg.dataset.classes
         self.class_num = len(self.classes)
         self.split = dataset.split
 
@@ -26,14 +26,13 @@ class DataPreprocessor(torch.utils.data.Dataset):
 
 
 class SegPreprocessor(DataPreprocessor):
-
-    def __init__(self, dataset, args, encoder_cfg, dataset_cfg):
-        super().__init__(dataset, args, encoder_cfg, dataset_cfg)
+    def __init__(self, dataset, cfg):
+        super().__init__(dataset, cfg)
 
         self.preprocessor = {}
         
-        self.preprocessor['optical'] = OpticalShapeAdaptor(args, encoder_cfg, dataset_cfg) if "optical" in dataset_cfg["bands"].keys() else None
-        self.preprocessor['sar'] = SARShapeAdaptor(args, encoder_cfg, dataset_cfg) if "sar" in dataset_cfg["bands"].keys() else None
+        self.preprocessor['optical'] = OpticalShapeAdaptor(cfg) if "optical" in cfg.dataset["bands"].keys() else None
+        self.preprocessor['sar'] = SARShapeAdaptor(cfg) if "sar" in cfg.dataset["bands"].keys() else None
         # TO DO: other modalities
 
 
@@ -48,10 +47,10 @@ class SegPreprocessor(DataPreprocessor):
 
         return image, target
     
-class RegPreprocessor(SegPreprocessor):
 
-    def __init__(self, dataset, args, encoder_cfg, dataset_cfg):
-        super().__init__(dataset, args, encoder_cfg, dataset_cfg)
+class RegPreprocessor(SegPreprocessor):
+    def __init__(self, dataset, cfg):
+        super().__init__(dataset, cfg)
 
     def __getitem__(self, index):
         data = self.dataset[index]
@@ -64,18 +63,17 @@ class RegPreprocessor(SegPreprocessor):
 
         return image, target
 
+
 class SARShapeAdaptor():
-    def __init__(self, args, encoder_cfg, dataset_cfg):
-        self.dataset_bands = dataset_cfg["bands"]['sar']
-        self.input_bands = encoder_cfg["input_bands"]['sar']
-        self.input_size = encoder_cfg["input_size"]
-        self.multi_temporal = dataset_cfg["multi_temporal"]
-        self.encoder_name = encoder_cfg['encoder_name']
+    def __init__(self, cfg):
+        self.dataset_bands = cfg.dataset.bands.sar
+        self.input_bands = cfg.encoder.input_bands.sar
+        self.input_size = cfg.encoder.input_size
+        self.multi_temporal = cfg.dataset.multi_temporal
+        self.encoder_name = cfg.encoder.encoder_name
 
         self.used_bands_mask = torch.tensor([b in self.input_bands for b in self.dataset_bands], dtype=torch.bool)
         self.avail_bands_mask = torch.tensor([b in self.dataset_bands for b in self.input_bands], dtype=torch.bool)
-        # self.used_bands_indices = torch.tensor([self.dataset_bands.index(b) if b in self.input_bands else -1 for b in self.dataset_bands], dtype=torch.long)
-        # self.avail_bands_indices = torch.tensor([self.dataset_bands.index(b) if b in self.dataset_bands else None for b in self.input_bands])
         self.avail_bands_indices = torch.tensor([self.dataset_bands.index(b) if b in self.dataset_bands else -1 for b in self.input_bands], dtype=torch.long)
                 
         self.need_padded = self.avail_bands_mask.sum() < len(self.input_bands)
@@ -111,17 +109,15 @@ class SARShapeAdaptor():
         return sar_image
     
 class OpticalShapeAdaptor():
-    def __init__(self, args, encoder_cfg, dataset_cfg):
-        self.dataset_bands = dataset_cfg["bands"]['optical']
-        self.input_bands = encoder_cfg["input_bands"]['optical']
-        self.input_size = encoder_cfg["input_size"]
-        self.multi_temporal = dataset_cfg["multi_temporal"]
-        self.encoder_name = encoder_cfg['encoder_name']
+    def __init__(self, cfg):
+        self.dataset_bands = cfg.dataset.bands.optical
+        self.input_bands = cfg.encoder.input_bands.optical
+        self.input_size = cfg.encoder.input_size
+        self.multi_temporal = cfg.dataset.multi_temporal
+        self.encoder_name = cfg.encoder.encoder_name
 
         self.used_bands_mask = torch.tensor([b in self.input_bands for b in self.dataset_bands], dtype=torch.bool)
         self.avail_bands_mask = torch.tensor([b in self.dataset_bands for b in self.input_bands], dtype=torch.bool)
-        # self.used_bands_indices = torch.tensor([self.dataset_bands.index(b) if b in self.input_bands else -1 for b in self.dataset_bands], dtype=torch.long)
-        # self.avail_bands_indices = torch.tensor([self.dataset_bands.index(b) if b in self.dataset_bands else None for b in self.input_bands])
         self.avail_bands_indices = torch.tensor([self.dataset_bands.index(b) if b in self.dataset_bands else -1 for b in self.input_bands], dtype=torch.long)
                 
         self.need_padded = self.avail_bands_mask.sum() < len(self.input_bands)

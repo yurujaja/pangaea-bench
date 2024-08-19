@@ -1,14 +1,14 @@
 import os
+import pathlib
 import time
 import argparse
 import ptflops
 import random
+from omegaconf import OmegaConf
 
 import torch
 from torch.utils.data import DataLoader, Subset
 from torch.utils.data.distributed import DistributedSampler
-
-import wandb
 
 import foundation_models
 import datasets
@@ -21,190 +21,207 @@ import utils.schedulers
 import utils.losses
 from utils.utils import fix_seed, get_generator, seed_worker, prepare_input
 from utils.logger import init_logger
-from utils.configs import load_config, write_config
+from utils.configs import load_configs
 from utils.registry import ENCODER_REGISTRY, SEGMENTOR_REGISTRY, DATASET_REGISTRY, OPTIMIZER_REGISTRY, SCHEDULER_REGISTRY, LOSS_REGISTRY
 
-parser = argparse.ArgumentParser(description="Train a downstreamtask with geospatial foundation models.")
+parser = argparse.ArgumentParser(description="Train a downstream task with geospatial foundation models.")
 
-
-
-parser.add_argument("--dataset_config", required=False,
+master_config_group = parser.add_mutually_exclusive_group(required=True)
+master_config_group.add_argument("--config", type=str, default="",
+                    help="Master config file path for training")
+master_config_group.add_argument("--eval_dir", type=str, default="",
+                    help="Path to the working directory of a model to be evaluated")
+parser.add_argument("--dataset_config", dest="dataset_config_path",
                     help="train config file path")
-parser.add_argument("--encoder_config", required=False,
+parser.add_argument("--encoder_config", dest="encoder_config_path",
                     help="train config file path")
-parser.add_argument("--segmentor_config", required=False,
+parser.add_argument("--segmentor_config", dest="segmentor_config_path",
                     help="train config file path")
+# parser.add_argument("--augmentation_config",dest="augmentation_config_path",
+#                     help="train config file path")
 parser.add_argument("--finetune", action="store_true",
                     help="fine tune whole networks")
-parser.add_argument("--test_only", required=False,
-                    type=str, default=None,
-                    help="the work dir path to test the model")
 parser.add_argument("--resume_from", type=str,
                     help="the path to the model to resume training")
 
 parser.add_argument("--use_wandb", action="store_true", help="use wandb for logging")
 
-parser.add_argument("--work_dir", default="./work-dir",
+parser.add_argument("--work_dir", type=str,
                     help="the dir to save logs and models")
 
-parser.add_argument("--seed", default=0, type=int,
+parser.add_argument("--seed", type=int,
                     help="random seed")
-parser.add_argument("--num_workers", default=8, type=int,
+parser.add_argument("--num_workers", type=int,
                     help="number of data loading workers")
-parser.add_argument("--batch_size", default=8, type=int,
+parser.add_argument("--batch_size", type=int,
                     help="batch_size")
 
-
-parser.add_argument("--epochs", default=80, type=int,
+parser.add_argument("--epochs", type=int,
                     help="number of data loading workers")
-# parser.add_argument("--lr", default=1e-4, type=int,
-#                     help="base learning rate")
-# parser.add_argument("--lr_milestones", default=[0.6, 0.9], type=float, nargs="+",
-#                     help="milestones in lr schedule")
-# parser.add_argument("--wd", default=0.05, type=int,
-#                     help="weight decay")
 
 parser.add_argument("--fp16", action="store_true",
                     help="use float16 for mixed precision training")
 parser.add_argument("--bf16", action="store_true",
                     help="use bfloat16 for mixed precision training")
 
-
-parser.add_argument("--ckpt_interval", default=20, type=int,
+parser.add_argument("--ckpt_interval", type=int,
                     help="checkpoint interval in epochs")
-parser.add_argument("--eval_interval", default=5, type=int,
+parser.add_argument("--eval_interval", type=int,
                     help="evaluate interval in epochs")
-parser.add_argument("--log_interval", default=10, type=int,
+parser.add_argument("--log_interval", type=int,
                     help="log interval in iterations")
 
 
-parser.add_argument('--rank', default=-1,
+parser.add_argument('--rank', type=int,
                     help='rank of current process')
-parser.add_argument('--local_rank', default=-1,
+parser.add_argument('--local_rank', type=int,
                     help='local rank of current process')
-parser.add_argument('--world_size', default=1,
+parser.add_argument('--world_size', type=int,
                     help="world size")
-parser.add_argument('--local_world_size', default=1,
+parser.add_argument('--local_world_size', type=int,
                     help="local world size")
-parser.add_argument('--init_method', default='tcp://localhost:10111',
-                    help="url for distributed training")
 
 def main():
-    args = parser.parse_args()
+    cfg = load_configs(parser)
 
     # fix all random seeds
-    fix_seed(args.seed)
+    fix_seed(cfg.seed)
 
     # distributed training variables
-    args.rank = int(os.environ['RANK'])
-    args.local_rank = int(os.environ['LOCAL_RANK'])
-    args.world_size = int(os.environ['WORLD_SIZE'])
-    args.local_world_size = int(os.environ['LOCAL_WORLD_SIZE'])
-    device = torch.device('cuda', args.local_rank)
+    cfg.rank = int(os.environ['RANK'])
+    cfg.local_rank = int(os.environ['LOCAL_RANK'])
+    cfg.world_size = int(os.environ['WORLD_SIZE'])
+    cfg.local_world_size = int(os.environ['LOCAL_WORLD_SIZE'])
+    device = torch.device('cuda', cfg.local_rank)
     torch.cuda.set_device(device)
     torch.distributed.init_process_group(backend='nccl')
 
-    # load config
-    encoder_cfg, dataset_cfg, segmentor_cfg = load_config(args)
-
-    encoder_name = encoder_cfg["encoder_name"]
-    dataset_name = dataset_cfg["dataset_name"]
-    task_name = segmentor_cfg["task_name"]
-    segmentor_name = segmentor_cfg["segmentor_name"]
-
+    encoder_name = cfg.encoder.encoder_name
+    dataset_name = cfg.dataset.dataset_name
+    task_name = cfg.segmentor.task_name
+    segmentor_name = cfg.segmentor.segmentor_name
         
     # setup a work directory and logger
     timestamp = time.strftime("%Y%m%d_%H%M%S", time.localtime())
     
-    if not args.test_only:
+    if not cfg.eval_dir:
         exp_name = f"{timestamp}-{encoder_name}-{segmentor_name}-{dataset_name}-{task_name}"
-        exp_dir = os.path.join(args.work_dir, exp_name)
-        os.makedirs(exp_dir, exist_ok=True)
-        logger_path = os.path.join(exp_dir, "train.log")
+        exp_dir = pathlib.Path(cfg.work_dir) / exp_name
+        exp_dir.mkdir(parents=True, exist_ok=True)
+        logger_path = exp_dir / 'train.log'
 
-        config_log_dir = os.path.join(exp_dir, 'configs')
-        os.makedirs(config_log_dir, exist_ok=True)
-        write_config(encoder_cfg, os.path.join(config_log_dir, 'encoder_config.yaml'))
-        write_config(dataset_cfg, os.path.join(config_log_dir, 'dataset_config.yaml'))
-        write_config(segmentor_cfg, os.path.join(config_log_dir, 'segmentor_config.yaml'))
+        config_log_dir = exp_dir / 'configs'
+        config_log_dir.mkdir(exist_ok=True)
+        OmegaConf.save(cfg, config_log_dir/'config.yaml')
     else:
-        exp_dir = args.test_only
-        logger_path = os.path.join(exp_dir, "test.log")
+        exp_dir = pathlib.Path(cfg.eval_dir)
+        logger_path = exp_dir / 'test.log'
     
 
-    logger = init_logger(logger_path, rank=args.rank)
+    logger = init_logger(logger_path, rank=cfg.rank)
     logger.info("============ Initialized logger ============")
-    logger.info("\n".join("%s: %s" % (k, str(v)) for k, v in sorted(dict(vars(args)).items())))
+    logger.info("\n".join("%s: %s" % (k, str(v)) for k, v in sorted(OmegaConf.to_container(cfg).items())))
     logger.info("The experiment is stored in %s\n" % exp_dir)
     logger.info(f"Device used: {device}")
 
     # init wandb
-    if args.use_wandb and args.rank == 0:
+    if cfg.use_wandb and cfg.rank == 0:
         import wandb
         wandb.init(
             project="geofm-bench",
             name=exp_name,
-            config={**vars(args), **encoder_cfg, **dataset_cfg, **segmentor_cfg},
+            config=OmegaConf.to_container(cfg, resolve=True),
         )
     
     # get datasets
-    dataset = DATASET_REGISTRY.get(dataset_cfg['dataset_name'])
-    dataset.download(dataset_cfg, silent=False)
-    train_dataset, val_dataset, test_dataset = dataset.get_splits(dataset_cfg)
+    dataset = DATASET_REGISTRY.get(cfg.dataset.dataset_name)
+    dataset.download(cfg.dataset, silent=False)
+    train_dataset, val_dataset, test_dataset = dataset.get_splits(cfg.dataset)
     
     # Apply data processing to the datasets
     if task_name == "regression":
-        train_dataset = RegPreprocessor(train_dataset, args, encoder_cfg, dataset_cfg)
-        val_dataset = RegPreprocessor(val_dataset, args, encoder_cfg, dataset_cfg)
-        test_dataset = RegPreprocessor(test_dataset, args, encoder_cfg, dataset_cfg)
+        train_dataset = RegPreprocessor(train_dataset, cfg)
+        val_dataset = RegPreprocessor(val_dataset, cfg)
+        test_dataset = RegPreprocessor(test_dataset, cfg)
     else:
-        train_dataset = SegPreprocessor(train_dataset, args, encoder_cfg, dataset_cfg)
-        val_dataset = SegPreprocessor(val_dataset, args, encoder_cfg, dataset_cfg)
-        test_dataset = SegPreprocessor(test_dataset, args, encoder_cfg, dataset_cfg)
-    
+        train_dataset = SegPreprocessor(train_dataset, cfg)
+        val_dataset = SegPreprocessor(val_dataset, cfg)
+        test_dataset = SegPreprocessor(test_dataset, cfg)
+
+    if (cfg.dataset["limited_label"]):
+        indices = random.sample(range(train_dataset.__len__()), int(train_dataset.__len__()*cfg.dataset.limited_label))
+        train_dataset = Subset(train_dataset, indices)
+        perc = cfg.dataset["limited_label"]*100
+        logger.info(f"Created a subset of the train dataset, with {perc}% of the labels available")
+
+    # get train val data loaders
+    train_loader = DataLoader(
+        train_dataset,
+        sampler=DistributedSampler(train_dataset),
+        batch_size=cfg.batch_size,#cfg.dataset["batch"],
+        num_workers=cfg.num_workers,
+        pin_memory=True,
+        persistent_workers=True,
+        worker_init_fn=seed_worker,
+        generator=get_generator(cfg.seed),
+        drop_last=True,
+    )
+    val_loader = DataLoader(
+        val_dataset,
+        sampler=DistributedSampler(val_dataset),
+        batch_size=cfg.batch_size,
+        num_workers=cfg.num_workers,
+        pin_memory=True,
+        persistent_workers=False,
+        #worker_init_fn=seed_worker,
+        #generator=g,
+        drop_last=False,
+    )
+
+    logger.info("Built {} dataset.".format(dataset_name))
 
     # prepare the foundation model
-    download_model(encoder_cfg)
-    encoder = ENCODER_REGISTRY.get(encoder_cfg['encoder_name'])(encoder_cfg, **encoder_cfg['encoder_model_args'])
+    download_model(cfg.encoder)
+    encoder = ENCODER_REGISTRY.get(cfg.encoder.encoder_name)(cfg.encoder, **cfg.encoder.encoder_model_args)
 
-    missing, incompatible_shape = encoder.load_encoder_weights(encoder_cfg['encoder_weights'])
-    logger.info("Loaded encoder weight from {}.".format(encoder_cfg['encoder_weights']))
+    missing, incompatible_shape = encoder.load_encoder_weights(cfg.encoder.encoder_weights)
+    logger.info("Loaded encoder weight from {}.".format(cfg.encoder.encoder_weights))
     if missing:
         logger.warning("Missing parameters:\n" + "\n".join("%s: %s" % (k, v) for k, v in sorted(missing.items())))
     if incompatible_shape:
         logger.warning("Incompatible parameters:\n" + "\n".join("%s: expected %s but found %s" % (k, v[0], v[1]) for k, v in sorted(incompatible_shape.items())))
 
     # prepare the segmentor
-    model = SEGMENTOR_REGISTRY.get(segmentor_cfg['segmentor_name'])(args, segmentor_cfg, encoder).to(device)
-    model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.local_rank], output_device=args.local_rank)
+    model = SEGMENTOR_REGISTRY.get(cfg.segmentor.segmentor_name)(cfg, cfg.segmentor, encoder).to(device)
+    model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[cfg.local_rank], output_device=cfg.local_rank)
     logger.info("Built {} for with {} encoder.".format(model.module.model_name, encoder.model_name))
 
     # training 
-    if not args.test_only:
+    if not cfg.eval_dir:
         
-        if (dataset_cfg["limited_label"]):
-            indices = random.sample(range(train_dataset.__len__()), int(train_dataset.__len__()*dataset_cfg["limited_label"]))
+        if (cfg.dataset.limited_label):
+            indices = random.sample(range(train_dataset.__len__()), int(train_dataset.__len__()*cfg.dataset.limited_label))
             train_dataset = Subset(train_dataset, indices)
-            perc = dataset_cfg["limited_label"]*100
+            perc = cfg.dataset.limited_label*100
             logger.info(f"Created a subset of the train dataset, with {perc}% of the labels available")
 
         # get train val data loaders
         train_loader = DataLoader(
             train_dataset,
             sampler=DistributedSampler(train_dataset),
-            batch_size=args.batch_size,#dataset_cfg["batch"],
-            num_workers=args.num_workers,
+            batch_size=cfg.batch_size,#cfg.dataset["batch"],
+            num_workers=cfg.num_workers,
             pin_memory=True,
             persistent_workers=True,
             worker_init_fn=seed_worker,
-            generator=get_generator(args.seed),
+            generator=get_generator(cfg.seed),
             drop_last=True,
         )
         val_loader = DataLoader(
             val_dataset,
             sampler=DistributedSampler(val_dataset),
-            batch_size=args.batch_size,
-            num_workers=args.num_workers,
+            batch_size=cfg.batch_size,
+            num_workers=cfg.num_workers,
             pin_memory=True,
             persistent_workers=False,
             #worker_init_fn=seed_worker,
@@ -222,56 +239,56 @@ def main():
         logger.info(f"Model Params: {params}")
 
         # build loss
-        criterion = LOSS_REGISTRY.get(segmentor_cfg['loss']['loss_name'])(segmentor_cfg['loss'])
+        criterion = LOSS_REGISTRY.get(cfg.segmentor.loss.loss_name)(cfg.segmentor.loss)
         logger.info("Built {} loss.".format(str(type(criterion))))
 
         # build optimizer
-        optimizer = OPTIMIZER_REGISTRY.get(segmentor_cfg['optimizer']['optimizer_name'])(model, segmentor_cfg['optimizer'])
+        optimizer = OPTIMIZER_REGISTRY.get(cfg.segmentor.optimizer.optimizer_name)(model, cfg.segmentor.optimizer)
         logger.info("Built {} optimizer.".format(str(type(optimizer))))
 
         # build scheduler
-        total_iters = args.epochs * len(train_loader)
-        scheduler = SCHEDULER_REGISTRY.get(segmentor_cfg['scheduler']['scheduler_name'])(optimizer, total_iters, segmentor_cfg['scheduler'])
+        total_iters = cfg.epochs * len(train_loader)
+        scheduler = SCHEDULER_REGISTRY.get(cfg.segmentor.scheduler.scheduler_name)(optimizer, total_iters, cfg.segmentor.scheduler)
         logger.info("Built {} scheduler.".format(str(type(scheduler))))
 
 
         # training: put all components into engines
         if task_name == "regression":
-            val_evaluator = RegEvaluator(args, val_loader, exp_dir, device)
-            trainer = RegTrainer(args, model, train_loader, criterion, optimizer, scheduler, val_evaluator, exp_dir, device)
+            val_evaluator = RegEvaluator(cfg, val_loader, exp_dir, device)
+            trainer = RegTrainer(cfg, model, train_loader, criterion, optimizer, scheduler, val_evaluator, exp_dir, device)
         else:
-            val_evaluator = SegEvaluator(args, val_loader, exp_dir, device)
-            trainer = SegTrainer(args, model, train_loader, criterion, optimizer, scheduler, val_evaluator, exp_dir, device)
+            val_evaluator = SegEvaluator(cfg, val_loader, exp_dir, device)
+            trainer = SegTrainer(cfg, model, train_loader, criterion, optimizer, scheduler, val_evaluator, exp_dir, device)
         
         # resume training if model_checkpoint is provided
-        if args.resume_from is not None:
-            trainer.load_model(args.resume_from)
+        if cfg.resume_from is not None:
+            trainer.load_model(cfg.resume_from)
 
         trainer.train()
     
-    # testing
+    # Evaluation
     else:
         test_loader = DataLoader(
             test_dataset,
             sampler=DistributedSampler(test_dataset),
-            batch_size=args.batch_size,                       
-            num_workers=args.num_workers,
+            batch_size=cfg.batch_size,                       
+            num_workers=cfg.num_workers,
             pin_memory=True,
             persistent_workers=False,
             drop_last=False,
         )
 
-        logger.info("Built {} dataset for testing.".format(dataset_name))
+        logger.info("Built {} dataset for evaluation.".format(dataset_name))
 
         if task_name == "regression":
-            test_evaluator = RegEvaluator(args, test_loader, exp_dir, device)
+            test_evaluator = RegEvaluator(cfg, test_loader, exp_dir, device)
         else:
-            test_evaluator = SegEvaluator(args, test_loader, exp_dir, device)
+            test_evaluator = SegEvaluator(cfg, test_loader, exp_dir, device)
 
         model_ckpt_path = os.path.join(exp_dir, next(f for f in os.listdir(exp_dir) if f.endswith('_final.pth')))
         test_evaluator.evaluate(model, 'final model', model_ckpt_path)
 
-    if args.use_wandb and args.rank == 0:
+    if cfg.use_wandb and cfg.rank == 0:
         wandb.finish()
 
 if __name__ == "__main__":
