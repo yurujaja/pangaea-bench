@@ -5,8 +5,6 @@ import logging
 import torch
 import torch.nn.functional as F
 
-import wandb
-
 class Evaluator():
     def __init__(self, args, val_loader, exp_dir, device):
 
@@ -20,6 +18,11 @@ class Evaluator():
         self.split = self.val_loader.dataset.split
         self.num_classes = len(self.classes)
         self.max_name_len = max([len(name) for name in self.classes])
+
+        if args.use_wandb:
+            import wandb
+            self.wandb = wandb
+
 
     def __call__(self, model):
         pass
@@ -140,7 +143,7 @@ class SegEvaluator(Evaluator):
         self.logger.info(macc_str)
 
         if self.args.use_wandb and self.args.rank == 0:
-            wandb.log(
+           self.wandb.log(
                 {
                     "val_mIoU": metrics["mIoU"],
                     "val_mF1": metrics["mF1"],
@@ -212,4 +215,4 @@ class RegEvaluator(Evaluator):
         self.logger.info(header+mse+rmse)
 
         if self.args.use_wandb and self.args.rank == 0:
-            wandb.log({"val_MSE": metrics["MSE"], "val_RMSE": metrics["RMSE"]})
+            self.wandb.log({"val_MSE": metrics["MSE"], "val_RMSE": metrics["RMSE"]})

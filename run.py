@@ -140,6 +140,7 @@ def main():
 
     # init wandb
     if args.use_wandb and args.rank == 0:
+        import wandb
         wandb.init(
             project="geofm-bench",
             name=exp_name,
