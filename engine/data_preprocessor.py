@@ -1,14 +1,19 @@
+import random
+
 import torch
 import torch.nn.functional as F
 
 import numpy as np
 import logging
 
+from utils.registry import AUGMENTER_REGISTRY
 
-class DataPreprocessor(torch.utils.data.Dataset):
+class RichDataset(torch.utils.data.Dataset):
+    """Torch dataset wrapper with extra information
+    """
     def __init__(self, dataset, cfg):
         self.dataset = dataset
-        # self.config = cfg.augmentation
+        self.config = cfg.augmentation
         self.encoder_config = cfg.encoder
         self.data_config = cfg.dataset
         self.root_path = cfg.dataset.root_path
@@ -24,44 +29,42 @@ class DataPreprocessor(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.dataset)
 
-
-class SegPreprocessor(DataPreprocessor):
-    def __init__(self, dataset, cfg):
+@AUGMENTER_REGISTRY.register()
+class SegPreprocessor(RichDataset):
+    def __init__(self, dataset, cfg, local_cfg):
         super().__init__(dataset, cfg)
 
         self.preprocessor = {}
         
-        self.preprocessor['optical'] = OpticalShapeAdaptor(cfg) if "optical" in cfg.dataset["bands"].keys() else None
-        self.preprocessor['sar'] = SARShapeAdaptor(cfg) if "sar" in cfg.dataset["bands"].keys() else None
+        self.preprocessor['optical'] = OpticalShapeAdaptor(cfg) if "optical" in cfg.dataset.bands.keys() else None
+        self.preprocessor['sar'] = SARShapeAdaptor(cfg) if "sar" in cfg.dataset.bands.keys() else None
         # TO DO: other modalities
 
 
     def __getitem__(self, index):
         data = self.dataset[index]
-        image = {}
 
         for k, v in data['image'].items():
-            image[k] = self.preprocessor[k](v)
+            data['image'][k] = self.preprocessor[k](v)
 
-        target = data['target'].long()
+        data['target'] = data['target'].long()
 
-        return image, target
+        return data
     
-
-class RegPreprocessor(SegPreprocessor):
-    def __init__(self, dataset, cfg):
+@AUGMENTER_REGISTRY.register()
+class RegPreprocessor(RichDataset):
+    def __init__(self, dataset, cfg, local_cfg):
         super().__init__(dataset, cfg)
 
     def __getitem__(self, index):
         data = self.dataset[index]
-        image = {}
 
         for k, v in data['image'].items():
-            image[k] = self.preprocessor[k](v)
+            data['image'][k] = self.preprocessor[k](v)
 
-        target = data['target'].float()
+        data['target'] = data['target'].float()
 
-        return image, target
+        return data
 
 
 class SARShapeAdaptor():
@@ -152,3 +155,47 @@ class OpticalShapeAdaptor():
 
         return optical_image
 
+class BaseAugment(RichDataset):
+    def __init__(self, dataset:torch.utils.data.Dataset, cfg, local_cfg):
+        super().__init__(dataset, cfg)
+        self.ignore_modalities = local_cfg.ignore_modalities
+
+@AUGMENTER_REGISTRY.register()
+class FlipAugment(BaseAugment):
+    def __init__(self, dataset, cfg, local_cfg):
+        super().__init__(dataset, cfg, local_cfg)
+        self.ud_probability = local_cfg.ud_probability
+        self.lr_probability = local_cfg.lr_probability
+
+    def __getitem__(self, index):
+        data = self.dataset[index]
+        if random.random() < self.ud_probability:
+            for k, v in data['image'].items():
+                if k not in self.ignore_modalities:
+                    data['image'][k] = torch.fliplr(v)
+            data['target'] = torch.fliplr(data['target'])
+        if random.random() > self.lr_probability:
+            for k, v in data['image'].items():
+                if k not in self.ignore_modalities:
+                    data['image'][k] = torch.flipud(v)
+            data['target'] = torch.flipud(data['target'])
+        return data
+    
+@AUGMENTER_REGISTRY.register()
+class GammaAugment(BaseAugment):
+    def __init__(self, dataset, cfg, local_cfg):
+        super().__init__(dataset, cfg, local_cfg)
+        self.probability = local_cfg.probability
+        self.gamma_range = local_cfg.gamma_range
+
+    def __getitem__(self, index):
+        data = self.dataset[index]
+        if random.random() < self.probability:
+            for k, v in data['image'].items():
+                if k not in self.ignore_modalities:
+                    data['image'][k] = v * random.uniform(*self.gamma_range)
+        return data
+
+# TODO: Train time: Random crop instead of bilinear if it would be downsampling. Should increase dataset size to have "full coverage"?
+# TODO: Eval time: Crop-tile, and mark as masked on overlaps 
+#       -> will this skew macro stats? I think only if the number of tiles is different per input (eg. non-uniform sized datasets).

@@ -48,13 +48,14 @@ Should be the same as the old version of the code, maybe some dependencies can b
 
 ## Example
 ### Training
-Set `config` `encoder_config`, `dataset_config`, and  `segmentor_config` and start the training process on single gpu:
+Set `config`, `encoder_config`, `dataset_config`, `segmentor_config` and `augmentation_config` and start the training process on single gpu:
 ```
 torchrun --nnodes=1 --nproc_per_node=1 run.py  \
 --config configs/run/default.yaml
 --encoder_config configs/foundation_models/prithvi.yaml  \
 --dataset_config configs/datasets/mados.yaml   \
 --segmentor_config configs/segmentors/upernet.yaml \
+--augmentation_config configs/augmentations/segmentation_default.yaml
 --num_workers 4 --eval_interval 1
 ```
 

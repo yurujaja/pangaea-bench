@@ -6,11 +6,10 @@ from omegaconf import OmegaConf
 from collections import defaultdict
 from typing import Any, Dict, Optional
 
+
 def load_configs(parser:argparse.ArgumentParser) -> OmegaConf:
     cli_provided, cli_defaults = omegaconf_from_argparse(parser)
     all_cli = OmegaConf.merge(cli_defaults, cli_provided)
-
-    print(all_cli)
 
     if all_cli.eval_dir:
         # Just load the dumped config file if we are evaluating
@@ -28,7 +27,7 @@ def load_configs(parser:argparse.ArgumentParser) -> OmegaConf:
         encoder_cfg = OmegaConf.load(bootstrap_cfg.encoder_config_path) 
         dataset_cfg = OmegaConf.load(bootstrap_cfg.dataset_config_path) 
         segmentor_cfg = OmegaConf.load(bootstrap_cfg.segmentor_config_path)
-        # augmentation_cfg = OmegaConf.load(bootstrap_cfg.augmentation_config_path)
+        augmentation_cfg = OmegaConf.load(bootstrap_cfg.augmentation_config_path)
    
         # Set some invariants based on other configs
         segmentor_cfg['num_classes'] = dataset_cfg['num_classes']
@@ -44,7 +43,7 @@ def load_configs(parser:argparse.ArgumentParser) -> OmegaConf:
         file_cfg["encoder"] = encoder_cfg
         file_cfg["dataset"] = dataset_cfg
         file_cfg["segmentor"] = segmentor_cfg
-        # file_cfg["augmentation"] = augmentation_cfg
+        file_cfg["augmentation"] = augmentation_cfg
 
         # Assemble final config file
         cfg = OmegaConf.merge(cli_defaults, default_cfg, file_cfg, cli_provided)
@@ -82,6 +81,7 @@ def omegaconf_from_argparse(parser: argparse.ArgumentParser):
     defaults = OmegaConf.create(_nest(default_args))
 
     return provided, defaults
+
 
 def _nest(
     d: Dict[str, Any], separator: str = ".", include_none: bool = False

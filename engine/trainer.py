@@ -77,7 +77,7 @@ class Trainer():
 
         end_time = time.time()
         for batch_idx, data in enumerate(self.train_loader):
-            image, target = data
+            image, target = data['image'], data['target']
             image = {k: v.to(self.device) for k, v in image.items()}
             target = target.to(self.device)
             self.training_stats['data_time'].update(time.time() - end_time)

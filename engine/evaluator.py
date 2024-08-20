@@ -58,7 +58,7 @@ class SegEvaluator(Evaluator):
         confusion_matrix = torch.zeros((self.num_classes, self.num_classes), device=self.device)
 
         for batch_idx, data in enumerate(tqdm(self.val_loader, desc=tag)):
-            image, target = data # TODO make this consistent with how data is passed around before the preprocessor
+            image, target = data['image'], data['target']
             image = {k: v.to(self.device) for k, v in image.items()}
             target = target.to(self.device)
 
@@ -175,7 +175,7 @@ class RegEvaluator(Evaluator):
         # confusion_matrix = torch.zeros((self.num_classes, self.num_classes), device=self.device)
 
         for batch_idx, data in enumerate(tqdm(self.val_loader, desc=tag)):
-            image, target = data # TODO make this consistent with how data is passed around before the preprocessor
+            image, target = data['image'], data['target']
             image = {k: v.to(self.device) for k, v in image.items()}
             target = target.to(self.device)
 

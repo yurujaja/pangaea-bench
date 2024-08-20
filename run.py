@@ -4,6 +4,7 @@ import time
 import argparse
 import ptflops
 import random
+import pprint
 from omegaconf import OmegaConf
 
 import torch
@@ -22,7 +23,7 @@ import utils.losses
 from utils.utils import fix_seed, get_generator, seed_worker, prepare_input
 from utils.logger import init_logger
 from utils.configs import load_configs
-from utils.registry import ENCODER_REGISTRY, SEGMENTOR_REGISTRY, DATASET_REGISTRY, OPTIMIZER_REGISTRY, SCHEDULER_REGISTRY, LOSS_REGISTRY
+from utils.registry import ENCODER_REGISTRY, SEGMENTOR_REGISTRY, DATASET_REGISTRY, OPTIMIZER_REGISTRY, SCHEDULER_REGISTRY, LOSS_REGISTRY, AUGMENTER_REGISTRY
 
 parser = argparse.ArgumentParser(description="Train a downstream task with geospatial foundation models.")
 
@@ -37,8 +38,8 @@ parser.add_argument("--encoder_config", dest="encoder_config_path",
                     help="train config file path")
 parser.add_argument("--segmentor_config", dest="segmentor_config_path",
                     help="train config file path")
-# parser.add_argument("--augmentation_config",dest="augmentation_config_path",
-#                     help="train config file path")
+parser.add_argument("--augmentation_config",dest="augmentation_config_path",
+                    help="train config file path")
 parser.add_argument("--finetune", action="store_true",
                     help="fine tune whole networks")
 parser.add_argument("--resume_from", type=str,
@@ -120,7 +121,7 @@ def main():
 
     logger = init_logger(logger_path, rank=cfg.rank)
     logger.info("============ Initialized logger ============")
-    logger.info("\n".join("%s: %s" % (k, str(v)) for k, v in sorted(OmegaConf.to_container(cfg).items())))
+    logger.info(pprint.pformat(OmegaConf.to_container(cfg), compact=True).strip("{}"))
     logger.info("The experiment is stored in %s\n" % exp_dir)
     logger.info(f"Device used: {device}")
 
@@ -139,14 +140,12 @@ def main():
     train_dataset, val_dataset, test_dataset = dataset.get_splits(cfg.dataset)
     
     # Apply data processing to the datasets
-    if task_name == "regression":
-        train_dataset = RegPreprocessor(train_dataset, cfg)
-        val_dataset = RegPreprocessor(val_dataset, cfg)
-        test_dataset = RegPreprocessor(test_dataset, cfg)
-    else:
-        train_dataset = SegPreprocessor(train_dataset, cfg)
-        val_dataset = SegPreprocessor(val_dataset, cfg)
-        test_dataset = SegPreprocessor(test_dataset, cfg)
+    for step in cfg.augmentation.train:
+        train_dataset = AUGMENTER_REGISTRY.get(step)(train_dataset, cfg, cfg.augmentation.train[step])
+
+    for step in cfg.augmentation.test:
+        val_dataset = AUGMENTER_REGISTRY.get(step)(val_dataset, cfg, cfg.augmentation.test[step])
+        test_dataset = AUGMENTER_REGISTRY.get(step)(test_dataset, cfg, cfg.augmentation.test[step])
 
     if (cfg.dataset["limited_label"]):
         indices = random.sample(range(train_dataset.__len__()), int(train_dataset.__len__()*cfg.dataset.limited_label))
@@ -231,9 +230,10 @@ def main():
 
         logger.info("Built {} dataset for training and evaluation.".format(dataset_name))
 
-        # flops calculator TO DO: make it not hard coded
-        train_features, _ = next(iter(train_loader))
-        input_res = tuple(train_features["optical"].size())
+        # flops calculator TODO: make it not hard coded
+        # TODO: Make this not drop the first training sample
+        train_features = next(iter(train_loader))
+        input_res = tuple(train_features["image"]["optical"].size())
         macs, params = ptflops.get_model_complexity_info(model=model, input_res=input_res, input_constructor=prepare_input, as_strings=True, backend='pytorch', verbose=True)
         logger.info(f"Model MACs: {macs}")
         logger.info(f"Model Params: {params}")
