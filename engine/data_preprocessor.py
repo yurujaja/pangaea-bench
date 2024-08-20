@@ -2,6 +2,7 @@ import random
 
 import torch
 import torch.nn.functional as F
+import torchvision.transforms as T
 
 import numpy as np
 import logging
@@ -19,6 +20,8 @@ class RichDataset(torch.utils.data.Dataset):
         self.root_path = cfg.dataset.root_path
         self.data_mean = cfg.dataset.data_mean
         self.data_std = cfg.dataset.data_std
+        # self.data_min = cfg.dataset.data_min
+        # self.data_max = cfg.dataset.data_max
         self.classes = cfg.dataset.classes
         self.class_num = len(self.classes)
         self.split = dataset.split
@@ -78,7 +81,6 @@ class SARShapeAdaptor():
         self.used_bands_mask = torch.tensor([b in self.input_bands for b in self.dataset_bands], dtype=torch.bool)
         self.avail_bands_mask = torch.tensor([b in self.dataset_bands for b in self.input_bands], dtype=torch.bool)
         self.avail_bands_indices = torch.tensor([self.dataset_bands.index(b) if b in self.dataset_bands else -1 for b in self.input_bands], dtype=torch.long)
-                
         self.need_padded = self.avail_bands_mask.sum() < len(self.input_bands)
 
         self.logger = logging.getLogger()
@@ -98,7 +100,6 @@ class SARShapeAdaptor():
         return sar_image
 
     def __call__(self, sar_image):
-
         if self.multi_temporal:
             final_image = []
             for i in range(sar_image.shape[1]):
@@ -142,7 +143,6 @@ class OpticalShapeAdaptor():
         return optical_image
 
     def __call__(self, optical_image):
-
         if self.multi_temporal:
             final_image = []
             for i in range(optical_image.shape[1]):
@@ -193,7 +193,29 @@ class GammaAugment(BaseAugment):
         if random.random() < self.probability:
             for k, v in data['image'].items():
                 if k not in self.ignore_modalities:
-                    data['image'][k] = v * random.uniform(*self.gamma_range)
+                    data['image'][k] = torch.pow(v, random.uniform(*self.gamma_range))
+        return data
+    
+@AUGMENTER_REGISTRY.register()
+class NoramlizeStdMean(BaseAugment):
+    def __init__(self, dataset, cfg, local_cfg):
+        super().__init__(dataset, cfg, local_cfg)
+        self.normalize = T.Normalize(mean=self.data_mean['optical'], std=self.data_std['optical'])
+
+    def __getitem__(self, index):
+        data = self.dataset[index]
+        for k, v in data['image'].items():
+            if k not in self.ignore_modalities:
+                data['image'][k] = self.normalize(data['image'][k])
+        return data
+
+@AUGMENTER_REGISTRY.register()
+class NoramlizeMinMax(BaseAugment):
+    def __getitem__(self, index):
+        data = self.dataset[index]
+        for k, v in data['image'].items():
+            if k not in self.ignore_modalities:
+                data['image'][k] = (data['image'][k] - self.data_min) / self.data_max
         return data
 
 # TODO: Train time: Random crop instead of bilinear if it would be downsampling. Should increase dataset size to have "full coverage"?
