@@ -174,7 +174,7 @@ class FlipAugment(BaseAugment):
                 if k not in self.ignore_modalities:
                     data['image'][k] = torch.fliplr(v)
             data['target'] = torch.fliplr(data['target'])
-        if random.random() > self.lr_probability:
+        if random.random() < self.lr_probability:
             for k, v in data['image'].items():
                 if k not in self.ignore_modalities:
                     data['image'][k] = torch.flipud(v)
@@ -204,8 +204,10 @@ class NoramlizeStdMean(BaseAugment):
 
     def __getitem__(self, index):
         data = self.dataset[index]
+        # import pdb; pdb.set_trace()
         for k, v in data['image'].items():
             if k not in self.ignore_modalities:
+                
                 data['image'][k] = self.normalize(data['image'][k])
         return data
 
@@ -217,6 +219,105 @@ class NoramlizeMinMax(BaseAugment):
             if k not in self.ignore_modalities:
                 data['image'][k] = (data['image'][k] - self.data_min) / self.data_max
         return data
+
+@AUGMENTER_REGISTRY.register()
+class ColorAugmentation(BaseAugment):
+    def __init__(self, dataset, cfg, local_cfg):
+        super().__init__(dataset, cfg, local_cfg)
+        self.brightness = getattr(local_cfg, 'brightness', 0)
+        self.contrast = getattr(local_cfg, 'contrast', 0)
+        self.br_probability = getattr(local_cfg, 'br_probability', 0)
+        self.ct_probability = getattr(local_cfg, 'ct_probability', 0)
+    
+    def adjust_brightness(self, image, factor, clip_output=True):
+        if isinstance(factor, float):
+            factor = torch.as_tensor(factor, device=image.device, dtype=image.dtype)
+        while len(factor.shape) != len(image.shape):
+            factor = factor[..., None]
+        
+        img_adjust = image + factor
+        if clip_output:
+            img_adjust = img_adjust.clamp(min=0.0, max=1.0)
+
+        return img_adjust
+
+    def adjust_contrast(self, image, factor, clip_output=True):
+        if isinstance(factor, float):
+            factor = torch.as_tensor(factor, device=image.device, dtype=image.dtype)
+        while len(factor.shape) != len(image.shape):
+            factor = factor[..., None]
+        assert factor >= 0, "Contrast factor must be positive"
+
+        img_adjust = image * factor
+        if clip_output:
+            img_adjust = img_adjust.clamp(min=0.0, max=1.0)
+
+        return img_adjust
+
+    def __getitem__(self, index):
+        data = self.dataset[index]
+        
+        for k, v in data['image'].items():
+            brightness = random.uniform(0, self.brightness)
+            if random.random() < self.br_probability:
+                if k not in self.ignore_modalities:
+                    data['image'][k] = self.adjust_brightness(data['image'][k], brightness)
+                
+        for k, v in data['image'].items():
+            if random.random() < self.ct_probability:
+                contrast = random.uniform(0, self.contrast)
+                if k not in self.ignore_modalities:
+                    data['image'][k] = self.adjust_contrast(data['image'][k], contrast)
+            
+        return data
+
+@AUGMENTER_REGISTRY.register()
+class RandomRotation(BaseAugment):
+    def __init__(self, dataset, cfg, local_cfg):
+        super().__init__(dataset, cfg, local_cfg)
+        self.degrees = local_cfg.degrees
+    
+    def __getitem__(self, index):
+        data = self.dataset[index]
+        for k, v in data['image'].items():
+            if k not in self.ignore_modalities:
+                data['image'][k] = T.RandomRotation(self.degrees)(v)
+        return data
+
+@AUGMENTER_REGISTRY.register()
+class RandomCrop(BaseAugment):
+    def __init__(self, dataset, cfg, local_cfg):
+        super().__init__(dataset, cfg, local_cfg)
+        self.size = local_cfg.size
+
+        # Optional parameters with default values if not present in local_cfg
+        self.padding = getattr(local_cfg, 'padding', None)
+        self.pad_if_needed = getattr(local_cfg, 'pad_if_needed', False)
+        self.fill = getattr(local_cfg, 'fill', 0)
+        self.padding_mode = getattr(local_cfg, 'padding_mode', 'constant')
+    
+    def __getitem__(self, index):
+        data = self.dataset[index]
+        for k, v in data['image'].items():
+            if k not in self.ignore_modalities:
+                data['image'][k] = T.RandomCrop(self.size, self.padding, self.pad_if_needed, self.fill, self.padding_mode)(v)
+            
+        return data
+    
+@AUGMENTER_REGISTRY.register()
+class Resize(BaseAugment):
+    def __init__(self, dataset, cfg, local_cfg):
+        super().__init__(dataset, cfg, local_cfg)
+        self.size = local_cfg.size
+    
+    def __getitem__(self, index):
+        data = self.dataset[index]
+        for k, v in data['image'].items():
+            if k not in self.ignore_modalities:
+                data['image'][k] = T.Resize(self.size)(v)
+
+        return data
+
 
 # TODO: Train time: Random crop instead of bilinear if it would be downsampling. Should increase dataset size to have "full coverage"?
 # TODO: Eval time: Crop-tile, and mark as masked on overlaps 
