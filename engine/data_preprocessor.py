@@ -171,7 +171,7 @@ class RandomFlip(BaseAugment):
                 if k not in self.ignore_modalities:
                     data['image'][k] = torch.fliplr(v)
             data['target'] = torch.fliplr(data['target'])
-        if random.random() > self.lr_probability:
+        if random.random() < self.lr_probability:
             for k, v in data['image'].items():
                 if k not in self.ignore_modalities:
                     data['image'][k] = torch.flipud(v)

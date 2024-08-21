@@ -7,7 +7,7 @@ input_size: 224
 embed_dim: 1024
 
 encoder_model_args:
-  model_identifier: Sentinel2_SwinB_MI_MS #Sentinel2_SwinB_SI_RGB   #
+  model_identifier: Sentinel2_SwinB_SI_MS #Sentinel2_SwinB_SI_RGB   #
   fpn: False
   
 input_bands:
