@@ -48,15 +48,18 @@ Should be the same as the old version of the code, maybe some dependencies can b
 
 ## Example
 ### Training
-Now running config is given in terminal directly for fast hyperparameter tuning, we may add run config file back later
-Set `encoder_config`, `dataset_config`, and  `segmentor_config` and start the training process on single gpu:
+Set `config`, `encoder_config`, `dataset_config`, `segmentor_config` and `augmentation_config` and start the training process on single gpu:
 ```
 torchrun --nnodes=1 --nproc_per_node=1 run.py  \
+--config configs/run/default.yaml
 --encoder_config configs/foundation_models/prithvi.yaml  \
 --dataset_config configs/datasets/mados.yaml   \
 --segmentor_config configs/segmentors/upernet.yaml \
+--augmentation_config configs/augmentations/segmentation_default.yaml
 --num_workers 4 --eval_interval 1
 ```
+
+All of these parameters can also be set in the run config file.
 
 To use more gpus or nodes, set `--nnodes` and `--nproc_per_node` correspondingly, see:
 https://pytorch.org/docs/stable/elastic/run.html
@@ -64,6 +67,8 @@ https://pytorch.org/docs/stable/elastic/run.html
 To use mixed precision training, specify either `--fp16` for float16 and or `--bf16` for bfloat16
 
 For fine-tuning instead of linear probing, specify `--finetune`.
+
+
 
 ## Some numbers
 

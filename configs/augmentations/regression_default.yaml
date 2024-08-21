@@ -1,0 +1,8 @@
+train:
+  RegPreprocessor: ~
+  FlipAugment:
+    ignore_modalities: []
+    ud_probability: 0.3
+    lr_probability: 0.3
+test:
+  RegPreprocessor: ~

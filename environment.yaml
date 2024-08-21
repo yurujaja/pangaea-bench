@@ -22,5 +22,6 @@ dependencies:
   - pytorch-cuda=11.8
   - gdown
   - ptflops
-  #  - opencv
+  - fastai::opencv-python-headless
   - google-cloud-storage
+  - omegaconf

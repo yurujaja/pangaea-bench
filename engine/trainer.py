@@ -9,8 +9,6 @@ from utils.logger import RunningAverageMeter, sec_to_hm
 
 import logging
 
-import wandb
-
 class Trainer():
     def __init__(self, args, model, train_loader, criterion, optimizer, lr_scheduler, evaluator, exp_dir, device):
         #torch.set_num_threads(1)
@@ -43,6 +41,9 @@ class Trainer():
         self.epochs = args.epochs
 
         self.use_wandb = args.use_wandb
+        if self.use_wandb:
+            import wandb
+            self.wandb = wandb
 
 
     def train(self):
@@ -76,7 +77,7 @@ class Trainer():
 
         end_time = time.time()
         for batch_idx, data in enumerate(self.train_loader):
-            image, target = data
+            image, target = data['image'], data['target']
             image = {k: v.to(self.device) for k, v in image.items()}
             target = target.to(self.device)
             self.training_stats['data_time'].update(time.time() - end_time)
@@ -101,7 +102,7 @@ class Trainer():
             end_time = time.time()
 
             if self.use_wandb and self.rank == 0:
-                wandb.log(
+                self.wandb.log(
                     {
                         "train_loss": loss.item(),
                         "learning_rate": self.optimizer.param_groups[0]["lr"],
