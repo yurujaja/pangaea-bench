@@ -231,6 +231,77 @@ class NormalizeMinMax(BaseAugment):
                 data['image'][modality] = ((data['image'][modality] - data_mins) * (self.max - self.min) - self.min) / data_maxes
         return data
 
+
+
+@AUGMENTER_REGISTRY.register()
+class ColorAugmentation(BaseAugment):
+    def __init__(self, dataset, cfg, local_cfg):
+        super().__init__(dataset, cfg, local_cfg)
+        self.brightness = getattr(local_cfg, 'brightness', 0)
+        self.contrast = getattr(local_cfg, 'contrast', 0)
+        self.br_probability = getattr(local_cfg, 'br_probability', 0)
+        self.ct_probability = getattr(local_cfg, 'ct_probability', 0)
+    
+    def adjust_brightness(self, image, factor, clip_output=True):
+        if isinstance(factor, float):
+            factor = torch.as_tensor(factor, device=image.device, dtype=image.dtype)
+        while len(factor.shape) != len(image.shape):
+            factor = factor[..., None]
+        
+        img_adjust = image + factor
+        if clip_output:
+            img_adjust = img_adjust.clamp(min=0.0, max=1.0)
+
+        return img_adjust
+
+    def adjust_contrast(self, image, factor, clip_output=True):
+        if isinstance(factor, float):
+            factor = torch.as_tensor(factor, device=image.device, dtype=image.dtype)
+        while len(factor.shape) != len(image.shape):
+            factor = factor[..., None]
+        assert factor >= 0, "Contrast factor must be positive"
+
+        img_adjust = image * factor
+        if clip_output:
+            img_adjust = img_adjust.clamp(min=0.0, max=1.0)
+
+        return img_adjust
+
+    def __getitem__(self, index):
+        data = self.dataset[index]
+        
+        for k, v in data['image'].items():
+            brightness = random.uniform(0, self.brightness)
+            if random.random() < self.br_probability:
+                if k not in self.ignore_modalities:
+                    data['image'][k] = self.adjust_brightness(data['image'][k], brightness)
+                
+        for k, v in data['image'].items():
+            if random.random() < self.ct_probability:
+                contrast = random.uniform(0, self.contrast)
+                if k not in self.ignore_modalities:
+                    data['image'][k] = self.adjust_contrast(data['image'][k], contrast)
+            
+        return data
+
+    
+@AUGMENTER_REGISTRY.register()
+class Resize(BaseAugment):
+    def __init__(self, dataset, cfg, local_cfg):
+        super().__init__(dataset, cfg, local_cfg)
+        self.size = local_cfg.size
+    
+    def __getitem__(self, index):
+        data = self.dataset[index]
+        for k, v in data['image'].items():
+            if k not in self.ignore_modalities:
+                data['image'][k] = T.Resize(self.size)(v)
+            data['target'] = T.Resize(self.size, interpolation = T.InterpolationMode.NEAREST)(data['target'])
+
+        return data
+
+
+
 # TODO: Move augmentation stuff _after_ the preprocessor (will need info on which bands we kept, and will need to move the weirdo prithvi dim to the right position)
 # TODO: Train time: Random crop instead of bilinear if it would be downsampling. Should increase dataset size to have "full coverage"?
 # TODO: Eval time: Crop-tile, and mark as masked on overlaps 
