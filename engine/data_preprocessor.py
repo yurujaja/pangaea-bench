@@ -231,8 +231,6 @@ class NormalizeMinMax(BaseAugment):
                 data['image'][modality] = ((data['image'][modality] - data_mins) * (self.max - self.min) - self.min) / data_maxes
         return data
 
-
-
 @AUGMENTER_REGISTRY.register()
 class ColorAugmentation(BaseAugment):
     def __init__(self, dataset, cfg, local_cfg):
@@ -271,14 +269,14 @@ class ColorAugmentation(BaseAugment):
         data = self.dataset[index]
         
         for k, v in data['image'].items():
-            brightness = random.uniform(0, self.brightness)
+            brightness = random.uniform(-self.brightness, self.brightness)
             if random.random() < self.br_probability:
                 if k not in self.ignore_modalities:
                     data['image'][k] = self.adjust_brightness(data['image'][k], brightness)
                 
         for k, v in data['image'].items():
             if random.random() < self.ct_probability:
-                contrast = random.uniform(0, self.contrast)
+                contrast = random.uniform(1 - self.contrast, 1 + self.contrast)
                 if k not in self.ignore_modalities:
                     data['image'][k] = self.adjust_contrast(data['image'][k], contrast)
             
