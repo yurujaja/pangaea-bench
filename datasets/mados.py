@@ -65,12 +65,6 @@ class MADOS(torch.utils.data.Dataset):
                     cl_path = os.path.join(tile, '10', os.path.basename(tile) + '_L2R_cl_' + crop)
                     self.target_list.append(cl_path)
 
-        self.transform = T.Compose([
-            #T.Resize((self.height, self.height), antialias=False),
-            T.Normalize(mean=self.data_mean['optical'], std=self.data_std['optical'])
-        ])
-        self.normalize = T.Normalize(mean=self.data_mean['optical'], std=self.data_std['optical'])
-
     def __len__(self):
         return len(self.image_list)
 
@@ -94,7 +88,6 @@ class MADOS(torch.utils.data.Dataset):
 
         image = torch.stack(current_image)
         invalid_mask = torch.isnan(image)
-        image = self.transform(image)
         image[invalid_mask] = 0
 
 

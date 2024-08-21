@@ -14,14 +14,9 @@ class RichDataset(torch.utils.data.Dataset):
     """
     def __init__(self, dataset, cfg):
         self.dataset = dataset
-        self.config = cfg.augmentation
-        self.encoder_config = cfg.encoder
-        self.data_config = cfg.dataset
+        self.root_cfg = cfg
+        self.cfg = cfg.dataset
         self.root_path = cfg.dataset.root_path
-        self.data_mean = cfg.dataset.data_mean
-        self.data_std = cfg.dataset.data_std
-        # self.data_min = cfg.dataset.data_min
-        # self.data_max = cfg.dataset.data_max
         self.classes = cfg.dataset.classes
         self.class_num = len(self.classes)
         self.split = dataset.split
@@ -107,6 +102,7 @@ class SARShapeAdaptor():
             sar_image = torch.stack(final_image, dim = 1)
         else:
             sar_image = self.preprocess_single_timeframe(sar_image)
+            # TODO move this to the Prithvi implementation lol
             if (self.encoder_name == "Prithvi_Encoder") and (len(sar_image.shape) == 3):
                 sar_image = sar_image.unsqueeze(1)
 
@@ -150,6 +146,7 @@ class OpticalShapeAdaptor():
             optical_image = torch.stack(final_image, dim = 1)
         else:
             optical_image = self.preprocess_single_timeframe(optical_image)
+            # TODO move this to the Prithvi implementation lol
             if (self.encoder_name == "Prithvi_Encoder") and (len(optical_image.shape) == 3):
                 optical_image = optical_image.unsqueeze(1)
 
@@ -161,7 +158,7 @@ class BaseAugment(RichDataset):
         self.ignore_modalities = local_cfg.ignore_modalities
 
 @AUGMENTER_REGISTRY.register()
-class FlipAugment(BaseAugment):
+class RandomFlip(BaseAugment):
     def __init__(self, dataset, cfg, local_cfg):
         super().__init__(dataset, cfg, local_cfg)
         self.ud_probability = local_cfg.ud_probability
@@ -197,27 +194,44 @@ class GammaAugment(BaseAugment):
         return data
     
 @AUGMENTER_REGISTRY.register()
-class NoramlizeStdMean(BaseAugment):
+class NormalizeMeanStd(BaseAugment):
     def __init__(self, dataset, cfg, local_cfg):
         super().__init__(dataset, cfg, local_cfg)
-        self.normalize = T.Normalize(mean=self.data_mean['optical'], std=self.data_std['optical'])
+        self.normalizers = {}
+        for modality in self.cfg.bands:
+            self.normalizers[modality] = T.Normalize(mean=self.cfg.data_mean[modality], std=self.cfg.data_std[modality])
 
     def __getitem__(self, index):
         data = self.dataset[index]
-        for k, v in data['image'].items():
-            if k not in self.ignore_modalities:
-                data['image'][k] = self.normalize(data['image'][k])
+        for modality in data['image']:
+            if modality not in self.ignore_modalities:
+                data['image'][modality] = self.normalizers[modality](data['image'][modality])
         return data
 
 @AUGMENTER_REGISTRY.register()
-class NoramlizeMinMax(BaseAugment):
+class NormalizeMinMax(BaseAugment):
+    def __init__(self, dataset, cfg, local_cfg):
+        super().__init__(dataset, cfg, local_cfg)
+        self.normalizers = {}
+        self.data_mins = {}
+        self.data_maxes = {}
+        self.min = local_cfg.min
+        self.max = local_cfg.max
+        for modality in self.cfg.bands:
+            self.data_mins[modality] = torch.tensor(self.cfg.data_min[modality])
+            self.data_maxes[modality] = torch.tensor(self.cfg.data_max[modality])
+
     def __getitem__(self, index):
         data = self.dataset[index]
-        for k, v in data['image'].items():
-            if k not in self.ignore_modalities:
-                data['image'][k] = (data['image'][k] - self.data_min) / self.data_max
+        for modality in data['image']:
+            if modality not in self.ignore_modalities:
+                ndims = data['image'][modality].ndim
+                data_mins = self.data_mins[modality].reshape((1,) * (ndims - 3) + (-1,1,1))
+                data_maxes = self.data_maxes[modality].reshape_as(data_mins)
+                data['image'][modality] = ((data['image'][modality] - data_mins) * (self.max - self.min) - self.min) / data_maxes
         return data
 
+# TODO: Move augmentation stuff _after_ the preprocessor (will need info on which bands we kept, and will need to move the weirdo prithvi dim to the right position)
 # TODO: Train time: Random crop instead of bilinear if it would be downsampling. Should increase dataset size to have "full coverage"?
 # TODO: Eval time: Crop-tile, and mark as masked on overlaps 
 #       -> will this skew macro stats? I think only if the number of tiles is different per input (eg. non-uniform sized datasets).

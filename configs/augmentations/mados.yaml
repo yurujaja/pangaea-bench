@@ -1,0 +1,12 @@
+train:
+  RandomFlip:
+    ignore_modalities: []
+    ud_probability: 0.3
+    lr_probability: 0.3
+  NormalizeMeanStd:
+    ignore_modalities: []
+  SegPreprocessor: ~
+test:
+  NormalizeMeanStd:
+    ignore_modalities: []
+  SegPreprocessor: ~

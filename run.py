@@ -147,6 +147,10 @@ def main():
         val_dataset = AUGMENTER_REGISTRY.get(step)(val_dataset, cfg, cfg.augmentation.test[step])
         test_dataset = AUGMENTER_REGISTRY.get(step)(test_dataset, cfg, cfg.augmentation.test[step])
 
+    logger.info("Created processing pipelines:")
+    logger.info(f"   Training: {pprint.pformat([s for s in cfg.augmentation.train])}")
+    logger.info(f"   Evaluation: {pprint.pformat([s for s in cfg.augmentation.test])}")
+
     if (cfg.dataset["limited_label"]):
         indices = random.sample(range(train_dataset.__len__()), int(train_dataset.__len__()*cfg.dataset.limited_label))
         train_dataset = Subset(train_dataset, indices)
