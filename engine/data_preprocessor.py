@@ -282,23 +282,50 @@ class ColorAugmentation(BaseAugment):
             
         return data
 
-    
+
 @AUGMENTER_REGISTRY.register()
 class Resize(BaseAugment):
     def __init__(self, dataset, cfg, local_cfg):
         super().__init__(dataset, cfg, local_cfg)
-        self.size = local_cfg.size
+        self.size = (local_cfg.size, local_cfg.size)
     
     def __getitem__(self, index):
         data = self.dataset[index]
         for k, v in data['image'].items():
             if k not in self.ignore_modalities:
                 data['image'][k] = T.Resize(self.size)(v)
+        
+        if data['target'].ndim == 2:
+            data['target'] = data['target'].unsqueeze(0)
+            data['target'] = T.Resize(self.size, interpolation = T.InterpolationMode.NEAREST)(data['target'])
+            data['target'] = data['target'].squeeze(0)
+        else:
             data['target'] = T.Resize(self.size, interpolation = T.InterpolationMode.NEAREST)(data['target'])
 
         return data
 
+@AUGMENTER_REGISTRY.register()
+class RandomCrop(BaseAugment):
+    def __init__(self, dataset, cfg, local_cfg):
+        super().__init__(dataset, cfg, local_cfg)
+        self.size = local_cfg.size
+        self.padding = getattr(local_cfg, 'padding', None)
+        self.pad_if_needed = getattr(local_cfg, 'pad_if_needed', False)
+        self.fill = getattr(local_cfg, 'fill', 0)
+        self.padding_mode = getattr(local_cfg, 'padding_mode', 'constant')
 
+    def __getitem__(self, index):       
+        data = self.dataset[index]
+        i, j, h, w = T.RandomCrop.get_params(
+            data['image'][list(data['image'].keys())[0]],  # Use the first image to determine parameters
+            output_size=(self.size, self.size)
+        )
+        for k, v in data['image'].items():
+            if k not in self.ignore_modalities:
+                data['image'][k] = T.functional.crop(v, i, j, h, w)
+        data['target'] = T.functional.crop(data['target'], i, j, h, w)
+
+        return data
 
 # TODO: Move augmentation stuff _after_ the preprocessor (will need info on which bands we kept, and will need to move the weirdo prithvi dim to the right position)
 # TODO: Train time: Random crop instead of bilinear if it would be downsampling. Should increase dataset size to have "full coverage"?

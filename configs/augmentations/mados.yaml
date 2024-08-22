@@ -11,6 +11,12 @@ train:
     contrast: 0.5 # distance to 1
     br_probability: 0.3
     ct_probability: 0.3
+  # RandomCrop:
+  #   ignore_modalities: []
+  #   size: 128
+  # Resize:
+  #   ignore_modalities: []
+  #   size: 128
   SegPreprocessor: ~
 
 test:
