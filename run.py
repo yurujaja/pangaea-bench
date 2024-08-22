@@ -116,6 +116,7 @@ def main():
         OmegaConf.save(cfg, config_log_dir/'config.yaml')
     else:
         exp_dir = pathlib.Path(cfg.eval_dir)
+        exp_name = exp_dir.name
         logger_path = exp_dir / 'test.log'
     
 
