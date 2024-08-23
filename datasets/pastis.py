@@ -343,6 +343,13 @@ class PASTIS(Dataset):
     def __len__(self) -> int:
         return len(self.meta_patch) * self.nb_split * self.nb_split
 
+    @staticmethod
+    def get_splits(dataset_config):
+        dataset_train = PASTIS(cfg=dataset_config, split="train", is_train=True)
+        dataset_val = PASTIS(cfg=dataset_config, split="val", is_train=False)
+        dataset_test = PASTIS(cfg=dataset_config, split="test", is_train=False)
+        return dataset_train, dataset_val, dataset_test
+
 
 if __name__ == "__main__":
     cfg = {
@@ -375,9 +382,9 @@ if __name__ == "__main__":
         "data_max": 1,
     }
 
-    path = "/share/DEEPLEARNING/datasets/PASTIS-HD"
     dataset = PASTIS(cfg, "train", is_train=True)
-    data = dataset.__getitem__(0)
+    train_dataset, val_dataset, test_dataset = PASTIS.get_splits(cfg)
+    data = train_dataset.__getitem__(0)
     print("Key: ", data.keys())
     print("Aerial: ", data["image"]["optical"].shape, data["image"]["optical"].dtype)
     print("SAR: ", data["image"]["sar"].shape, data["image"]["sar"].dtype)
