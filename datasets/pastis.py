@@ -1,3 +1,4 @@
+import json
 from torch.utils.data import Dataset, DataLoader
 import pandas as pd
 import numpy as np
@@ -58,6 +59,8 @@ def collate_fn(batch):
 
 def prepare_dates(date_dict, reference_date):
     """Date formating."""
+    if type(date_dict) == str:
+        date_dict = json.loads(date_dict)
     d = pd.DataFrame().from_dict(date_dict, orient="index")
     d = d[0].apply(
         lambda x: (
@@ -351,33 +354,48 @@ class PASTIS(Dataset):
         dataset_test = PASTIS(cfg=dataset_config, split="test", is_train=False)
         return dataset_train, dataset_val, dataset_test
 
+    @staticmethod
+    def download(dataset_config: dict, silent=False):
+        pass
+
 
 if __name__ == "__main__":
+    class_prob = {
+        "Background": 0.0,
+        "Meadow": 31292,
+        "Soft Winter Wheat": 8206,
+        "Corn": 13123,
+        "Winter Barley": 2766,
+        "Winter Rapeseed": 1769,
+        "Spring Barley": 908,
+        "Sunflower": 1355,
+        "Grapevine": 10640,
+        "Beet": 871,
+        "Winter Triticale": 1208,
+        "Winter Durum Wheat": 1704,
+        "Fruits, Vegetables, Flowers": 2619,
+        "Potatoes": 551,
+        "Leguminous Fodder": 3174,
+        "Soybeans": 1212,
+        "Orchard": 2998,
+        "Mixed Cereal": 848,
+        "Sorghum": 707,
+        "Void Label": 35924,
+    }
+
+    # get the class weights
+    class_weights = np.array([class_prob[key] for key in class_prob.keys()])
+    class_weights = class_weights / class_weights.sum()
+    for i, key in enumerate(class_prob.keys()):
+        print(key, "->", class_weights[i])
+
     cfg = {
         "root_path": "/share/DEEPLEARNING/datasets/PASTIS-HD",
         "data_mean": None,
         "data_std": None,
         "classes": {
-            "Background": 0,
-            "Void": 1,
-            "Building": 2,
-            "Road": 3,
-            "Track": 4,
-            "Trees": 5,
-            "Crops": 6,
-            "Water": 7,
-            "Standing water": 8,
-            "Vehicle": 9,
-            "Car": 10,
-            "Truck": 11,
-            "Boat": 12,
-            "Plane": 13,
-            "Pool": 14,
-            "Helicopter": 15,
-            "Roundabout": 16,
-            "Soccer field": 17,
-            "Basketball court": 18,
-            "Tennis court": 19,
+            "0": "Background",
+            "1": "Meadow",
         },
         "data_min": 0,
         "data_max": 1,
