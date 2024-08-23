@@ -128,6 +128,7 @@ class PASTIS(Dataset):
         elif split == "test":
             folds = [5]
 
+        self.split = split
         self.path = cfg["root_path"]
         self.data_mean = cfg["data_mean"]
         self.data_std = cfg["data_std"]
