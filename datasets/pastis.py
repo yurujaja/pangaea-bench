@@ -7,6 +7,9 @@ import torch
 import rasterio
 from datetime import datetime
 
+# from utils.registry import DATASET_REGISTRY
+from omegaconf import OmegaConf
+
 
 def collate_fn(batch):
     """
@@ -98,39 +101,50 @@ def split_image(image_tensor, nb_split, id):
         ].float()
 
 
+# @DATASET_REGISTRY.register()
 class PASTIS(Dataset):
     def __init__(
         self,
-        path,
-        modalities,
-        transform,
-        folds=None,
-        reference_date="2018-09-01",
-        nb_split=1,
-        num_classes=20,
+        cfg: OmegaConf,
+        split: str,
+        is_train: bool = True,
     ):
         """
         Initializes the dataset.
         Args:
             path (str): path to the dataset
             modalities (list): list of modalities to use
-            transform (torch module): transform to apply to the data
             folds (list): list of folds to use
             reference_date (str date): reference date for the data
             nb_split (int): number of splits from one observation
             num_classes (int): number of classes
         """
         super(PASTIS, self).__init__()
-        self.path = path
-        self.transform = transform
-        self.modalities = modalities
-        self.nb_split = nb_split
 
+        if split == "train":
+            folds = [1, 2, 3]
+        elif split == "val":
+            folds = [4]
+        elif split == "test":
+            folds = [5]
+
+        self.path = cfg["root_path"]
+        self.data_mean = cfg["data_mean"]
+        self.data_std = cfg["data_std"]
+        self.data_min = cfg["data_min"]
+        self.data_max = cfg["data_max"]
+        self.classes = cfg["classes"]
+        self.class_num = len(self.classes)
+
+        self.modalities = ["s2", "aerial", "s1-asc"]
+        self.nb_split = 1
+
+        reference_date = "2018-09-01"
         self.reference_date = datetime(*map(int, reference_date.split("-")))
 
         self.meta_patch = gpd.read_file(os.path.join(self.path, "metadata.geojson"))
 
-        self.num_classes = num_classes
+        self.num_classes = 20
 
         if folds is not None:
             self.meta_patch = pd.concat(
@@ -317,23 +331,54 @@ class PASTIS(Dataset):
                         "_".join([modality, "dates"])
                     ][random_indices]
 
-        return self.transform(output)
+        return {
+            "image": {
+                "optical": output["s2"],
+                "sar": output["s1-asc"],
+            },
+            "target": output["label"],
+            "metadata": {},
+        }
 
     def __len__(self) -> int:
         return len(self.meta_patch) * self.nb_split * self.nb_split
 
 
 if __name__ == "__main__":
-    path = "/share/DEEPLEARNING/datasets/PASTIS-HD"
-    modalities = ["s2", "aerial"]
-    transform = lambda x: x
-    dataset = PASTIS(path, modalities, transform, folds=[1, 2, 3], nb_split=1)
-    dataloader = DataLoader(dataset, batch_size=1, collate_fn=collate_fn)
+    cfg = {
+        "root_path": "/share/DEEPLEARNING/datasets/PASTIS-HD",
+        "data_mean": None,
+        "data_std": None,
+        "classes": {
+            "Background": 0,
+            "Void": 1,
+            "Building": 2,
+            "Road": 3,
+            "Track": 4,
+            "Trees": 5,
+            "Crops": 6,
+            "Water": 7,
+            "Standing water": 8,
+            "Vehicle": 9,
+            "Car": 10,
+            "Truck": 11,
+            "Boat": 12,
+            "Plane": 13,
+            "Pool": 14,
+            "Helicopter": 15,
+            "Roundabout": 16,
+            "Soccer field": 17,
+            "Basketball court": 18,
+            "Tennis court": 19,
+        },
+        "data_min": 0,
+        "data_max": 1,
+    }
 
-    for i, data in enumerate(dataloader):
-        print("Key: ", data.keys())
-        print(data["label"])
-        print(data["label"].shape)
-        print(data["s2"].shape)
-        print(data["aerial"].shape)
-        break
+    path = "/share/DEEPLEARNING/datasets/PASTIS-HD"
+    dataset = PASTIS(cfg, "train", is_train=True)
+    data = dataset.__getitem__(0)
+    print("Key: ", data.keys())
+    print("Aerial: ", data["image"]["optical"].shape, data["image"]["optical"].dtype)
+    print("SAR: ", data["image"]["sar"].shape, data["image"]["sar"].dtype)
+    print("target: ", data["target"].shape, data["target"].dtype)
