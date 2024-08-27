@@ -1,12 +1,11 @@
 train:
+  SegPreprocessor: ~
+  RandomCropToEncoder: ~
   RandomFlip:
-    ignore_modalities: []
     ud_probability: 0.3
     lr_probability: 0.3
   NormalizeMeanStd:
-    ignore_modalities: []
   ColorAugmentation:
-    ignore_modalities: []
     brightness: 0.3 
     contrast: 0.5 # distance to 1
     br_probability: 0.3
@@ -17,9 +16,8 @@ train:
   # Resize:
   #   ignore_modalities: []
   #   size: 128
-  SegPreprocessor: ~
 
 test:
-  NormalizeMeanStd:
-    ignore_modalities: []
   SegPreprocessor: ~
+  Tile: ~
+  NormalizeMeanStd:
