@@ -153,9 +153,13 @@ class OpticalShapeAdaptor():
         return optical_image
 
 class BaseAugment(RichDataset):
+    """Base class for augmentations.
+    __getitem__ will recieve data in CxTxHxW format from the preprocessor.
+    """
     def __init__(self, dataset:torch.utils.data.Dataset, cfg, local_cfg):
         super().__init__(dataset, cfg)
-        self.ignore_modalities = local_cfg.ignore_modalities
+        self.ignore_modalities = getattr(local_cfg, 'ignore_modalities', [])
+
 
 @AUGMENTER_REGISTRY.register()
 class RandomFlip(BaseAugment):
