@@ -19,17 +19,20 @@ class RichDataset(torch.utils.data.Dataset):
     """
     def __init__(self, dataset, cfg):
         self.dataset = dataset
+        # TODO: find out why these are here when every dataset gets the cfg as an input anyways.
+        # Either use unly these, or only the input arguments. 
         self.root_cfg = cfg
-        self.cfg = cfg.dataset
+        self.dataset_cfg = cfg.dataset
         self.root_path = cfg.dataset.root_path
         self.classes = cfg.dataset.classes
         self.class_num = len(self.classes)
         self.split = dataset.split
 
-        self.data_mean = cfg.dataset.data_mean.copy()
-        self.data_std = cfg.dataset.data_std.copy()
-        self.data_min = cfg.dataset.data_min.copy()
-        self.data_max = cfg.dataset.data_max.copy()
+        # TODO: Make these optional.
+        self.data_mean = getattr(dataset, "data_mean", cfg.dataset.data_mean).copy()
+        self.data_std = getattr(dataset, "data_std", cfg.dataset.data_mean).copy()
+        self.data_min = getattr(dataset, "data_min", cfg.dataset.data_min).copy()
+        self.data_max = getattr(dataset, "data_max", cfg.dataset.data_max).copy()
 
     def __getitem__(self, index):
         return self.dataset[index]
@@ -48,7 +51,7 @@ class SegPreprocessor(RichDataset):
         self.preprocessor['sar'] = BandAdaptor(cfg, "sar") if "sar" in cfg.dataset.bands.keys() else None
         # TO DO: other modalities
 
-        for modality in self.cfg.bands:
+        for modality in self.dataset_cfg.bands:
             new_stats = self.preprocessor[modality].preprocess_band_statistics(
                 self.data_mean[modality],
                 self.data_std[modality],
@@ -70,7 +73,7 @@ class SegPreprocessor(RichDataset):
 @AUGMENTER_REGISTRY.register()
 class RegPreprocessor(SegPreprocessor):
     def __init__(self, dataset, cfg, local_cfg):
-        super().__init__(dataset, cfg)
+        super().__init__(dataset, cfg, local_cfg)
 
     def __getitem__(self, index):
         data = self.dataset[index]
@@ -157,15 +160,17 @@ class Tile(BaseAugment):
         else:
             self.tiles_per_dim = math.ceil((self.input_size - self.min_overlap) / (self.output_size - self.min_overlap))
 
+        logging.getLogger().info(f"Tiling {self.input_size}x{self.input_size} input images to {self.tiles_per_dim * self.tiles_per_dim} {self.output_size}x{self.output_size} output images.")
+
         self.h_spacing_cache = [None] * super().__len__()
         self.w_spacing_cache = [None] * super().__len__()
 
 
     def __getitem__(self, index):
-        dataset_index = math.floor(index / (self.tiles_per_dim ^ 2))
+        dataset_index = math.floor(index / (self.tiles_per_dim * self.tiles_per_dim))
         data = self.dataset[dataset_index]
         # Calculate tile coordinates
-        tile_index = index % (self.tiles_per_dim ^ 2)
+        tile_index = index % (self.tiles_per_dim * self.tiles_per_dim)
         h_index = math.floor(tile_index / self.tiles_per_dim)
         w_index = tile_index % self.tiles_per_dim
         # Use the actual image size so we can handle data that's not always uniform.
@@ -203,18 +208,18 @@ class Tile(BaseAugment):
 
         # Ignore overlapping borders
         if h_index != 0:
-            data['target'][..., 0:h_label_offset, :] = self.cfg.ignore_index
+            data['target'][..., 0:h_label_offset, :] = self.dataset_cfg.ignore_index
         if w_index != 0:
-            data['target'][..., 0:w_label_offset] = self.cfg.ignore_index
+            data['target'][..., 0:w_label_offset] = self.dataset_cfg.ignore_index
         if h_index != self.tiles_per_dim - 1:
-            data['target'][..., self.output_size - h_label_offset:, :] = self.cfg.ignore_index
+            data['target'][..., self.output_size - h_label_offset:, :] = self.dataset_cfg.ignore_index
         if w_index != self.tiles_per_dim - 1:
-            data['target'][..., self.output_size - w_label_offset:] = self.cfg.ignore_index
+            data['target'][..., self.output_size - w_label_offset:] = self.dataset_cfg.ignore_index
 
         return data
 
     def __len__(self):
-        return (super().__len__()) * (self.tiles_per_dim ^ 2)
+        return (super().__len__()) * (self.tiles_per_dim * self.tiles_per_dim)
 
 @AUGMENTER_REGISTRY.register()
 class RandomFlip(BaseAugment):
@@ -258,17 +263,17 @@ class GammaAugment(BaseAugment):
 class NormalizeMeanStd(BaseAugment):
     def __init__(self, dataset, cfg, local_cfg):
         super().__init__(dataset, cfg, local_cfg)
-        self.means = {}
-        self.stds = {}
-        for modality in self.cfg.bands: # Bands is a dict of {modality:[b1, b2, ...], ...} so it's keys are the modalaities in use
-            self.means = torch.tensor(self.cfg.data_mean[modality]).reshape((-1,1,1,1))
-            self.stds = torch.tensor(self.cfg.data_std[modality]).reshape((-1,1,1,1))
+        self.data_mean_tensors = {}
+        self.data_std_tensors = {}
+        for modality in self.dataset_cfg.bands: # Bands is a dict of {modality:[b1, b2, ...], ...} so it's keys are the modalaities in use
+            self.data_mean_tensors[modality] = torch.tensor(self.data_mean[modality]).reshape((-1,1,1,1))
+            self.data_std_tensors[modality] = torch.tensor(self.data_std[modality]).reshape((-1,1,1,1))
 
     def __getitem__(self, index):
         data = self.dataset[index]
         for modality in data['image']:
             if modality not in self.ignore_modalities:
-                data['image'][modality] = (data['image'][modality] - self.means[modality])/self.stds[modality]
+                data['image'][modality] = (data['image'][modality] - self.data_mean_tensors[modality])/self.data_std_tensors[modality]
         return data
 
 
@@ -277,20 +282,20 @@ class NormalizeMinMax(BaseAugment):
     def __init__(self, dataset, cfg, local_cfg):
         super().__init__(dataset, cfg, local_cfg)
         self.normalizers = {}
-        self.data_mins = {}
-        self.data_maxes = {}
+        self.data_min_tensors = {}
+        self.data_max_tensors = {}
         self.min = local_cfg.min
         self.max = local_cfg.max
-        for modality in self.cfg.bands:
-            self.data_mins[modality] = torch.tensor(self.cfg.data_min[modality]).reshape((-1,1,1,1))
-            self.data_maxes[modality] = torch.tensor(self.cfg.data_max[modality]).reshape((-1,1,1,1))
+        for modality in self.dataset_cfg.bands:
+            self.data_min_tensors[modality] = torch.tensor(self.data_min[modality]).reshape((-1,1,1,1))
+            self.data_max_tensors[modality] = torch.tensor(self.data_max[modality]).reshape((-1,1,1,1))
 
     def __getitem__(self, index):
         data = self.dataset[index]
         for modality in data['image']:
             if modality not in self.ignore_modalities:
-                data['image'][modality] = ((data['image'][modality] - self.data_mins[modality])\
-                                           * (self.max - self.min) - self.min) / self.data_maxes[modality]
+                data['image'][modality] = ((data['image'][modality] - self.data_min_tensors[modality])\
+                                           * (self.max - self.min) - self.min) / self.data_max_tensors[modality]
         return data
 
 
