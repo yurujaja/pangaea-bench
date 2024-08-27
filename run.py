@@ -158,29 +158,12 @@ def main():
         perc = cfg.dataset["limited_label"]*100
         logger.info(f"Created a subset of the train dataset, with {perc}% of the labels available")
 
-    # get train val data loaders
-    train_loader = DataLoader(
-        train_dataset,
-        sampler=DistributedSampler(train_dataset),
-        batch_size=cfg.batch_size,#cfg.dataset["batch"],
-        num_workers=cfg.num_workers,
-        pin_memory=True,
-        persistent_workers=True,
-        worker_init_fn=seed_worker,
-        generator=get_generator(cfg.seed),
-        drop_last=True,
-    )
-    val_loader = DataLoader(
-        val_dataset,
-        sampler=DistributedSampler(val_dataset),
-        batch_size=cfg.batch_size,
-        num_workers=cfg.num_workers,
-        pin_memory=True,
-        persistent_workers=False,
-        #worker_init_fn=seed_worker,
-        #generator=g,
-        drop_last=False,
-    )
+    # TODO: Move this somewhere in data preprocessing
+    def collate_data(batch):
+        return {
+            'image': {modality:torch.stack([x['image'][modality] for x in batch]) for modality in cfg.dataset.bands},
+            'target': torch.stack([x['target'] for x in batch])
+        }
 
     logger.info("Built {} dataset.".format(dataset_name))
 
@@ -220,6 +203,7 @@ def main():
             worker_init_fn=seed_worker,
             generator=get_generator(cfg.seed),
             drop_last=True,
+            collate_fn=collate_data
         )
         val_loader = DataLoader(
             val_dataset,
@@ -231,6 +215,7 @@ def main():
             #worker_init_fn=seed_worker,
             #generator=g,
             drop_last=False,
+            collate_fn=collate_data
         )
 
         logger.info("Built {} dataset for training and evaluation.".format(dataset_name))
@@ -281,6 +266,7 @@ def main():
             pin_memory=True,
             persistent_workers=False,
             drop_last=False,
+            collate_fn=collate_data
         )
 
         logger.info("Built {} dataset for evaluation.".format(dataset_name))

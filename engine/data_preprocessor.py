@@ -181,30 +181,30 @@ class Tile(BaseAugment):
         if not self.h_spacing_cache[dataset_index]:
             float_spacing = np.linspace(0, input_h - self.output_size, self.tiles_per_dim)
             rounded_spacing = float_spacing.round().astype(int)
-            unique_sizes = np.ediff1d(rounded_spacing, to_end=self.output_size)
-            self.h_spacing_cache[dataset_index] = (rounded_spacing, unique_sizes)
+            labeled_sizes = np.ediff1d(rounded_spacing, to_end=self.output_size)
+            self.h_spacing_cache[dataset_index] = (rounded_spacing, labeled_sizes)
         if not self.w_spacing_cache[dataset_index]:
             float_spacing = np.linspace(0, input_w - self.output_size, self.tiles_per_dim)
             rounded_spacing = float_spacing.round().astype(int)
-            unique_sizes = np.ediff1d(rounded_spacing, to_end=self.output_size)
-            self.w_spacing_cache[dataset_index] = (rounded_spacing, unique_sizes)
+            labeled_sizes = np.ediff1d(rounded_spacing, to_end=self.output_size)
+            self.w_spacing_cache[dataset_index] = (rounded_spacing, labeled_sizes)
         
-        h_positions, h_unique_sizes = self.h_spacing_cache[dataset_index]
-        w_positions, w_unique_sizes = self.w_spacing_cache[dataset_index]
+        h_positions, h_labeled_sizes = self.h_spacing_cache[dataset_index]
+        w_positions, w_labeled_sizes = self.w_spacing_cache[dataset_index]
 
         h, w = h_positions[h_index], w_positions[w_index]
-        h_unique, w_unique = h_unique_sizes[h_index], w_unique_sizes[w_index]
+        h_labeled, w_labeled = h_labeled_sizes[h_index], w_labeled_sizes[w_index]
 
         for k, v in data['image'].items():
             if k not in self.ignore_modalities:
-                data['image'][k] = v[..., h:self.output_size, w:self.output_size]
+                data['image'][k] = v[..., h:h+self.output_size, w:w+self.output_size]
         
         # Place the mesaured part in the middle to help with tiling artefacts
-        h_label_offset = round((self.output_size - h_unique) / 2)
-        w_label_offset = round((self.output_size - w_unique) / 2)
+        h_label_offset = round((self.output_size - h_labeled) / 2)
+        w_label_offset = round((self.output_size - w_labeled) / 2)
 
         # Crop target to size
-        data['target'] = data['target'][..., h:self.output_size, w:self.output_size]
+        data['target'] = data['target'][..., h:h+self.output_size, w:w+self.output_size]
 
         # Ignore overlapping borders
         if h_index != 0:
