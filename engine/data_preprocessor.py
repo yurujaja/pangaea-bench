@@ -170,12 +170,13 @@ class Tile(BaseAugment):
 
     def __getitem__(self, index):
         dataset_index = math.floor(index / (self.tiles_per_dim * self.tiles_per_dim))
+        data = self.dataset[dataset_index]
         # Cache the last data, very useful for sequential reads
-        if self.data_cache[0] == dataset_index:
-            data = self.data_cache[1]
-        else:
-            data = self.dataset[dataset_index]
-            self.data_cache = (dataset_index, data)
+        # if self.data_cache[0] == dataset_index:
+        #     data = self.data_cache[1]
+        # else:
+        #     data = self.dataset[dataset_index]
+        #     self.data_cache = (dataset_index, data)
         # Calculate tile coordinates
         tile_index = index % (self.tiles_per_dim * self.tiles_per_dim)
         h_index = math.floor(tile_index / self.tiles_per_dim)
