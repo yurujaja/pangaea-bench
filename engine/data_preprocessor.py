@@ -89,7 +89,6 @@ class BandAdaptor():
     def __init__(self, cfg, modality):
         self.dataset_bands = cfg.dataset.bands[modality]
         self.input_bands = cfg.encoder.input_bands[modality]
-        self.multi_temporal = cfg.dataset.multi_temporal
         self.encoder_name = cfg.encoder.encoder_name
 
         self.used_bands_mask = torch.tensor([b in self.input_bands for b in self.dataset_bands], dtype=torch.bool)
@@ -120,16 +119,18 @@ class BandAdaptor():
         return image
 
     def __call__(self, image):
-        if self.multi_temporal:
+        if len(image.shape) == 3:
+            # Add a time dimension so preprocessing can work on consistent images
+            image = image.unsqueeze(1)
+
+        if image.shape[1] != 1:
             final_image = []
             for i in range(image.shape[1]):
                 final_image.append(self.preprocess_single_timeframe(image[:,i,:,:]))
             image = torch.stack(final_image, dim = 1)
         else:
             image = self.preprocess_single_timeframe(image)
-            # Add a time dimension so preprocessing can work on consistent images
-            if len(image.shape) == 3:
-                image = image.unsqueeze(1)
+
         return image
 
 
