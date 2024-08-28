@@ -152,7 +152,7 @@ class Tile(BaseAugment):
         if self.output_size == self.input_size:
             self.tiles_per_dim = 1
         elif self.output_size > self.input_size:
-            raise ValueError(f"Can't tile inputs if dataset.img_size={self.input_size} < encoder.input_size={self.output_size}, use Resize instead.")
+            raise ValueError(f"Can't tile inputs if dataset.img_size={self.input_size} < encoder.input_size={self.output_size}, use ResizeToEncoder instead.")
         elif self.min_overlap >= self.input_size:
             raise ValueError("min_overlap >= dataset.img_size")
         elif self.min_overlap >= self.input_size:
@@ -169,14 +169,11 @@ class Tile(BaseAugment):
 
 
     def __getitem__(self, index):
+        if self.tiles_per_dim == 1:
+            return self.dataset[dataset_index]
+
         dataset_index = math.floor(index / (self.tiles_per_dim * self.tiles_per_dim))
         data = self.dataset[dataset_index]
-        # Cache the last data, very useful for sequential reads
-        # if self.data_cache[0] == dataset_index:
-        #     data = self.data_cache[1]
-        # else:
-        #     data = self.dataset[dataset_index]
-        #     self.data_cache = (dataset_index, data)
         # Calculate tile coordinates
         tile_index = index % (self.tiles_per_dim * self.tiles_per_dim)
         h_index = math.floor(tile_index / self.tiles_per_dim)
@@ -186,6 +183,8 @@ class Tile(BaseAugment):
         # Also, in case there was insufficient overlap (or tiles_per_dim=1) sepcified, we'll crop the image and lose info.
         input_h, input_w = data['image'][next(iter(data['image'].keys()))].shape[-2:]
 
+        # Calculate the sizes of the labeled parts seperately to deal with aliasing when
+        # tile spacing values are not exact integers 
         if not self.h_spacing_cache[dataset_index]:
             float_spacing = np.linspace(0, input_h - self.output_size, self.tiles_per_dim)
             rounded_spacing = float_spacing.round().astype(int)
@@ -203,28 +202,31 @@ class Tile(BaseAugment):
         h, w = h_positions[h_index], w_positions[w_index]
         h_labeled, w_labeled = h_labeled_sizes[h_index], w_labeled_sizes[w_index]
 
+        tiled_data = {'image': {},
+                      'target': None}
+        tiled_data['image'] = {}
         for k, v in data['image'].items():
             if k not in self.ignore_modalities:
-                data['image'][k] = v[..., h:h+self.output_size, w:w+self.output_size]
+                tiled_data['image'][k] = v[..., h:h+self.output_size, w:w+self.output_size]
         
         # Place the mesaured part in the middle to help with tiling artefacts
         h_label_offset = round((self.output_size - h_labeled) / 2)
         w_label_offset = round((self.output_size - w_labeled) / 2)
 
         # Crop target to size
-        data['target'] = data['target'][..., h:h+self.output_size, w:w+self.output_size]
+        tiled_data['target'] = data['target'][..., h:h+self.output_size, w:w+self.output_size]
 
         # Ignore overlapping borders
         if h_index != 0:
-            data['target'][..., 0:h_label_offset, :] = self.dataset_cfg.ignore_index
+            tiled_data['target'][..., 0:h_label_offset, :] = self.dataset_cfg.ignore_index
         if w_index != 0:
-            data['target'][..., 0:w_label_offset] = self.dataset_cfg.ignore_index
+            tiled_data['target'][..., 0:w_label_offset] = self.dataset_cfg.ignore_index
         if h_index != self.tiles_per_dim - 1:
-            data['target'][..., self.output_size - h_label_offset:, :] = self.dataset_cfg.ignore_index
+            tiled_data['target'][..., self.output_size - h_label_offset:, :] = self.dataset_cfg.ignore_index
         if w_index != self.tiles_per_dim - 1:
-            data['target'][..., self.output_size - w_label_offset:] = self.dataset_cfg.ignore_index
+            tiled_data['target'][..., self.output_size - w_label_offset:] = self.dataset_cfg.ignore_index
 
-        return data
+        return tiled_data
 
     def __len__(self):
         return (super().__len__()) * (self.tiles_per_dim * self.tiles_per_dim)
@@ -380,6 +382,14 @@ class Resize(BaseAugment):
             data['target'] = T.Resize(self.size, interpolation = T.InterpolationMode.NEAREST)(data['target'])
 
         return data
+    
+
+@AUGMENTER_REGISTRY.register()
+class ResizeToEncoder(Resize):
+    def __init__(self, dataset, cfg, local_cfg):
+        if not local_cfg:
+            local_cfg = omegaconf.OmegaConf.create()
+        local_cfg.size = cfg.encoder.input_size
 
 
 @AUGMENTER_REGISTRY.register()
