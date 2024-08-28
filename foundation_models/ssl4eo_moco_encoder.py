@@ -97,7 +97,7 @@ class SSL4EO_MOCO_Encoder(Base_Encoder):
         return missing, incompatible_shape
 
     def forward(self, image):
-        x = image['optical']
+        x = image['optical'].squeeze(1)
 
         x = self.patch_embed(x)
         cls_tokens = self.cls_token.expand(x.shape[0], -1, -1)

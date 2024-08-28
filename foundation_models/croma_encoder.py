@@ -40,7 +40,7 @@ class CROMA_OPTICAL_Encoder(nn.Module):
 
     def forward(self, image):
 
-        output = self.s2_encoder(image['optical'], self.attn_bias.to(image['optical'].device), self.output_layers)  # (bsz, num_patches, encoder_dim)
+        output = self.s2_encoder(image['optical'].squeeze(1), self.attn_bias.to(image['optical'].device), self.output_layers)  # (bsz, num_patches, encoder_dim)
 
         output = [x.permute(0, 2, 1).view(x.shape[0], -1, self.img_size // self.patch_size, self.img_size // self.patch_size).contiguous() for x in output]
 
@@ -97,7 +97,7 @@ class CROMA_SAR_Encoder(nn.Module):
     def forward(self, image):
         #output = []
 
-        output = self.s1_encoder(image['sar'], self.attn_bias.to(image['sar'].device), self.output_layers)  # (bsz, num_patches, encoder_dim)
+        output = self.s1_encoder(image['sar'].squeeze(1), self.attn_bias.to(image['sar'].device), self.output_layers)  # (bsz, num_patches, encoder_dim)
 
         output = [x.permute(0, 2, 1).view(x.shape[0], -1, self.img_size // self.patch_size, self.img_size // self.patch_size).contiguous() for x in output]
 
@@ -160,8 +160,8 @@ class CROMA_JOINT_Encoder(nn.Module):
     def forward(self, image):
 
         attn_bias = self.attn_bias.to(image['optical'].device)
-        SAR_encodings = self.s1_encoder(image['sar'], attn_bias)  # (bsz, num_patches, encoder_dim)
-        optical_encodings = self.s2_encoder(image['optical'], attn_bias)  # (bsz, num_patches, encoder_dim)
+        SAR_encodings = self.s1_encoder(image['sar'].squeeze(1), attn_bias)  # (bsz, num_patches, encoder_dim)
+        optical_encodings = self.s2_encoder(image['optical'].squeeze(1), attn_bias)  # (bsz, num_patches, encoder_dim)
         output = self.cross_encoder(x=SAR_encodings, context=optical_encodings, relative_position_bias=attn_bias, output_layers=self.output_layers)
 
         output = [x.permute(0, 2, 1).view(x.shape[0], -1, self.img_size // self.patch_size, self.img_size // self.patch_size).contiguous() for x in output]
