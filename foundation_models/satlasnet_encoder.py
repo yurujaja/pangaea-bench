@@ -474,7 +474,7 @@ class SatlasNet_Encoder(Base_Encoder):
     def forward(self, imgs):
         # Define forward pass
 
-        x = imgs['optical'].squeeze(1)
+        x = imgs['optical'].squeeze(2)
         x = self.backbone(x)
         
         if self.fpn:

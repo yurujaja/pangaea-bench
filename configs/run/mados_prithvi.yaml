@@ -1,5 +1,5 @@
 dataset_config_path: configs/datasets/mados.yaml
-encoder_config_path: configs/foundation_models/prithvi.yaml
+encoder_config_path: configs/foundation_models/ssl4eo_moco.yaml
 segmentor_config_path: configs/segmentors/upernet.yaml
 augmentation_config_path: configs/augmentations/segmentation_default.yaml
 

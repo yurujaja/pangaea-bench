@@ -125,7 +125,7 @@ class SSL4EO_MAE_SAR_Encoder(SSL4EO_MAE_OPTICAL_Encoder):
         
     def forward(self, image):
         # embed patches
-        x = image['sar'].squeeze(1)
+        x = image['sar'].squeeze(2)
         x = self.patch_embed(x)
 
         # append cls token
