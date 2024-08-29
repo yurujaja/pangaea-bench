@@ -337,8 +337,8 @@ class PASTIS(Dataset):
 
         return {
             "image": {
-                "optical": output["s2"],
-                "sar": output["s1-asc"],
+                "optical": output["s2"].to(torch.float32),
+                "sar": output["s1-asc"].to(torch.float32),
             },
             "target": output["label"],
             "metadata": {},
@@ -360,6 +360,8 @@ class PASTIS(Dataset):
 
 
 if __name__ == "__main__":
+    from tqdm import tqdm
+
     class_prob = {
         "Background": 0.0,
         "Meadow": 31292,
@@ -386,8 +388,10 @@ if __name__ == "__main__":
     # get the class weights
     class_weights = np.array([class_prob[key] for key in class_prob.keys()])
     class_weights = class_weights / class_weights.sum()
+    print("Class weights: ")
     for i, key in enumerate(class_prob.keys()):
         print(key, "->", class_weights[i])
+    print("_" * 100)
 
     cfg = {
         "root_path": "/share/DEEPLEARNING/datasets/PASTIS-HD",
@@ -403,8 +407,61 @@ if __name__ == "__main__":
 
     dataset = PASTIS(cfg, "train", is_train=True)
     train_dataset, val_dataset, test_dataset = PASTIS.get_splits(cfg)
+
+    class RunningStats:
+        def __init__(self, stats_dim):
+            self.n = torch.zeros(stats_dim)
+            self.mean = torch.zeros(stats_dim)
+            self.M2 = torch.zeros(stats_dim)
+
+            self.min = 10e10 * torch.ones(stats_dim)
+            self.max = -10e10 * torch.ones(stats_dim)
+
+        def update_tensor(self, x: torch.Tensor):
+            # tensor of shape (T, C, H, W)
+            for frame in x:
+                frame = frame.reshape(-1, frame.shape[0])
+                for pixel in frame:
+                    self.update(pixel)
+
+        def update(self, x):
+            self.n += 1
+            delta = x - self.mean
+
+            self.mean += delta / self.n
+            delta2 = x - self.mean
+            self.M2 += delta * delta2
+
+            self.min = torch.min(self.min, x)
+            self.max = torch.max(self.max, x)
+
+        def finalize(self):
+            return {
+                "mean": self.mean,
+                "std": torch.sqrt(self.M2 / self.n),
+                "min": self.min,
+                "max": self.max,
+            }
+
     data = train_dataset.__getitem__(0)
-    print("Key: ", data.keys())
-    print("Aerial: ", data["image"]["optical"].shape, data["image"]["optical"].dtype)
-    print("SAR: ", data["image"]["sar"].shape, data["image"]["sar"].dtype)
-    print("target: ", data["target"].shape, data["target"].dtype)
+    sar = data["image"]["sar"]
+    optical = data["image"]["optical"]
+
+    for i in tqdm(range(len(train_dataset))):
+        data = train_dataset.__getitem__(i)
+        sar = torch.cat([sar, data["image"]["sar"]], dim=0)
+        optical = torch.cat([optical, data["image"]["optical"]], dim=0)
+
+    print("SAR shape: ", sar.shape)
+    print("Optical shape: ", optical.shape)
+    reduce_dim = (0, 2, 3)
+    print("_" * 100)
+    print("SAR min: ", sar.amin(reduce_dim))
+    print("SAR max: ", sar.amax(reduce_dim))
+    print("SAR mean: ", sar.mean(reduce_dim))
+    print("SAR std: ", sar.std(reduce_dim))
+    print("_" * 100)
+    print("Optical min: ", optical.amin(reduce_dim))
+    print("Optical max: ", optical.amax(reduce_dim))
+    print("Optical mean: ", optical.mean(reduce_dim))
+    print("Optical std: ", optical.std(reduce_dim))
