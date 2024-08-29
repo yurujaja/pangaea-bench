@@ -12,6 +12,7 @@ import logging
 
 import omegaconf
 
+
 from utils.registry import AUGMENTER_REGISTRY
 
 
@@ -34,11 +35,14 @@ def get_collate_fn(cfg: omegaconf.DictConfig) -> Callable:
         T_max = 0
         for modality in modalities:
             for x in batch:
+                # check if the image is a time series, i.e. has 4 dimensions
                 if len(x["image"][modality].shape) == 4:
                     T_max = max(T_max, x["image"][modality].shape[1])
         # pad all images to the same temporal dimension
         for modality in modalities:
             for i, x in enumerate(batch):
+                # check if the image is a time series, if yes then pad it
+                # else do nothing
                 if len(x["image"][modality].shape) == 4:
                     T = x["image"][modality].shape[1]
                     if T < T_max:
