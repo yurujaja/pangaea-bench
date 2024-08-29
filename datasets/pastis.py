@@ -7,6 +7,7 @@ import geopandas as gpd
 import torch
 import rasterio
 from datetime import datetime
+from einops import rearrange
 
 # from utils.registry import DATASET_REGISTRY
 from omegaconf import OmegaConf
@@ -335,10 +336,12 @@ class PASTIS(Dataset):
                         "_".join([modality, "dates"])
                     ][random_indices]
 
+        optical_ts = rearrange(output["s2"], "t c h w -> c t h w")
+        sar_ts = rearrange(output["s1-asc"], "t c h w -> c t h w")
         return {
             "image": {
-                "optical": output["s2"].to(torch.float32),
-                "sar": output["s1-asc"].to(torch.float32),
+                "optical": optical_ts.to(torch.float32),
+                "sar": sar_ts.to(torch.float32),
             },
             "target": output["label"],
             "metadata": {},
@@ -410,58 +413,46 @@ if __name__ == "__main__":
 
     class RunningStats:
         def __init__(self, stats_dim):
-            self.n = torch.zeros(stats_dim)
-            self.mean = torch.zeros(stats_dim)
-            self.M2 = torch.zeros(stats_dim)
+            self.n = 0
+            self.sum = torch.zeros(stats_dim)
+            self.sum_2 = torch.zeros(stats_dim)
 
             self.min = 10e10 * torch.ones(stats_dim)
             self.max = -10e10 * torch.ones(stats_dim)
 
-        def update_tensor(self, x: torch.Tensor):
-            # tensor of shape (T, C, H, W)
-            for frame in x:
-                frame = frame.reshape(-1, frame.shape[0])
-                for pixel in frame:
-                    self.update(pixel)
+        def update(self, x, reduce_dim):
+            self.n += np.prod([x.shape[i] for i in reduce_dim])
+            self.sum += torch.sum(x, reduce_dim)
+            self.sum_2 += torch.sum(x**2, reduce_dim)
 
-        def update(self, x):
-            self.n += 1
-            delta = x - self.mean
-
-            self.mean += delta / self.n
-            delta2 = x - self.mean
-            self.M2 += delta * delta2
-
-            self.min = torch.min(self.min, x)
-            self.max = torch.max(self.max, x)
+            x_min = torch.amin(x, reduce_dim)
+            x_max = torch.amax(x, reduce_dim)
+            self.min = torch.min(self.min, x_min)
+            self.max = torch.max(self.max, x_max)
 
         def finalize(self):
             return {
-                "mean": self.mean,
-                "std": torch.sqrt(self.M2 / self.n),
+                "mean": self.sum / self.n,
+                "std": torch.sqrt(self.sum_2 / self.n - (self.sum / self.n) ** 2),
                 "min": self.min,
                 "max": self.max,
             }
 
     data = train_dataset.__getitem__(0)
-    sar = data["image"]["sar"]
-    optical = data["image"]["optical"]
+    stats = {}
+    for modality, img in data["image"].items():
+        print(modality, img.shape)
+        # compute the number of channels in the image
+        n_channels = img.shape[0]
+        stats[modality] = RunningStats(n_channels)
 
     for i in tqdm(range(len(train_dataset))):
         data = train_dataset.__getitem__(i)
-        sar = torch.cat([sar, data["image"]["sar"]], dim=0)
-        optical = torch.cat([optical, data["image"]["optical"]], dim=0)
+        for modality, img in data["image"].items():
+            reduce_dim = list(range(1, img.ndim))
+            stats[modality].update(img, reduce_dim)
 
-    print("SAR shape: ", sar.shape)
-    print("Optical shape: ", optical.shape)
-    reduce_dim = (0, 2, 3)
-    print("_" * 100)
-    print("SAR min: ", sar.amin(reduce_dim))
-    print("SAR max: ", sar.amax(reduce_dim))
-    print("SAR mean: ", sar.mean(reduce_dim))
-    print("SAR std: ", sar.std(reduce_dim))
-    print("_" * 100)
-    print("Optical min: ", optical.amin(reduce_dim))
-    print("Optical max: ", optical.amax(reduce_dim))
-    print("Optical mean: ", optical.mean(reduce_dim))
-    print("Optical std: ", optical.std(reduce_dim))
+    for modality, stat in stats.items():
+        print(modality)
+        print(stat.finalize())
+        print("_" * 100)
