@@ -3,7 +3,7 @@ foundation_model_name: satlaspretrain
 encoder_weights: null
 temporal_input: True
 
-input_size: 224
+input_size: 128
 embed_dim: 1024
 
 encoder_model_args:
