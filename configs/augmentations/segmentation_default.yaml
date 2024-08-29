@@ -1,9 +1,9 @@
 train:
-  NormalizeMeanStd:
-    ignore_modalities: []
-  SegPreprocessor: ~ 
-
-test:
-  NormalizeMeanStd:
-    ignore_modalities: []
   SegPreprocessor: ~
+  RandomCropToEncoder: ~
+  RandomFlip:
+    ud_probability: 0.3
+    lr_probability: 0.3
+test:
+  SegPreprocessor: ~
+  Tile: ~

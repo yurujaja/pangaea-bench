@@ -115,7 +115,6 @@ class SpectralGPT_Encoder(Base_Encoder):
     def forward(self, image):
 
         x = image['optical']
-        x = torch.unsqueeze(x, dim=1) # B, 1, T, H, W
         x = self.patch_embed(x)
         N, T, L, C = x.shape  # T: number of bands; L: spatial
 

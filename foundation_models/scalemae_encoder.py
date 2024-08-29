@@ -125,7 +125,7 @@ class ScaleMAE_Encoder(nn.Module):
 
 
     def forward(self, image):
-        x = image['optical']
+        x = image['optical'].squeeze(2)
         B, _, h, w = x.shape
         x = self.patch_embed(x)
 

@@ -600,7 +600,7 @@ class GFMSwin_Encoder(Base_Encoder):
 
     def forward(self, image):
 
-        x = image['optical']
+        x = image['optical'].squeeze(2)
         x = self.patch_embed(x)
         if self.ape:
             x = x + self.absolute_pos_embed

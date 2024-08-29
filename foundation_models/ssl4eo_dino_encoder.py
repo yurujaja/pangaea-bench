@@ -250,7 +250,7 @@ class SSL4EO_DINO_Encoder(Base_Encoder):
         return self.pos_drop(x)
 
     def forward(self, images):
-        x = images['optical']
+        x = images['optical'].squeeze(2)
         x = self.prepare_tokens(x)
 
         output = []

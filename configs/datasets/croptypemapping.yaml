@@ -1,0 +1,72 @@
+dataset_name: CropTypeMappingSouthSudan
+root_path: ./data/croptypemapping
+download_url: https://drive.google.com/drive/folders/1WhVObtFOzYFiXBsbbrEGy1DUtv7ov7wF?usp=sharing
+auto_download: True
+
+img_size: 64
+multi_temporal: True
+multi_modal: True
+limited_label: False
+
+# classes
+ignore_index: -1
+num_classes: 4
+classes:
+  - Sorghum
+  - Maize
+  - Rice
+  - Groundnut
+
+distribution:
+  - 0.6795
+  - 0.0851
+  - 0.0690
+  - 0.0598
+
+bands:
+  optical:
+    - B2
+    - B3
+    - B4
+    - B5
+    - B6
+    - B7
+    - B8
+    - B8A
+    - B11
+    - B12
+  sar:
+    - VV
+    - VH
+
+data_mean:
+  optical:
+    - 2119.15
+    - 2061.95
+    - 2127.71
+    - 2277.60
+    - 2784.21
+    - 3088.40
+    - 2939.33
+    - 3308.03
+    - 2597.14
+    - 1834.81
+  sar:
+    - -9.02
+    - -15.26
+
+data_std:
+  optical:
+    - 2113.41
+    - 2026.64
+    - 2126.10
+    - 2093.35
+    - 2066.81
+    - 2114.85
+    - 2049.70
+    - 2111.51
+    - 1320.97
+    - 1029.58
+  sar:
+    - 4.49
+    - 6.68

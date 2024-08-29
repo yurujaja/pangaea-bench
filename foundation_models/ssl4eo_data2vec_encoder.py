@@ -356,7 +356,7 @@ class SSL4EO_Data2Vec_Encoder(Base_Encoder):
         return {"pos_embed", "cls_token"}
 
     def forward(self, images):
-        x = images['optical']
+        x = images['optical'].squeeze(2)
         x = self.patch_embed(x)
         batch_size, seq_len, _ = x.size()
 
