@@ -13,51 +13,6 @@ from utils.registry import DATASET_REGISTRY
 from omegaconf import OmegaConf
 
 
-def collate_fn(batch):
-    """
-    Collate function for the dataloader.
-    Args:
-        batch (list): list of dictionaries with keys "label", "name" and the other corresponding to the modalities used
-    Returns:
-        dict: dictionary with keys "label", "name"  and the other corresponding to the modalities used
-    """
-    keys = list(batch[0].keys())
-    output = {}
-    for key in ["s2", "s1-asc", "s1-des", "s1"]:
-        if key in keys:
-            idx = [x[key] for x in batch]
-            max_size_0 = max(tensor.size(0) for tensor in idx)
-            stacked_tensor = torch.stack(
-                [
-                    torch.nn.functional.pad(
-                        tensor, (0, 0, 0, 0, 0, 0, 0, max_size_0 - tensor.size(0))
-                    )
-                    for tensor in idx
-                ],
-                dim=0,
-            )
-            output[key] = stacked_tensor.float()
-            keys.remove(key)
-            key = "_".join([key, "dates"])
-            idx = [x[key] for x in batch]
-            max_size_0 = max(tensor.size(0) for tensor in idx)
-            stacked_tensor = torch.stack(
-                [
-                    torch.nn.functional.pad(tensor, (0, max_size_0 - tensor.size(0)))
-                    for tensor in idx
-                ],
-                dim=0,
-            )
-            output[key] = stacked_tensor.long()
-            keys.remove(key)
-    if "name" in keys:
-        output["name"] = [x["name"] for x in batch]
-        keys.remove("name")
-    for key in keys:
-        output[key] = torch.stack([x[key] for x in batch]).float()
-    return output
-
-
 def prepare_dates(date_dict, reference_date):
     """Date formating."""
     if type(date_dict) == str:
@@ -155,7 +110,6 @@ class Pastis(Dataset):
             self.meta_patch = pd.concat(
                 [self.meta_patch[self.meta_patch["Fold"] == f] for f in folds]
             )
-        self.collate_fn = collate_fn
 
     def __getitem__(self, i):
         """
@@ -352,9 +306,9 @@ class Pastis(Dataset):
 
     @staticmethod
     def get_splits(dataset_config):
-        dataset_train = PASTIS(cfg=dataset_config, split="train", is_train=True)
-        dataset_val = PASTIS(cfg=dataset_config, split="val", is_train=False)
-        dataset_test = PASTIS(cfg=dataset_config, split="test", is_train=False)
+        dataset_train = Pastis(cfg=dataset_config, split="train", is_train=True)
+        dataset_val = Pastis(cfg=dataset_config, split="val", is_train=False)
+        dataset_test = Pastis(cfg=dataset_config, split="test", is_train=False)
         return dataset_train, dataset_val, dataset_test
 
     @staticmethod
