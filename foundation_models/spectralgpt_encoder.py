@@ -114,7 +114,7 @@ class SpectralGPT_Encoder(Base_Encoder):
 
     def forward(self, image):
 
-        x = image['optical']
+        x = image['optical'].permute(0, 2, 1, 3, 4)  # for this model: B, T, C, H, W 
         x = self.patch_embed(x)
         N, T, L, C = x.shape  # T: number of bands; L: spatial
 
@@ -215,7 +215,7 @@ class PatchEmbed(nn.Module):
     def forward(self, x):
         # print(x.shape)
 
-        B, C, T, H, W = x.shape  #2,1,10,512,512
+        B, C, T, H, W = x.shape  # b, 1, in_chans, H, W
 
         assert (
             H == self.img_size[0] and W == self.img_size[1]

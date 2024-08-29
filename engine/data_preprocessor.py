@@ -88,7 +88,7 @@ class RegPreprocessor(SegPreprocessor):
 class BandAdaptor():
     def __init__(self, cfg, modality):
         self.dataset_bands = cfg.dataset.bands[modality]
-        self.input_bands = cfg.encoder.input_bands[modality]
+        self.input_bands = getattr(cfg.encoder.input_bands, modality, [])
         self.encoder_name = cfg.encoder.encoder_name
 
         self.used_bands_mask = torch.tensor([b in self.input_bands for b in self.dataset_bands], dtype=torch.bool)
