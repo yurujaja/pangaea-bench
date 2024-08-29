@@ -29,7 +29,8 @@ class CropTypeMappingSouthSudan(torch.utils.data.Dataset):
         self.split_mapping = {'train': 'Train', 'val': 'Validation', 'test': 'Test'}
 
         self.country = 'southsudan'
-        self.grid_size = 20
+        self.use_pad = cfg['use_pad']
+        self.grid_size = cfg['grid_size']
 
         split_df = pd.read_csv(os.path.join(self.root_path, self.country, 'list_eval_partition.csv'))
         self.split_array = split_df['partition'].values
@@ -48,8 +49,9 @@ class CropTypeMappingSouthSudan(torch.utils.data.Dataset):
         s1 = torch.from_numpy(images['s1'])[:2, ...]  # only use VV and VH bands
         s2 = torch.from_numpy(images['s2'])
 
-        s1 = self.pad_or_crop(s1)
-        s2 = self.pad_or_crop(s2)
+        if self.use_pad:
+            s1 = self.pad_or_crop(s1)
+            s2 = self.pad_or_crop(s2)
 
         s1 = torch.permute(s1, (0, 3, 1, 2))  # C, T, H, W
         s2 = torch.permute(s2, (0, 3, 1, 2))  # C, T, H, W
@@ -109,8 +111,9 @@ class CropTypeMappingSouthSudan(torch.utils.data.Dataset):
         s2_json = json.loads(open(os.path.join(self.root_path, self.country, 's2', f's2_{self.country}_{loc_id}.json'), 'r').read())
         s2 = self.get_dates(s2_json)
 
-        s1 = self.pad_or_crop(s1)
-        s2 = self.pad_or_crop(s2)
+        if self.use_pad:
+            s1 = self.pad_or_crop(s1)
+            s2 = self.pad_or_crop(s2)
         
         return {'s1': s1, 's2': s2}
     
