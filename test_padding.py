@@ -5,12 +5,13 @@ import random
 
 batch = []
 for i in range(5):
-    T = random.randint(1, 10)
+    T = random.randint(1, 100)
+    print(T)
     batch.append(
         {
             "image": {
                 "optical": torch.rand(3, T, 256, 256),
-                "sar": torch.rand(2, T, 256, 256),
+                "sar": torch.rand(2, 256, 256),
             },
             "target": torch.rand(1, 256, 256),
         }
