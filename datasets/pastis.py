@@ -408,51 +408,5 @@ if __name__ == "__main__":
         "data_max": 1,
     }
 
-    dataset = PASTIS(cfg, "train", is_train=True)
-    train_dataset, val_dataset, test_dataset = PASTIS.get_splits(cfg)
-
-    class RunningStats:
-        def __init__(self, stats_dim):
-            self.n = 0
-            self.sum = torch.zeros(stats_dim)
-            self.sum_2 = torch.zeros(stats_dim)
-
-            self.min = 10e10 * torch.ones(stats_dim)
-            self.max = -10e10 * torch.ones(stats_dim)
-
-        def update(self, x, reduce_dim):
-            self.n += np.prod([x.shape[i] for i in reduce_dim])
-            self.sum += torch.sum(x, reduce_dim)
-            self.sum_2 += torch.sum(x**2, reduce_dim)
-
-            x_min = torch.amin(x, reduce_dim)
-            x_max = torch.amax(x, reduce_dim)
-            self.min = torch.min(self.min, x_min)
-            self.max = torch.max(self.max, x_max)
-
-        def finalize(self):
-            return {
-                "mean": self.sum / self.n,
-                "std": torch.sqrt(self.sum_2 / self.n - (self.sum / self.n) ** 2),
-                "min": self.min,
-                "max": self.max,
-            }
-
-    data = train_dataset.__getitem__(0)
-    stats = {}
-    for modality, img in data["image"].items():
-        print(modality, img.shape)
-        # compute the number of channels in the image
-        n_channels = img.shape[0]
-        stats[modality] = RunningStats(n_channels)
-
-    for i in tqdm(range(len(train_dataset))):
-        data = train_dataset.__getitem__(i)
-        for modality, img in data["image"].items():
-            reduce_dim = list(range(1, img.ndim))
-            stats[modality].update(img, reduce_dim)
-
-    for modality, stat in stats.items():
-        print(modality)
-        print(stat.finalize())
-        print("_" * 100)
+    dataset = Pastis(cfg, "train", is_train=True)
+    train_dataset, val_dataset, test_dataset = Pastis.get_splits(cfg)
