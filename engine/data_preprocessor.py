@@ -16,11 +16,13 @@ from utils.registry import AUGMENTER_REGISTRY
 
 
 def get_collate_fn(cfg: omegaconf.DictConfig) -> Callable:
+    modalities = cfg.dataset.bands.keys()
+
     def collate_fn(batch):
         return {
             "image": {
                 modality: torch.stack([x["image"][modality] for x in batch])
-                for modality in cfg.dataset.bands
+                for modality in modalities
             },
             "target": torch.stack([x["target"] for x in batch]),
         }
