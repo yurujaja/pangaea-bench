@@ -9,7 +9,7 @@ import rasterio
 from datetime import datetime
 from einops import rearrange
 
-# from utils.registry import DATASET_REGISTRY
+from utils.registry import DATASET_REGISTRY
 from omegaconf import OmegaConf
 
 
@@ -105,8 +105,8 @@ def split_image(image_tensor, nb_split, id):
         ].float()
 
 
-# @DATASET_REGISTRY.register()
-class PASTIS(Dataset):
+@DATASET_REGISTRY.register()
+class Pastis(Dataset):
     def __init__(
         self,
         cfg: OmegaConf,
@@ -123,7 +123,7 @@ class PASTIS(Dataset):
             nb_split (int): number of splits from one observation
             num_classes (int): number of classes
         """
-        super(PASTIS, self).__init__()
+        super(Pastis, self).__init__()
 
         if split == "train":
             folds = [1, 2, 3]

@@ -1,4 +1,4 @@
-dataset_name: PASTIS
+dataset_name: Pastis
 root_path: /share/DEEPLEARNING/datasets/PASTIS-HD
 download_url: null
 auto_download: False
