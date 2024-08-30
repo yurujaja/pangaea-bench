@@ -335,7 +335,7 @@ class RemoteCLIP_Encoder(nn.Module):
 
         self.ln_pre = nn.Identity() if no_ln_pre else norm_layer(width)
 
-        print(self.output_layers)
+        # print(self.output_layers)
         heads = width // head_width
         self.transformer = Transformer(
             width,
