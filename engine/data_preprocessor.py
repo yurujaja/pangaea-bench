@@ -171,7 +171,7 @@ class Tile(BaseAugment):
 
     def __getitem__(self, index):
         if self.tiles_per_dim == 1:
-            return self.dataset[dataset_index]
+            return self.dataset[index]
 
         dataset_index = math.floor(index / (self.tiles_per_dim * self.tiles_per_dim))
         data = self.dataset[dataset_index]
