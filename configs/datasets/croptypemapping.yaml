@@ -6,7 +6,6 @@ auto_download: True
 img_size: 64
 multi_temporal: True
 multi_modal: True
-limited_label: False
 
 use_pad: false
 grid_size: 20
