@@ -1,0 +1,40 @@
+dataset_name: AI4SmallFarms
+root_path: ./data/ai4smallfarms
+dataverse_api_token: 753e72e8-c746-4860-9d0c-3aec872d888a
+auto_download: True
+
+img_size: 224
+multi_temporal: False
+multi_modal: False
+limited_label: False
+
+ignore_index: -1
+num_classes: 2
+classes:
+  - Background
+  - Crop Field
+
+distribution:
+  - 0.72676
+  - 0.27324
+
+bands:
+  optical:
+    - B2
+    - B3
+    - B4
+    - B8
+
+data_mean:
+  optical:
+    - 750.2136
+    - 1032.7277
+    - 1165.1279
+    - 2416.0448
+
+data_std:
+  optical:
+    - 283.3842
+    - 332.7280
+    - 518.9025
+    - 702.3791
