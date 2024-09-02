@@ -209,7 +209,7 @@ class MTUPerNet(UPerNet):
     def forward(self, img, output_shape=None):
         """Forward function for change detection."""
 
-        if self.encoder.model_name not in ["Prithvi", "satlas_pretrain"]:
+        if self.encoder.model_name not in ["Prithvi", "satlas_pretrain", "SpectralGPT"]:
             feats = []
             for i in range(self.multi_temporal):
                 if not self.finetune:
@@ -227,7 +227,7 @@ class MTUPerNet(UPerNet):
             else:
                 feats = self.encoder(img)
 
-        if self.encoder.model_name not in ["satlas_pretrain"]:
+        if self.encoder.model_name not in ["satlas_pretrain", "SpectralGPT"]:
             for i in range(len(feats)):
                 if self.multi_temporal_strategy == "ltae":
                     feats[i] = self.tmap(feats[i])
