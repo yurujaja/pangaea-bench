@@ -391,6 +391,7 @@ class ResizeToEncoder(Resize):
         if not local_cfg:
             local_cfg = omegaconf.OmegaConf.create()
         local_cfg.size = cfg.encoder.input_size
+        super().__init__(dataset, cfg, local_cfg)
 
 
 @AUGMENTER_REGISTRY.register()

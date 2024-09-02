@@ -1,0 +1,10 @@
+train:
+  SegPreprocessor: ~
+  NormalizeMeanStd: ~
+  ResizeToEncoder: ~
+  
+test:
+  SegPreprocessor: ~
+  NormalizeMeanStd: ~
+  ResizeToEncoder: ~
+  #Tile: ~

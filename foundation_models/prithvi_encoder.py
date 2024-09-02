@@ -23,7 +23,6 @@ class Prithvi_Encoder(nn.Module):
         self.model_name = 'Prithvi'
         self.img_size = img_size
         self.num_frames = cfg['multi_temporal'] if cfg['multi_temporal'] else 1
-        # print(self.num_frames)
 
         self.embed_dim = embed_dim
         self.patch_size = patch_size
@@ -57,6 +56,7 @@ class Prithvi_Encoder(nn.Module):
                 pretrained_encoder[name] = pretrained_model[name]
 
         msg = self.load_state_dict(pretrained_encoder, strict=False)
+        print(msg)
 
         return missing, incompatible_shape
 
@@ -92,10 +92,9 @@ class Prithvi_Encoder(nn.Module):
 
     def forward(self, image):
         # embed patches
-        # print("prithvi encoder", image.keys())
         x = image['optical']
         x = self.patch_embed(x)
-
+        
         cls_tokens = self.cls_token.expand(x.shape[0], -1, -1)
         x = torch.cat((cls_tokens, x), dim=1)
 
@@ -110,6 +109,8 @@ class Prithvi_Encoder(nn.Module):
                 #out = self.norm(x) if i == 11 else x
                 # print(x.shape)
                 out = x[:, 1:, :].permute(0, 2, 1).view(x.shape[0], -1, self.num_frames, self.img_size // self.patch_size, self.img_size // self.patch_size).squeeze(2).contiguous()
+                # out = x[:, 1:, :].permute(0, 2, 1).reshape(x.shape[0], -1, self.img_size // self.patch_size, self.img_size // self.patch_size).contiguous()
+
                 output.append(out)
 
         return output
