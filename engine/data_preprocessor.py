@@ -151,19 +151,9 @@ class BandAdaptor:
         self.input_bands = getattr(cfg.encoder.input_bands, modality, [])
         self.encoder_name = cfg.encoder.encoder_name
 
-        self.used_bands_mask = torch.tensor(
-            [b in self.input_bands for b in self.dataset_bands], dtype=torch.bool
-        )
-        self.avail_bands_mask = torch.tensor(
-            [b in self.dataset_bands for b in self.input_bands], dtype=torch.bool
-        )
-        self.avail_bands_indices = torch.tensor(
-            [
-                self.dataset_bands.index(b) if b in self.dataset_bands else -1
-                for b in self.input_bands
-            ],
-            dtype=torch.long,
-        )
+        self.used_bands_mask = torch.tensor([b in self.input_bands for b in self.dataset_bands], dtype=torch.bool)
+        self.avail_bands_mask = torch.tensor([b in self.dataset_bands for b in self.input_bands], dtype=torch.bool)
+        self.avail_bands_indices = torch.tensor([self.dataset_bands.index(b) if b in self.dataset_bands else -1 for b in self.input_bands], dtype=torch.long)
 
         self.need_padded = self.avail_bands_mask.sum() < len(self.input_bands)
 
@@ -193,18 +183,10 @@ class BandAdaptor:
             )
 
     def preprocess_band_statistics(self, data_mean, data_std, data_min, data_max):
-        data_mean = [
-            data_mean[i] if i != -1 else 0.0 for i in self.avail_bands_indices.tolist()
-        ]
-        data_std = [
-            data_std[i] if i != -1 else 1.0 for i in self.avail_bands_indices.tolist()
-        ]
-        data_min = [
-            data_min[i] if i != -1 else -1.0 for i in self.avail_bands_indices.tolist()
-        ]
-        data_max = [
-            data_max[i] if i != -1 else 1.0 for i in self.avail_bands_indices.tolist()
-        ]
+        data_mean = [data_mean[i] if i != -1 else 0.0 for i in self.avail_bands_indices.tolist()]
+        data_std = [data_std[i] if i != -1 else 1.0 for i in self.avail_bands_indices.tolist()]
+        data_min = [data_min[i] if i != -1 else -1.0 for i in self.avail_bands_indices.tolist()]
+        data_max = [data_max[i] if i != -1 else 1.0 for i in self.avail_bands_indices.tolist()]
         return data_mean, data_std, data_min, data_max
 
     def preprocess_single_timeframe(self, image):
@@ -243,9 +225,8 @@ class Tile(BaseAugment):
     def __init__(self, dataset, cfg, local_cfg):
         super().__init__(dataset, cfg, local_cfg)
         self.min_overlap = getattr(local_cfg, "min_overlap", 0)
-        self.input_size = (
-            cfg.dataset.img_size
-        )  # Should be the _largest_ image in the dataset to avoid problems mentioned in __getitem__
+        # Should be the _largest_ image in the dataset to avoid problems mentioned in __getitem__
+        self.input_size = cfg.dataset.img_size
         self.output_size = cfg.encoder.input_size
         if self.output_size == self.input_size:
             self.tiles_per_dim = 1
