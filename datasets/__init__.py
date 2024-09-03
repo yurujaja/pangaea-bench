@@ -5,3 +5,4 @@ from .xview2 import xView2
 from .biomassters import BioMassters
 from .croptypemapping import CropTypeMappingSouthSudan
 from .ai4smallfarms import AI4SmallFarms
+from .spacenet7 import SN7
