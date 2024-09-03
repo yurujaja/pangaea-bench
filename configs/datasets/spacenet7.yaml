@@ -20,9 +20,9 @@ distribution:
 # data stats
 bands:
   optical:
-    - B3  # Band 1 (Red)
-    - B2  # Band 2 (Green)
-    - B1  # Band 3 (Blue)
+    - B4  # Band 1 (Red)
+    - B3  # Band 2 (Green)
+    - B2  # Band 3 (Blue)
 data_mean:
   optical:
     - 121.826

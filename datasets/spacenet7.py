@@ -210,7 +210,7 @@ class SN7(torch.utils.data.Dataset):
             except Exception as e:
                 print(f"Failed to move {item}: {e}")
         tar_file.unlink()
-        temp_dataset_path.unlink()
+        # temp_dataset_path.unlink()
 
     @staticmethod
     def get_splits(dataset_config):
