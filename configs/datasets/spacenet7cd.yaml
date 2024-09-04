@@ -1,19 +1,19 @@
-dataset_name: SN7MAPPING
+dataset_name: SN7CD
 root_path: ./data/spacenet7
 download_url: https://drive.google.com/uc?id=1BADSEjxYKFZZlM-tEkRUfHvHi5XdaVV9
 auto_download: True
 
 img_size: 1024
-multi_temporal: False
+multi_temporal: 2
 multi_modal: False
 
 # classes
 ignore_index: -1
 num_classes: 2
 classes:
-  - Background
-  - Building
-distribution:
+  - No Change
+  - Change
+distribution:  # TODO: update for CD
   - 0.92530769
   - 0.07469231
 

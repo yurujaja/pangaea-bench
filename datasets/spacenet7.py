@@ -21,6 +21,7 @@ import torchvision.transforms.functional as TF
 import torchvision.transforms as T
 
 from .utils import DownloadProgressBar
+from abc import abstractmethod
 from utils.registry import DATASET_REGISTRY
 
 # train/val/test split from https://doi.org/10.3390/rs15215135
@@ -95,10 +96,10 @@ SN7_TEST = [
 # SPACENET 7 DATASET                                             #
 ###############################################################
 
-@DATASET_REGISTRY.register()
-class SN7(torch.utils.data.Dataset):
-    def __init__(self, cfg, split):
+class AbstractSN7(torch.utils.data.Dataset):
 
+    def __init__(self, cfg, split):
+        super().__init__()
         self.root_path = Path(cfg['root_path'])
         metadata_file = self.root_path / 'metadata_train.json'
         with open(metadata_file, 'r') as f:
@@ -119,36 +120,13 @@ class SN7(torch.utils.data.Dataset):
         else:
             raise Exception('Invalid split')
 
-        self.items = []
-        # adding timestamps (only if label exists and not masked) for each AOI
-        for aoi_id in self.aoi_ids:
-            timestamps = list(self.metadata[aoi_id])
-            timestamps = [t for t in timestamps if not t['mask'] and t['label']]
-            self.items.extend(timestamps)
+    @abstractmethod
+    def __getitem__(self, index: int) -> dict:
+        pass
 
-    def __len__(self):
-        return len(self.items)
-
-    def __getitem__(self, index):
-
-        item = self.items[index]
-        aoi_id, year, month = item['aoi_id'], int(item['year']), int(item['month'])
-
-        image = self.load_planet_mosaic(aoi_id, year, month)
-        target = self.load_building_label(aoi_id, year, month)
-
-        image = torch.from_numpy(image)
-        target = torch.from_numpy(target)
-
-        output = {
-            'image': {
-                'optical': image,
-            },
-            'target': target,
-            'metadata': {}
-        }
-
-        return output
+    @abstractmethod
+    def __len__(self) -> int:
+        pass
 
     def load_planet_mosaic(self, aoi_id: str, year: int, month: int) -> np.ndarray:
         folder = self.root_path / 'train' / aoi_id / 'images_masked'
@@ -170,7 +148,7 @@ class SN7(torch.utils.data.Dataset):
     def load_change_label(self, aoi_id: str, year_t1: int, month_t1: int, year_t2: int, month_t2) -> np.ndarray:
         building_t1 = self.load_building_label(aoi_id, year_t1, month_t1)
         building_t2 = self.load_building_label(aoi_id, year_t2, month_t2)
-        change = np.logical_and(building_t1 == 0, building_t2 == 1)
+        change = building_t1 != building_t2
         return change.astype(np.float32)
 
     @staticmethod
@@ -212,9 +190,102 @@ class SN7(torch.utils.data.Dataset):
         tar_file.unlink()
         # temp_dataset_path.unlink()
 
+
+@DATASET_REGISTRY.register()
+class SN7MAPPING(AbstractSN7):
+    def __init__(self, cfg, split):
+        super().__init__(cfg, split)
+
+        self.items = []
+        # adding timestamps (only if label exists and not masked) for each AOI
+        for aoi_id in self.aoi_ids:
+            timestamps = list(self.metadata[aoi_id])
+            timestamps = [ts for ts in timestamps if not ts['mask'] and ts['label']]
+            self.items.extend(timestamps)
+
+    def __len__(self):
+        return len(self.items)
+
+    def __getitem__(self, index):
+
+        item = self.items[index]
+        aoi_id, year, month = item['aoi_id'], int(item['year']), int(item['month'])
+
+        image = self.load_planet_mosaic(aoi_id, year, month)
+        target = self.load_building_label(aoi_id, year, month)
+
+        image = torch.from_numpy(image)
+        target = torch.from_numpy(target)
+
+        output = {
+            'image': {
+                'optical': image,
+            },
+            'target': target,
+            'metadata': {}
+        }
+
+        return output
+
     @staticmethod
     def get_splits(dataset_config):
-        dataset_train = SN7(cfg=dataset_config, split='train')
-        dataset_val = SN7(cfg=dataset_config, split='val')
-        dataset_test = SN7(cfg=dataset_config, split='test')
+        dataset_train = SN7MAPPING(cfg=dataset_config, split='train')
+        dataset_val = SN7MAPPING(cfg=dataset_config, split='val')
+        dataset_test = SN7MAPPING(cfg=dataset_config, split='test')
         return dataset_train, dataset_val, dataset_test
+
+
+@DATASET_REGISTRY.register()
+class SN7CD(AbstractSN7):
+    def __init__(self, cfg, split, eval_mode):
+        super().__init__(cfg, split)
+
+        self.T = cfg['multi_temporal']
+        assert self.T > 1
+        self.eval_mode = eval_mode
+        self.items = list(self.aoi_ids)
+
+    def __len__(self):
+        return len(self.items)
+
+    def __getitem__(self, index):
+        aoi_id = self.items[index]
+
+        # determine timestamps for t1 and t2 (random for train and first-last for eval)
+        timestamps = [ts for ts in self.metadata[aoi_id] if not ts['mask'] and ts['label']]
+        if self.eval_mode:
+            t_values = list(np.linspace(0, len(timestamps), self.T, endpoint=False, dtype=int))
+        else:
+            t_values = sorted(np.random.randint(0, len(timestamps), size=self.T))
+        timestamps = sorted([timestamps[t] for t in t_values], key=lambda ts: int(ts['year']) * 12 + int(ts['month']))
+
+        # load images according to timestamps
+        image = np.stack([self.load_planet_mosaic(aoi_id, ts['year'], ts['month']) for ts in timestamps])
+
+        # Reshaping tensor (T, C, H, W) to (C, T, H, W)
+        image = image.transpose(1, 0, 2, 3)
+        image = torch.from_numpy(image)
+
+        # change label between first (0) and last (-1) timestamp
+        year_t1, month_t1 = timestamps[0]['year'], timestamps[0]['month']
+        year_t2, month_t2 = timestamps[-1]['year'], timestamps[-1]['month']
+        target = self.load_change_label(aoi_id, year_t1, month_t1, year_t2, month_t2)
+        target = torch.from_numpy(target)
+
+        output = {
+            'image': {
+                'optical': image,
+            },
+            'target': target,
+            'metadata': {}
+        }
+
+        return output
+
+    @staticmethod
+    def get_splits(dataset_config):
+        dataset_train = SN7CD(cfg=dataset_config, split='train', eval_mode=False)
+        dataset_val = SN7CD(cfg=dataset_config, split='val', eval_mode=True)
+        dataset_test = SN7CD(cfg=dataset_config, split='test', eval_mode=True)
+        return dataset_train, dataset_val, dataset_test
+
