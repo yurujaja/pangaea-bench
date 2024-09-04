@@ -10,10 +10,11 @@ work_dir: './work-dir'
 seed: 0
 num_workers: 8
 batch_size: 8
-epochs: 20
+epochs: 80
+limited_label: -1
 fp16: false
 bf16: false
-ckpt_interval: 20
+ckpt_interval: 40
 eval_interval: 5
 log_interval: 10
 rank: -1

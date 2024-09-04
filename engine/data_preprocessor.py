@@ -5,13 +5,62 @@ import math
 import torch
 import torch.nn.functional as F
 import torchvision.transforms as T
+from typing import Callable
 
 import numpy as np
 import logging
 
 import omegaconf
 
+
 from utils.registry import AUGMENTER_REGISTRY
+
+
+def get_collate_fn(cfg: omegaconf.DictConfig) -> Callable:
+    modalities = cfg.dataset.bands.keys()
+
+    def collate_fn(
+        batch: dict[dict[str, torch.Tensor]]
+    ) -> dict[dict[str, torch.Tensor]]:
+        """Collate function for torch DataLoader
+        args:
+            batch: list of dictionaries with keys 'image' and 'target'.
+            'image' is a dictionary with keys corresponding to modalities and values being torch.Tensor
+            of shape (C, H, W) for single images, (C, T, H, W) where T is the temporal dimension for
+            time series data. 'target' is a torch.Tensor
+        returns:
+            dictionary with keys 'image' and 'target'
+        """
+        # compute the maximum temporal dimension
+        T_max = 0
+        for modality in modalities:
+            for x in batch:
+                # check if the image is a time series, i.e. has 4 dimensions
+                if len(x["image"][modality].shape) == 4:
+                    T_max = max(T_max, x["image"][modality].shape[1])
+        # pad all images to the same temporal dimension
+        for modality in modalities:
+            for i, x in enumerate(batch):
+                # check if the image is a time series, if yes then pad it
+                # else do nothing
+                if len(x["image"][modality].shape) == 4:
+                    T = x["image"][modality].shape[1]
+                    if T < T_max:
+                        padding = (0, 0, 0, 0, 0, T_max - T)
+                        batch[i]["image"][modality] = F.pad(
+                            x["image"][modality], padding, "constant", 0
+                        )
+
+        # stack all images and targets
+        return {
+            "image": {
+                modality: torch.stack([x["image"][modality] for x in batch])
+                for modality in modalities
+            },
+            "target": torch.stack([x["target"] for x in batch]),
+        }
+
+    return collate_fn
 
 
 class RichDataset(torch.utils.data.Dataset):
@@ -30,7 +79,7 @@ class RichDataset(torch.utils.data.Dataset):
 
         # TODO: Make these optional.
         self.data_mean = getattr(dataset, "data_mean", cfg.dataset.data_mean).copy()
-        self.data_std = getattr(dataset, "data_std", cfg.dataset.data_mean).copy()
+        self.data_std = getattr(dataset, "data_std", cfg.dataset.data_std).copy()
         self.data_min = getattr(dataset, "data_min", cfg.dataset.data_min).copy()
         self.data_max = getattr(dataset, "data_max", cfg.dataset.data_max).copy()
 
@@ -99,7 +148,7 @@ class RegPreprocessor(SegPreprocessor):
 class BandAdaptor:
     def __init__(self, cfg, modality):
         self.dataset_bands = cfg.dataset.bands[modality]
-        self.input_bands = cfg.encoder.input_bands[modality]
+        self.input_bands = getattr(cfg.encoder.input_bands, modality, [])
         self.encoder_name = cfg.encoder.encoder_name
 
         self.used_bands_mask = torch.tensor(
@@ -194,9 +243,8 @@ class Tile(BaseAugment):
     def __init__(self, dataset, cfg, local_cfg):
         super().__init__(dataset, cfg, local_cfg)
         self.min_overlap = getattr(local_cfg, "min_overlap", 0)
-        self.input_size = (
-            cfg.dataset.img_size
-        )  # Should be the _largest_ image in the dataset to avoid problems mentioned in __getitem__
+        # Should be the _largest_ image in the dataset to avoid problems mentioned in __getitem__
+        self.input_size = cfg.dataset.img_size
         self.output_size = cfg.encoder.input_size
         if self.output_size == self.input_size:
             self.tiles_per_dim = 1
@@ -225,7 +273,7 @@ class Tile(BaseAugment):
 
     def __getitem__(self, index):
         if self.tiles_per_dim == 1:
-            return self.dataset[dataset_index]
+            return self.dataset[index]
 
         dataset_index = math.floor(index / (self.tiles_per_dim * self.tiles_per_dim))
         data = self.dataset[dataset_index]
@@ -484,6 +532,7 @@ class ResizeToEncoder(Resize):
         if not local_cfg:
             local_cfg = omegaconf.OmegaConf.create()
         local_cfg.size = cfg.encoder.input_size
+        super().__init__(dataset, cfg, local_cfg)
 
 
 @AUGMENTER_REGISTRY.register()

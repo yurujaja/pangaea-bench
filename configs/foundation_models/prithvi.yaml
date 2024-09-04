@@ -17,7 +17,7 @@ encoder_model_args:
   depth: 12
   mlp_ratio: 4
   tubelet_size: 1
-  # num_frames: 1 #temporal frames (needed also in the encoder for prithvi)
+
 
 input_bands:
   optical:

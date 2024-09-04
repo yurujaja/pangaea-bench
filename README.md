@@ -41,7 +41,7 @@ Should be the same as the v1 version of the code, maybe some dependencies can be
 
 
 ## Example
-### Training
+### Training: Single Temporal
 Set `config`, `encoder_config`, `dataset_config`, `segmentor_config` and `augmentation_config` and start the training process on single gpu:
 ```
 torchrun --nnodes=1 --nproc_per_node=1 run.py  \
@@ -50,7 +50,19 @@ torchrun --nnodes=1 --nproc_per_node=1 run.py  \
 --dataset_config configs/datasets/mados.yaml   \
 --segmentor_config configs/segmentors/upernet.yaml \
 --augmentation_config configs/augmentations/segmentation_default.yaml  \
---num_workers 4 --eval_interval 1
+--num_workers 4 --eval_interval 1  --use_wandb
+```
+
+### Training: Multi Temporal
+Multi-temporal model `configs/segmentors/upernet_mt.yaml` should be used. In addition, in the dataset config, indicate the number of time frames, e.g., `multi_temporal: 6`
+```
+torchrun --nnodes=1 --nproc_per_node=1 run.py  \
+--config configs/run/default.yaml  \
+--encoder_config configs/foundation_models/prithvi.yaml  \
+--dataset_config configs/datasets/croptypemapping.yaml   \
+--segmentor_config configs/segmentors/upernet_mt.yaml \
+--augmentation_config configs/augmentations/segmentation_default.yaml  \
+--num_workers 4 --eval_interval 1 --use_wandb
 ```
 
 ### Evaluation

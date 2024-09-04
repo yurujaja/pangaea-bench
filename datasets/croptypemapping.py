@@ -4,6 +4,7 @@ import os
 import json
 import gdown
 import tarfile
+import zipfile
 import shutil
 
 import numpy as np
@@ -29,7 +30,8 @@ class CropTypeMappingSouthSudan(torch.utils.data.Dataset):
         self.split_mapping = {'train': 'Train', 'val': 'Validation', 'test': 'Test'}
 
         self.country = 'southsudan'
-        self.grid_size = 20
+        self.use_pad = cfg['use_pad']
+        self.grid_size = cfg['multi_temporal']
 
         split_df = pd.read_csv(os.path.join(self.root_path, self.country, 'list_eval_partition.csv'))
         self.split_array = split_df['partition'].values
@@ -43,34 +45,40 @@ class CropTypeMappingSouthSudan(torch.utils.data.Dataset):
         id = self.split_indices[idx]
         loc_id = f'{self.ori_ids[id]:06d}'
 
-        images = np.load(os.path.join(self.root_path, self.country, 'npy', f'{self.country}_{loc_id}.npz'))
+        file_path = os.path.join(self.root_path, self.country, 'npy', f'{self.country}_{loc_id}.npz')
+        try:
+            images = np.load(file_path)
+            s1 = torch.from_numpy(images['s1'])[:2, ...].float()   # only use VV and VH bands
+            s2 = torch.from_numpy(images['s2']).float() 
 
-        s1 = torch.from_numpy(images['s1'])[:2, ...]  # only use VV and VH bands
-        s2 = torch.from_numpy(images['s2'])
+            if self.use_pad:
+                s1 = self.pad_or_crop(s1)
+                s2 = self.pad_or_crop(s2)
 
-        s1 = self.pad_or_crop(s1)
-        s2 = self.pad_or_crop(s2)
+            s1 = torch.permute(s1, (0, 3, 1, 2))  # C, T, H, W
+            s2 = torch.permute(s2, (0, 3, 1, 2))  # C, T, H, W
 
-        s1 = torch.permute(s1, (0, 3, 1, 2))  # C, T, H, W
-        s2 = torch.permute(s2, (0, 3, 1, 2))  # C, T, H, W
+            label = np.load(os.path.join(self.root_path, self.country, 'truth', f'{self.country}_{loc_id}.npz'))['truth']
+            label = self._mapping_label(label)
+            label = torch.from_numpy(label).float() 
 
-        label = np.load(os.path.join(self.root_path, self.country, 'truth', f'{self.country}_{loc_id}.npz'))['truth']
-        label = self._mapping_label(label)
-        label = torch.from_numpy(label)
+            metadata = self.get_metadata(idx)
+            output = {
+                'image': {
+                    'optical': s2,
+                    'sar': s1
+                },
+                'target': label,
+                'metadata': metadata
+            }
 
-        metadata = self.get_metadata(idx)
-
-        output = {
-            'image': {
-                'optical': s2,
-                'sar': s1
-            },
-            'target': label,
-            'metadata': metadata
-        }
+            return output
         
-        return output
-
+        except zipfile.BadZipFile:
+            print(f"BadZipFile: {file_path}. This file is skipped.")
+            return self.__getitem__(idx + 1)
+            
+        
     def _mapping_label(self, label):
         # The dataset uses top four crop types 
         # Reference: https://openaccess.thecvf.com/content_CVPRW_2019/papers/cv4gc/Rustowicz_Semantic_Segmentation_of_Crop_Type_in_Africa_A_Novel_Dataset_CVPRW_2019_paper.pdf
@@ -109,8 +117,9 @@ class CropTypeMappingSouthSudan(torch.utils.data.Dataset):
         s2_json = json.loads(open(os.path.join(self.root_path, self.country, 's2', f's2_{self.country}_{loc_id}.json'), 'r').read())
         s2 = self.get_dates(s2_json)
 
-        s1 = self.pad_or_crop(s1)
-        s2 = self.pad_or_crop(s2)
+        if self.use_pad:
+            s1 = self.pad_or_crop(s1)
+            s2 = self.pad_or_crop(s2)
         
         return {'s1': s1, 's2': s2}
     
