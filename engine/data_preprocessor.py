@@ -30,7 +30,7 @@ class RichDataset(torch.utils.data.Dataset):
 
         # TODO: Make these optional.
         self.data_mean = getattr(dataset, "data_mean", cfg.dataset.data_mean).copy()
-        self.data_std = getattr(dataset, "data_std", cfg.dataset.data_mean).copy()
+        self.data_std = getattr(dataset, "data_std", cfg.dataset.data_std).copy()
         self.data_min = getattr(dataset, "data_min", cfg.dataset.data_min).copy()
         self.data_max = getattr(dataset, "data_max", cfg.dataset.data_max).copy()
 
