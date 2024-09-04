@@ -256,7 +256,11 @@ class SN7CD(AbstractSN7):
         if self.eval_mode:
             t_values = list(np.linspace(0, len(timestamps), self.T, endpoint=False, dtype=int))
         else:
-            t_values = sorted(np.random.randint(0, len(timestamps), size=self.T))
+            if self.T == 2:
+                t_values = [0, -1]
+            else:  # randomly add intermediate timestamps
+                t_values = [0] + sorted(np.random.randint(1, len(timestamps) - 1, size=self.T - 2)) + [-1]
+
         timestamps = sorted([timestamps[t] for t in t_values], key=lambda ts: int(ts['year']) * 12 + int(ts['month']))
 
         # load images according to timestamps
