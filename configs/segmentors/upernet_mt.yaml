@@ -1,6 +1,6 @@
 segmentor_name: MTUPerNet
 task_name: semantic-segmentation
-multi_temporal_strategy: ltae
+multi_temporal_strategy: linear
 # time_frames: 2
 #task_model_args:
   #num_frames: 1

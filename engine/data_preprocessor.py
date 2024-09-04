@@ -79,7 +79,7 @@ class RichDataset(torch.utils.data.Dataset):
 
         # TODO: Make these optional.
         self.data_mean = getattr(dataset, "data_mean", cfg.dataset.data_mean).copy()
-        self.data_std = getattr(dataset, "data_std", cfg.dataset.data_mean).copy()
+        self.data_std = getattr(dataset, "data_std", cfg.dataset.data_std).copy()
         self.data_min = getattr(dataset, "data_min", cfg.dataset.data_min).copy()
         self.data_max = getattr(dataset, "data_max", cfg.dataset.data_max).copy()
 
@@ -255,7 +255,7 @@ class Tile(BaseAugment):
 
     def __getitem__(self, index):
         if self.tiles_per_dim == 1:
-            return self.dataset[dataset_index]
+            return self.dataset[index]
 
         dataset_index = math.floor(index / (self.tiles_per_dim * self.tiles_per_dim))
         data = self.dataset[dataset_index]
@@ -514,6 +514,7 @@ class ResizeToEncoder(Resize):
         if not local_cfg:
             local_cfg = omegaconf.OmegaConf.create()
         local_cfg.size = cfg.encoder.input_size
+        super().__init__(dataset, cfg, local_cfg)
 
 
 @AUGMENTER_REGISTRY.register()

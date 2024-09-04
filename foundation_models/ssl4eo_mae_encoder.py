@@ -75,7 +75,7 @@ class SSL4EO_MAE_OPTICAL_Encoder(Base_Encoder):
 
     def forward(self, image):
         # embed patches
-        x = image['optical']
+        x = image['optical'].squeeze(2)
         x = self.patch_embed(x)
 
         # append cls token

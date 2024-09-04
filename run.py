@@ -76,31 +76,45 @@ parser.add_argument(
 
 parser.add_argument("--use_wandb", action="store_true", help="use wandb for logging")
 
-parser.add_argument("--work_dir", type=str, help="the dir to save logs and models")
+parser.add_argument("--work_dir", type=str,
+                    help="the dir to save logs and models")
 
-parser.add_argument("--seed", type=int, help="random seed")
-parser.add_argument("--num_workers", type=int, help="number of data loading workers")
-parser.add_argument("--batch_size", type=int, help="batch_size")
+parser.add_argument("--limited_label", type=float,
+                    default=-1,
+                    help="Percentage of the dataset to use as a decimal, \
+                          (e.g., 0.1 for 10%). Default -1 to use the entire dataset.")
 
-parser.add_argument("--epochs", type=int, help="number of data loading workers")
+parser.add_argument("--seed", type=int,
+                    help="random seed")
+parser.add_argument("--num_workers", type=int,
+                    help="number of data loading workers")
+parser.add_argument("--batch_size", type=int,
+                    help="batch_size")
 
-parser.add_argument(
-    "--fp16", action="store_true", help="use float16 for mixed precision training"
-)
-parser.add_argument(
-    "--bf16", action="store_true", help="use bfloat16 for mixed precision training"
-)
+parser.add_argument("--epochs", type=int,
+                    help="number of data loading workers")
 
-parser.add_argument("--ckpt_interval", type=int, help="checkpoint interval in epochs")
-parser.add_argument("--eval_interval", type=int, help="evaluate interval in epochs")
-parser.add_argument("--log_interval", type=int, help="log interval in iterations")
+parser.add_argument("--fp16", action="store_true",
+                    help="use float16 for mixed precision training")
+parser.add_argument("--bf16", action="store_true",
+                    help="use bfloat16 for mixed precision training")
+
+parser.add_argument("--ckpt_interval", type=int,
+                    help="checkpoint interval in epochs")
+parser.add_argument("--eval_interval", type=int,
+                    help="evaluate interval in epochs")
+parser.add_argument("--log_interval", type=int,
+                    help="log interval in iterations")
 
 
-parser.add_argument("--rank", type=int, help="rank of current process")
-parser.add_argument("--local_rank", type=int, help="local rank of current process")
-parser.add_argument("--world_size", type=int, help="world size")
-parser.add_argument("--local_world_size", type=int, help="local world size")
-
+parser.add_argument('--rank', type=int,
+                    help='rank of current process')
+parser.add_argument('--local_rank', type=int,
+                    help='local rank of current process')
+parser.add_argument('--world_size', type=int,
+                    help="world size")
+parser.add_argument('--local_world_size', type=int,
+                    help="local world size")
 
 def main():
     cfg = load_configs(parser)
@@ -180,16 +194,6 @@ def main():
     logger.info(f"   Training: {pprint.pformat([s for s in cfg.augmentation.train])}")
     logger.info(f"   Evaluation: {pprint.pformat([s for s in cfg.augmentation.test])}")
 
-    if cfg.dataset["limited_label"]:
-        indices = random.sample(
-            range(train_dataset.__len__()),
-            int(train_dataset.__len__() * cfg.dataset.limited_label),
-        )
-        train_dataset = Subset(train_dataset, indices)
-        perc = cfg.dataset["limited_label"] * 100
-        logger.info(
-            f"Created a subset of the train dataset, with {perc}% of the labels available"
-        )
 
     logger.info("Built {} dataset.".format(dataset_name))
 
@@ -232,17 +236,16 @@ def main():
 
     # training
     if not cfg.eval_dir:
-        if cfg.dataset.limited_label:
-            indices = random.sample(
-                range(train_dataset.__len__()),
-                int(train_dataset.__len__() * cfg.dataset.limited_label),
-            )
-            train_dataset = Subset(train_dataset, indices)
-            perc = cfg.dataset.limited_label * 100
-            logger.info(
-                f"Created a subset of the train dataset, with {perc}% of the labels available"
-            )
 
+
+        if 0 < cfg.limited_label < 1:
+            indices = random.sample(range(len(train_dataset)), int(len(train_dataset)*cfg.limited_label))
+            train_dataset = Subset(train_dataset, indices)
+            perc = cfg.limited_label*100
+            logger.info(f"Created a subset of the train dataset, with {perc}% of the labels available")
+        else:
+            logger.info(f"The entire train dataset will be used.")
+        
         collate_fn = get_collate_fn(cfg)
         # get train val data loaders
         train_loader = DataLoader(
