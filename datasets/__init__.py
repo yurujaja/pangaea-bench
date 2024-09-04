@@ -6,3 +6,4 @@ from .biomassters import BioMassters
 from .croptypemapping import CropTypeMappingSouthSudan
 # from .ai4smallfarms import AI4SmallFarms
 from .spacenet7 import SN7MAPPING, SN7CD
+from .pastis import Pastis
