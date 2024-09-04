@@ -1,9 +1,11 @@
 train:
   SegPreprocessor: ~
+  NormalizeMeanStd: ~
   ResizeToEncoder: ~
-  RandomFlip:
-    ud_probability: 0.3
-    lr_probability: 0.3
+  # RandomFlip:
+  #   ud_probability: 0.3
+  #   lr_probability: 0.3
 test:
   SegPreprocessor: ~
-  Tile: ~
+  ResizeToEncoder: ~
+  NormalizeMeanStd: ~

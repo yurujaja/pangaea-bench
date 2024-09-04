@@ -121,7 +121,14 @@ class SegPreprocessor(RichDataset):
             ) = new_stats
 
     def __getitem__(self, index):
+        print("Index: ", index)
+        print("Dataset: ", self.dataset)
         data = self.dataset[index]
+        print("Data: ", data.keys())
+        print("Data Image: ", data["image"]["sar"].shape)
+        print("Data Image: ", data["image"]["optical"].shape)
+        print("processor: ", self.preprocessor)
+
 
         for k, v in data["image"].items():
             data["image"][k] = self.preprocessor[k](v)
@@ -510,7 +517,18 @@ class Resize(BaseAugment):
         data = self.dataset[index]
         for k, v in data["image"].items():
             if k not in self.ignore_modalities:
-                data["image"][k] = T.Resize(self.size)(v)
+                if data["image"][k].ndim == 4: # its a time series
+                    C, tdim, H, W = data["image"][k].shape
+                    print("INITIAL SHAPE", k,  data["image"][k].shape)
+                    resized = torch.zeros((C, tdim, self.size[0], self.size[1]), dtype=v.dtype, device=v.device)
+                    print("RESIZED SHAPE", resized.shape)
+
+                    for i in range(data["image"][k].shape[1]):
+                        print("RESIZED ADJKLFJKLFD ", v[:, i].shape)
+                        resized[:, i] = T.Resize(self.size)(v[:, i])
+                    data["image"][k] = resized
+                else:
+                    data["image"][k] = T.Resize(self.size)(v)
 
         if data["target"].ndim == 2:
             data["target"] = data["target"].unsqueeze(0)
