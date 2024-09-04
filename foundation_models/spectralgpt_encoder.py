@@ -19,7 +19,7 @@ class SpectralGPT_Encoder(Base_Encoder):
                  t_patch_size,
                  img_size=224,
                  patch_size=16,
-                 num_frames=3,
+                 # num_frames=3,
                  embed_dim=768,
                  depth=12,
                  num_heads=12,
@@ -33,9 +33,10 @@ class SpectralGPT_Encoder(Base_Encoder):
 
         self.model_name = "SpectralGPT"
         self.output_layers = cfg['output_layers']
+        self.num_frames = cfg['multi_temporal'] if cfg['multi_temporal'] else 1
 
         self.patch_embed = PatchEmbed(
-            img_size, patch_size, num_frames, embed_dim, in_chans, t_patch_size) 
+            img_size, patch_size, self.num_frames, embed_dim, in_chans, t_patch_size) 
         
         num_patches = self.patch_embed.num_patches
         input_size = self.patch_embed.input_size
@@ -113,7 +114,6 @@ class SpectralGPT_Encoder(Base_Encoder):
         return missing, incompatible_shape
 
     def forward(self, image):
-
         x = image['optical'].permute(0, 2, 1, 3, 4)  # for this model: B, T, C, H, W 
         x = self.patch_embed(x)
         N, T, L, C = x.shape  # T: number of bands; L: spatial
