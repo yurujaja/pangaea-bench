@@ -1,6 +1,4 @@
-''' 
-Adapted from: https://github.com/zhu-xlab/SSL4EO-S12/tree/main
-'''
+# Adapted from: https://github.com/zhu-xlab/SSL4EO-S12/tree/main
 
 from functools import partial
 import torch

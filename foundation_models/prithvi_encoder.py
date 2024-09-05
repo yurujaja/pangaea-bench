@@ -1,3 +1,5 @@
+# Adapted from https://github.com/NASA-IMPACT/hls-foundation-os
+
 import torch
 import torch.nn as nn
 

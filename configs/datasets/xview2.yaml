@@ -1,6 +1,6 @@
 dataset_name: xView2
-root_path: ./data/xview2_test
-download_url: #https://huggingface.co/datasets/ibm-nasa-geospatial/hls_burn_scars/resolve/main/hls_burn_scars.tar.gz?download=true
+root_path: ./data/xView2
+download_url: https://the-dataset-is-not-publicly-available.com
 auto_download: False
 img_size: 1024
 multi_temporal: 2
@@ -10,17 +10,17 @@ multi_modal: False
 ignore_index: -1
 num_classes: 5
 classes:
-  - Not burned
-  - Burn scar
-  - C
-  - D
-  - E
+  - No building
+  - No damage
+  - Minor damage
+  - Major damage
+  - Destroyed
 distribution:
-  - 0.2
-  - 0.2
-  - 0.2
-  - 0.2
-  - 0.2
+  - 0.9415
+  - 0.0448
+  - 0.0049
+  - 0.0057
+  - 0.0031
 
 bands:
   optical:
@@ -37,23 +37,7 @@ data_std:
     - 48.3066
     - 51.9129
     - 62.7612
-
-#     dataset: datasets.xView2.xView2
-# data_path: ./data/xView2
-# num_classes: 5
-# img_size: 1024 
-# multi_temporal: true
-# multi_modal: false
-# bands:
-#   optical: 
-
-# data_mean:
-
-# data_std:
-
-# data_loader:
-#   batch: 2
-#   num_workers: 0
-#   pin_memory: False
-#   prefetch_factor: null
-#   persistent_workers: False
+data_min:
+  optical: [0.0, 0.0, 0.0]
+data_max:
+  optical: [255, 255, 255]

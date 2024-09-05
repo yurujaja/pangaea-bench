@@ -43,7 +43,7 @@ class DICELoss(torch.nn.Module):
 
         dice_score = (2. * intersection + 1e-6) / (union + 1e-6)
         # dice_loss = 1 - dice_score.mean(dim=1).mean()
-        valid_dice = dice_score[mask.any(dim=(1, 2))]
+        valid_dice = dice_score[mask.any(dim=1).any(dim=1)]
         dice_loss = 1 - valid_dice.mean()  # Dice loss is 1 minus the Dice score
         
         return dice_loss

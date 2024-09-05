@@ -77,18 +77,11 @@ class xView2(Dataset):
         img_pre = cv2.imread(fn, cv2.IMREAD_COLOR)
         img_post = cv2.imread(fn.replace('_pre_', '_post_'), cv2.IMREAD_COLOR)
 
-        # print(img_pre.shape)
-        # print(img_post.shape)
 
         #msk_pre = cv2.imread(fn.replace('/images/', '/masks/'), cv2.IMREAD_UNCHANGED)
-        # path = fn.replace('/images/', '/targets/').replace('_pre_disaster', '_post_disaster')
-        # print(path)
-        msk_post = cv2.imread(fn.replace('/images/', '/targets/').replace(
-            '_pre_disaster', '_post_disaster_target'), cv2.IMREAD_UNCHANGED)
+        msk_post = cv2.imread(fn.replace('/images/', '/masks/').replace(
+            '_pre_disaster', '_post_disaster'), cv2.IMREAD_UNCHANGED)
         
-        # print(msk_post.shape)
-        # print(img_post.shape)
-
         #msk = np.stack([msk_pre, msk_post], axis=0)
         msk = msk_post
         img = np.stack([img_pre, img_post], axis=0) 
@@ -123,8 +116,8 @@ class xView2(Dataset):
 
     @staticmethod
     def get_splits(dataset_config):
-        dataset_train = xView2(cfg=dataset_config, split="test")
-        dataset_val = xView2(cfg=dataset_config, split="test")
+        dataset_train = xView2(cfg=dataset_config, split="train")
+        dataset_val = xView2(cfg=dataset_config, split="val")
         dataset_test = xView2(cfg=dataset_config, split="test")
         return dataset_train, dataset_val, dataset_test
 

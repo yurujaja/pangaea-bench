@@ -1,0 +1,9 @@
+train:
+  SegPreprocessor:
+  NormalizeMeanStd:
+  Tile:
+
+test:
+  SegPreprocessor:
+  NormalizeMeanStd:
+  Tile:
