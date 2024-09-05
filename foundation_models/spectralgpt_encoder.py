@@ -1,3 +1,5 @@
+# Obtained from: https://github.com/danfenghong/IEEE_TPAMI_SpectralGPT
+
 from functools import partial
 
 import torch

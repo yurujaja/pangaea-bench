@@ -1,6 +1,4 @@
-'''
-Adapted from: https://github.com/allenai/satlaspretrain_models/
-'''
+# Adapted from: https://github.com/allenai/satlaspretrain_models/
 
 import torch
 import torch.nn

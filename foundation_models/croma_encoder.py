@@ -1,3 +1,5 @@
+# Adapted from: https://github.com/antofuller/CROMA
+
 from torch import nn, einsum
 from einops import rearrange
 import math

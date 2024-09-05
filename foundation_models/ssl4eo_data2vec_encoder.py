@@ -1,3 +1,4 @@
+# Adapted from: https://github.com/zhu-xlab/SSL4EO-S12/tree/main
 
 import math
 import torch
