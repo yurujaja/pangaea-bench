@@ -297,7 +297,7 @@ class Tile(BaseAugment):
             if k not in self.ignore_modalities:
                 tiled_data["image"][k] = v[
                     ..., h : h + self.output_size, w : w + self.output_size
-                ]
+                ].clone()
 
         # Place the mesaured part in the middle to help with tiling artefacts
         h_label_offset = round((self.output_size - h_labeled) / 2)
@@ -306,7 +306,7 @@ class Tile(BaseAugment):
         # Crop target to size
         tiled_data["target"] = data["target"][
             ..., h : h + self.output_size, w : w + self.output_size
-        ]
+        ].clone()
 
         # Ignore overlapping borders
         if h_index != 0:
