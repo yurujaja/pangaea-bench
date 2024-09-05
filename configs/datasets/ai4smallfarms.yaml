@@ -3,7 +3,7 @@ root_path: ./data/ai4smallfarms
 dataverse_api_token: 753e72e8-c746-4860-9d0c-3aec872d888a
 auto_download: True
 
-img_size: 224
+img_size: 807
 multi_temporal: False
 multi_modal: False
 limited_label: False
@@ -20,7 +20,7 @@ distribution:
 
 bands:
   optical:
-    - B2
+    - B2 
     - B3
     - B4
     - B8
@@ -38,3 +38,17 @@ data_std:
     - 332.7280
     - 518.9025
     - 702.3791
+
+data_max:
+  optical:
+    - 10806.0
+    - 10167.0
+    - 9992.0
+    - 10088.0
+
+data_min:
+  optical:
+    - 1.0
+    - 9.0
+    - 1.0
+    - 66.0

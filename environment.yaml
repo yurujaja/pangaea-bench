@@ -25,3 +25,4 @@ dependencies:
   - fastai::opencv-python-headless
   - google-cloud-storage
   - omegaconf
+  - pydataverse
