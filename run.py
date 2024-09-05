@@ -237,6 +237,7 @@ def main():
     )
 
     # training
+    collate_fn = get_collate_fn(cfg)
     if not cfg.eval_dir:
 
 
@@ -248,7 +249,6 @@ def main():
         else:
             logger.info(f"The entire train dataset will be used.")
         
-        collate_fn = get_collate_fn(cfg)
         # get train val data loaders
         train_loader = DataLoader(
             train_dataset,
