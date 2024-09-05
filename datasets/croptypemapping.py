@@ -51,18 +51,24 @@ class CropTypeMappingSouthSudan(torch.utils.data.Dataset):
             s1 = torch.from_numpy(images['s1'])[:2, ...].float()   # only use VV and VH bands
             s2 = torch.from_numpy(images['s2']).float() 
 
+            s1  = torch.flip(s1, dims=[3])  # flip the time dimension
+            s2 = torch.flip(s2, dims=[3])  
+
             if self.use_pad:
                 s1 = self.pad_or_crop(s1)
                 s2 = self.pad_or_crop(s2)
 
+
             s1 = torch.permute(s1, (0, 3, 1, 2))  # C, T, H, W
             s2 = torch.permute(s2, (0, 3, 1, 2))  # C, T, H, W
+
 
             label = np.load(os.path.join(self.root_path, self.country, 'truth', f'{self.country}_{loc_id}.npz'))['truth']
             label = self._mapping_label(label)
             label = torch.from_numpy(label).float() 
 
             metadata = self.get_metadata(idx)
+            
             output = {
                 'image': {
                     'optical': s2,
@@ -117,11 +123,14 @@ class CropTypeMappingSouthSudan(torch.utils.data.Dataset):
         s2_json = json.loads(open(os.path.join(self.root_path, self.country, 's2', f's2_{self.country}_{loc_id}.json'), 'r').read())
         s2 = self.get_dates(s2_json)
 
+        s1 = torch.flip(s1, dims=[0])  # flip the time dimension
+        s2 = torch.flip(s2, dims=[0])
+    
         if self.use_pad:
             s1 = self.pad_or_crop(s1)
             s2 = self.pad_or_crop(s2)
         
-        return {'s1': s1, 's2': s2}
+        return {'sar': s1, 'optical': s2}
     
     def pad_or_crop(self, tensor):
         '''
