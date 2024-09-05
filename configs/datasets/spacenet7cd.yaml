@@ -4,7 +4,7 @@ download_url: https://drive.google.com/uc?id=1BADSEjxYKFZZlM-tEkRUfHvHi5XdaVV9
 auto_download: True
 
 img_size: 1024
-multi_temporal: 4
+multi_temporal: 2
 multi_modal: False
 
 # classes

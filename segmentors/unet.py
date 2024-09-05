@@ -40,6 +40,44 @@ class UNet(nn.Module):
         return output
 
 
+@SEGMENTOR_REGISTRY.register()
+class UNetCD(nn.Module):
+    """
+    """
+
+    def __init__(self, args, cfg, encoder):
+        super().__init__()
+
+        # self.frozen_backbone = frozen_backbone
+
+        self.model_name = 'UNetCD'
+        self.encoder = encoder
+        self.finetune = args.finetune
+        assert self.finetune  # the UNet encoder should always be trained
+
+        self.align_corners = False
+
+        self.num_classes = cfg['num_classes']
+        self.topology = encoder.topology
+
+        self.decoder = Decoder(self.topology)
+        self.conv_seg = OutConv(self.topology[0], self.num_classes)
+
+    def forward(self, img, output_shape=None):
+        """Forward function."""
+        
+        img1 = {k: v[:,:,0,:,:] for k, v in img.items()}
+        img2 = {k: v[:,:,1,:,:] for k, v in img.items()}
+
+        feat1 = self.encoder(img1)
+        feat2= self.encoder(img2)
+ 
+        feat = [f2 - f1 for f2, f1 in zip(feat1, feat2)]
+        feat = self.decoder(feat)
+        output = self.conv_seg(feat)
+        return output
+
+
 class Decoder(nn.Module):
     def __init__(self, topology: Sequence[int]):
         super(Decoder, self).__init__()

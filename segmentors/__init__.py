@@ -1,5 +1,5 @@
 from .upernet import UPerNet, UPerNetCD, MTUPerNet
 from .ltae import LTAE2d
-from .unet import UNet
+from .unet import UNet, UNetCD
 
-all = ['UPerNet', 'UPerNetCD', 'MTUPerNet', 'UNet']
+all = ['UPerNet', 'UPerNetCD', 'MTUPerNet', 'UNet', 'UNetCD']
