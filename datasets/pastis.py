@@ -1,5 +1,5 @@
 import json
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 import pandas as pd
 import numpy as np
 import os
@@ -95,6 +95,7 @@ class Pastis(Dataset):
         self.data_max = cfg["data_max"]
         self.classes = cfg["classes"]
         self.class_num = len(self.classes)
+        self.grid_size = cfg["multi_temporal"]
 
         self.modalities = ["s2", "aerial", "s1-asc"]
         self.nb_split = 1
@@ -292,6 +293,16 @@ class Pastis(Dataset):
 
         optical_ts = rearrange(output["s2"], "t c h w -> c t h w")
         sar_ts = rearrange(output["s1-asc"], "t c h w -> c t h w")
+        print("Optical TS shape: ", optical_ts.shape)
+        print("SAR TS shape: ", sar_ts.shape)
+
+        optical_ts = optical_ts[:, :self.grid_size, ...]
+        sar_ts = sar_ts[:, :self.grid_size, ...]
+
+        print(" AFTER Optical TS shape: ", optical_ts.shape)
+        print("AFTER SAR TS shape: ", sar_ts.shape)
+
+
         return {
             "image": {
                 "optical": optical_ts.to(torch.float32),
@@ -300,6 +311,7 @@ class Pastis(Dataset):
             "target": output["label"],
             "metadata": {},
         }
+
 
     def __len__(self) -> int:
         return len(self.meta_patch) * self.nb_split * self.nb_split
@@ -317,7 +329,6 @@ class Pastis(Dataset):
 
 
 if __name__ == "__main__":
-    from tqdm import tqdm
 
     class_prob = {
         "Background": 0.0,

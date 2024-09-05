@@ -4,8 +4,8 @@ download_url: null
 auto_download: False
 
 img_size: 128
-multi_temporal: 47
-multi_modal: False
+multi_temporal: 6
+multi_modal: True
 limited_label: False
 
 # classes

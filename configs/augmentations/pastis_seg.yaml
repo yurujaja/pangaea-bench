@@ -7,5 +7,5 @@ train:
   #   lr_probability: 0.3
 test:
   SegPreprocessor: ~
-  ResizeToEncoder: ~
   NormalizeMeanStd: ~
+  ResizeToEncoder: ~
