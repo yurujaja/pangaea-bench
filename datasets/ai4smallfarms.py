@@ -2,31 +2,23 @@ import os
 import pathlib
 import torch
 import numpy as np
-import yaml
-import logging
-
 from glob import glob
-from torchvision.transforms import Normalize
-from easyDataverse import Dataverse
-from utils.registry import DATASET_REGISTRY
+from pyDataverse.api import NativeApi, DataAccessApi
 from tifffile import imread
+from utils.registry import DATASET_REGISTRY
+import requests
+
 
 @DATASET_REGISTRY.register()
 class AI4SmallFarms(torch.utils.data.Dataset):
     def __init__(self, cfg, split):
         self.root_path = pathlib.Path(cfg['root_path'])
         self.split = split
-        self.img_size = cfg['img_size']  # Get the tile size from the config
         self.image_dir = self.root_path.joinpath(f"sentinel-2-asia/{split}/images")
         self.mask_dir = self.root_path.joinpath(f"sentinel-2-asia/{split}/masks")
 
         self.image_list = sorted(glob(str(self.image_dir.joinpath("*.tif"))))
         self.mask_list = sorted(glob(str(self.mask_dir.joinpath("*.tif"))))
-
-        self.data_mean = cfg['data_mean']['optical']
-        self.data_std = cfg['data_std']['optical']
-
-        self.transform = Normalize(mean=self.data_mean, std=self.data_std)
 
     def __len__(self):
         return len(self.image_list)
@@ -38,9 +30,6 @@ class AI4SmallFarms(torch.utils.data.Dataset):
         # Convert the image and target to supported types
         image = image.astype(np.float32)  # Convert to float32
         target = target.astype(np.int64)  # Convert to int64 (since it's a mask)
-
-        # Tile the image and target to the fixed size specified in the config
-        image, target = self.tile_image_and_mask(image, target, self.img_size)
 
         image = torch.from_numpy(image).permute(2, 0, 1)
         target = torch.from_numpy(target).long()
@@ -60,21 +49,6 @@ class AI4SmallFarms(torch.utils.data.Dataset):
             'metadata': {}
         }
 
-    def tile_image_and_mask(self, image, target, tile_size):
-        """Tiles the image and target to the specified tile_size."""
-        # Ensure the image and target have the same dimensions
-        height, width, _ = image.shape
-        target_height, target_width = target.shape
-
-        if height != target_height or width != target_width:
-            raise ValueError("Image and target sizes do not match.")
-
-        # Select the first tile (top-left corner)
-        image_tile = image[:tile_size, :tile_size, :]
-        target_tile = target[:tile_size, :tile_size]
-
-        return image_tile, target_tile
-
     @staticmethod
     def get_splits(dataset_config):
         dataset_train = AI4SmallFarms(cfg=dataset_config, split="train")
@@ -86,23 +60,67 @@ class AI4SmallFarms(torch.utils.data.Dataset):
     def download(dataset_config: dict, silent=False):
         root_path = pathlib.Path(dataset_config["root_path"])
 
+        # Create the root directory if it does not exist
+        if not root_path.exists():
+            root_path.mkdir(parents=True, exist_ok=True)
+
         if root_path.exists() and any(root_path.iterdir()):
             if not silent:
                 print(f"Dataset already exists at {root_path}. Skipping download.")
             return
 
-        dataverse = Dataverse(
-            server_url="https://phys-techsciences.datastations.nl",
-            api_token=dataset_config.get("dataverse_api_token", None)
-        )
+        # Set up the Dataverse API
+        base_url = "https://phys-techsciences.datastations.nl"
+        api = NativeApi(base_url)
+        data_api = DataAccessApi(base_url)
+        DOI = "doi:10.17026/dans-xy6-ngg6"
 
-        dataset = dataverse.load_dataset(
-            pid="doi:10.17026/dans-xy6-ngg6",
-            version="1",
-            filedir=root_path
-        )
+        # Fetch dataset files using NativeAPI
+        try:
+            dataset = api.get_dataset(DOI)
+            files_list = dataset.json()['data']['latestVersion']['files']
+        except Exception as e:
+            if not silent:
+                print(f"Error retrieving dataset metadata: {e}")
+            return
 
-        # List of unwanted files and directories to remove
+        if not files_list:
+            if not silent:
+                print(f"No files found for DOI: {DOI}")
+            return
+
+        # Process each file and download
+        for file in files_list:
+            filename = file["dataFile"]["filename"]
+            file_id = file["dataFile"]["id"]
+            directory_label = file.get("directoryLabel", "")
+            dv_path = os.path.join(directory_label, filename)
+
+            # Construct the full path for the file
+            file_path = root_path / dv_path
+
+            # Create subdirectories if they do not exist
+            file_path.parent.mkdir(parents=True, exist_ok=True)
+
+            if not silent:
+                print(f"Downloading file: {filename}, id: {file_id} to {file_path}")
+
+            try:
+                # Download the file using its ID
+                response = data_api.get_datafile(file_id, is_pid=False)
+                response.raise_for_status()  # Check if the request was successful
+                with open(file_path, "wb") as f:
+                    f.write(response.content)
+            except requests.exceptions.HTTPError as err:
+                if err.response.status_code == 404:
+                    if not silent:
+                        print(f"File {filename} with id {file_id} not found (404). Skipping.")
+                else:
+                    if not silent:
+                        print(f"Error downloading file {filename} with id {file_id}: {err}")
+                    raise
+
+        # **Cleanup: Remove unwanted files and directories**
         unwanted_paths = [
             os.path.join(dataset_config["root_path"], 'easy-migration.zip'),
             os.path.join(dataset_config["root_path"], 'readme.md'),
