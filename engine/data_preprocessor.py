@@ -121,14 +121,7 @@ class SegPreprocessor(RichDataset):
             ) = new_stats
 
     def __getitem__(self, index):
-        print("Index: ", index)
-        print("Dataset: ", self.dataset)
         data = self.dataset[index]
-        print("Data: ", data.keys())
-        print("Data Image: ", data["image"]["sar"].shape)
-        print("Data Image: ", data["image"]["optical"].shape)
-        print("processor: ", self.preprocessor)
-
 
         for k, v in data["image"].items():
             data["image"][k] = self.preprocessor[k](v)
@@ -158,19 +151,9 @@ class BandAdaptor:
         self.input_bands = getattr(cfg.encoder.input_bands, modality, [])
         self.encoder_name = cfg.encoder.encoder_name
 
-        self.used_bands_mask = torch.tensor(
-            [b in self.input_bands for b in self.dataset_bands], dtype=torch.bool
-        )
-        self.avail_bands_mask = torch.tensor(
-            [b in self.dataset_bands for b in self.input_bands], dtype=torch.bool
-        )
-        self.avail_bands_indices = torch.tensor(
-            [
-                self.dataset_bands.index(b) if b in self.dataset_bands else -1
-                for b in self.input_bands
-            ],
-            dtype=torch.long,
-        )
+        self.used_bands_mask = torch.tensor([b in self.input_bands for b in self.dataset_bands], dtype=torch.bool)
+        self.avail_bands_mask = torch.tensor([b in self.dataset_bands for b in self.input_bands], dtype=torch.bool)
+        self.avail_bands_indices = torch.tensor([self.dataset_bands.index(b) if b in self.dataset_bands else -1 for b in self.input_bands], dtype=torch.long)
 
         self.need_padded = self.avail_bands_mask.sum() < len(self.input_bands)
 
@@ -200,18 +183,10 @@ class BandAdaptor:
             )
 
     def preprocess_band_statistics(self, data_mean, data_std, data_min, data_max):
-        data_mean = [
-            data_mean[i] if i != -1 else 0.0 for i in self.avail_bands_indices.tolist()
-        ]
-        data_std = [
-            data_std[i] if i != -1 else 1.0 for i in self.avail_bands_indices.tolist()
-        ]
-        data_min = [
-            data_min[i] if i != -1 else -1.0 for i in self.avail_bands_indices.tolist()
-        ]
-        data_max = [
-            data_max[i] if i != -1 else 1.0 for i in self.avail_bands_indices.tolist()
-        ]
+        data_mean = [data_mean[i] if i != -1 else 0.0 for i in self.avail_bands_indices.tolist()]
+        data_std = [data_std[i] if i != -1 else 1.0 for i in self.avail_bands_indices.tolist()]
+        data_min = [data_min[i] if i != -1 else -1.0 for i in self.avail_bands_indices.tolist()]
+        data_max = [data_max[i] if i != -1 else 1.0 for i in self.avail_bands_indices.tolist()]
         return data_mean, data_std, data_min, data_max
 
     def preprocess_single_timeframe(self, image):
@@ -517,18 +492,7 @@ class Resize(BaseAugment):
         data = self.dataset[index]
         for k, v in data["image"].items():
             if k not in self.ignore_modalities:
-                if data["image"][k].ndim == 4: # its a time series
-                    C, tdim, H, W = data["image"][k].shape
-                    print("INITIAL SHAPE", k,  data["image"][k].shape)
-                    resized = torch.zeros((C, tdim, self.size[0], self.size[1]), dtype=v.dtype, device=v.device)
-                    print("RESIZED SHAPE", resized.shape)
-
-                    for i in range(data["image"][k].shape[1]):
-                        print("RESIZED ADJKLFJKLFD ", v[:, i].shape)
-                        resized[:, i] = T.Resize(self.size)(v[:, i])
-                    data["image"][k] = resized
-                else:
-                    data["image"][k] = T.Resize(self.size)(v)
+                data["image"][k] = T.Resize(self.size)(v)
 
         if data["target"].ndim == 2:
             data["target"] = data["target"].unsqueeze(0)

@@ -96,7 +96,6 @@ class Pastis(Dataset):
         self.classes = cfg["classes"]
         self.class_num = len(self.classes)
         self.grid_size = cfg["multi_temporal"]
-
         self.modalities = ["s2", "aerial", "s1-asc"]
         self.nb_split = 1
 
@@ -128,11 +127,11 @@ class Pastis(Dataset):
                 os.path.join(self.path, "ANNOTATIONS/TARGET_" + str(name) + ".npy")
             )[0].astype(np.int32)
         )
-        label = torch.unique(split_image(label, self.nb_split, part)).long()
-        label = torch.sum(
-            torch.nn.functional.one_hot(label, num_classes=self.num_classes), dim=0
-        )
-        label = label[1:-1]  # remove Background and Void classes
+        # label = torch.unique(split_image(label, self.nb_split, part)).long()
+        # label = torch.sum(
+        #     torch.nn.functional.one_hot(label, num_classes=self.num_classes), dim=0
+        # )
+        # label = label[1:-1]  # remove Background and Void classes
         output = {"label": label, "name": name}
 
         for modality in self.modalities:
@@ -293,15 +292,8 @@ class Pastis(Dataset):
 
         optical_ts = rearrange(output["s2"], "t c h w -> c t h w")
         sar_ts = rearrange(output["s1-asc"], "t c h w -> c t h w")
-        print("Optical TS shape: ", optical_ts.shape)
-        print("SAR TS shape: ", sar_ts.shape)
-
         optical_ts = optical_ts[:, :self.grid_size, ...]
         sar_ts = sar_ts[:, :self.grid_size, ...]
-
-        print(" AFTER Optical TS shape: ", optical_ts.shape)
-        print("AFTER SAR TS shape: ", sar_ts.shape)
-
 
         return {
             "image": {
