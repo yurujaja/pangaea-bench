@@ -1,3 +1,5 @@
+# Obtained from: https://github.com/zhu-xlab/DOFA
+
 from functools import partial
 
 import torch
@@ -24,7 +26,7 @@ class TransformerWeightGenerator(nn.Module):
             dropout=False,
         )
         self.transformer_encoder = nn.TransformerEncoder(
-            encoder_layer, num_layers=num_layers, #enable_nested_tensor=False
+            encoder_layer, num_layers=num_layers, enable_nested_tensor=False
         )
 
         # Linear layer to map transformer output to desired weight shape
@@ -125,9 +127,8 @@ class Dynamic_MLP_OFA(nn.Module):
         waves = self.fclayer(waves)
         weight, bias = self._get_weights(waves)  
 
-        dynamic_weight = weight.view(
-            self.embed_dim, inplanes, self.kernel_size, self.kernel_size
-        ) 
+        dynamic_weight = weight.view(inplanes, self.kernel_size, self.kernel_size, self.embed_dim)
+        dynamic_weight = dynamic_weight.permute([3,0,1,2])
         if bias is not None:
             bias = bias.view([self.embed_dim]) * self.scaler
 
@@ -197,6 +198,7 @@ class DOFA_Encoder(Base_Encoder):
         x = torch.cat(x, dim=1)
         wavelist = torch.tensor(self.wv_list, device=x.device).float()
         self.waves = wavelist
+
 
         x, _ = self.patch_embed(x, self.waves)
 
