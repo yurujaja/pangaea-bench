@@ -76,6 +76,8 @@ parser.add_argument(
 
 parser.add_argument("--use_wandb", action="store_true", help="use wandb for logging")
 
+parser.add_argument("--cal_flops", action="store_true", help="use flops calculator")
+
 parser.add_argument("--work_dir", type=str,
                     help="the dir to save logs and models")
 
@@ -279,18 +281,19 @@ def main():
 
         # flops calculator TODO: make it not hard coded
         # TODO: Make this not drop the first training sample
-        train_features = next(iter(train_loader))
-        input_res = tuple(train_features["image"]["optical"].size())
-        macs, params = ptflops.get_model_complexity_info(
-            model=model,
-            input_res=input_res,
-            input_constructor=prepare_input,
-            as_strings=True,
-            backend="pytorch",
-            verbose=True,
-        )
-        logger.info(f"Model MACs: {macs}")
-        logger.info(f"Model Params: {params}")
+        if cfg.cal_flops:
+            train_features = next(iter(train_loader))
+            input_res = tuple(train_features["image"]["optical"].size())
+            macs, params = ptflops.get_model_complexity_info(
+                model=model,
+                input_res=input_res,
+                input_constructor=prepare_input,
+                as_strings=True,
+                backend="pytorch",
+                verbose=True,
+            )
+            logger.info(f"Model MACs: {macs}")
+            logger.info(f"Model Params: {params}")
 
         # build loss
         criterion = LOSS_REGISTRY.get(cfg.segmentor.loss.loss_name)(cfg.segmentor.loss)
