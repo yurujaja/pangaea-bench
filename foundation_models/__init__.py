@@ -25,6 +25,7 @@ from .ssl4eo_dino_encoder import SSL4EO_DINO_Encoder
 from .ssl4eo_moco_encoder import SSL4EO_MOCO_Encoder
 from .ssl4eo_data2vec_encoder import SSL4EO_Data2Vec_Encoder
 from .ssl4eo_mae_encoder import SSL4EO_MAE_OPTICAL_Encoder, SSL4EO_MAE_SAR_Encoder
+from .unet_encoder import UNet_Encoder
 #
 # spectral_gpt_vit_base = vit_spectral_gpt
 # prithvi_vit_base = MaskedAutoencoderViT
