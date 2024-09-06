@@ -235,7 +235,7 @@ def main():
             model.module.model_name, encoder.model_name
         )
     )
-
+    collate_fn = get_collate_fn(cfg)
     # training
     if not cfg.eval_dir:
 
@@ -247,8 +247,7 @@ def main():
             logger.info(f"Created a subset of the train dataset, with {perc}% of the labels available")
         else:
             logger.info(f"The entire train dataset will be used.")
-        
-        collate_fn = get_collate_fn(cfg)
+
         # get train val data loaders
         train_loader = DataLoader(
             train_dataset,
