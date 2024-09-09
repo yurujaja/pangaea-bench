@@ -1,6 +1,6 @@
 segmentor_name: UNet
 task_name: semantic-segmentation
-binary: False
+binary: True
   # time_frames: 1
   #task_model_args:
   #num_frames: 1
