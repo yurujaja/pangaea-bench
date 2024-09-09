@@ -50,9 +50,9 @@ class Trainer():
         #end_time = time.time()
         for epoch in range(self.start_epoch, self.epochs):
             # train the network for one epoch     
-            # if epoch % self.args.eval_interval == 0:
-                # _, used_time = self.evaluator(self.model, f'epoch {epoch}')
-                # self.training_stats['eval_time'].update(used_time)
+            if epoch % self.args.eval_interval == 0:
+                _, used_time = self.evaluator(self.model, f'epoch {epoch}')
+                self.training_stats['eval_time'].update(used_time)
 
             self.logger.info("============ Starting epoch %i ... ============" % epoch)
             # set sampler
