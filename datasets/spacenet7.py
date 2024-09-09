@@ -248,7 +248,8 @@ class SN7CD(AbstractSN7):
         self.T = cfg['multi_temporal']
         assert self.T > 1
         self.eval_mode = eval_mode
-        self.items = 100 * list(self.aoi_ids)
+        self.multiplier = 1 if eval_mode else 100  # TODO: get this from config
+        self.items = self.multiplier * list(self.aoi_ids)
 
     def __len__(self):
         return len(self.items)
