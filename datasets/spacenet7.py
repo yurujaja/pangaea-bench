@@ -109,6 +109,7 @@ class AbstractSN7(torch.utils.data.Dataset):
         self.data_std = cfg['data_std']
         self.classes = cfg['classes']
         self.class_num = len(self.classes)
+        self.distribution = cfg['distribution']
         self.split = split
 
         if split == 'train':
@@ -216,12 +217,16 @@ class SN7MAPPING(AbstractSN7):
 
         image = torch.from_numpy(image)
         target = torch.from_numpy(target)
+        weight = torch.empty(target.shape)
+        for i, freq in enumerate(self.distribution):
+            weight[target == i] = 1 - freq
 
         output = {
             'image': {
                 'optical': image,
             },
             'target': target,
+            'weight': weight,
             'metadata': {}
         }
 
@@ -243,7 +248,7 @@ class SN7CD(AbstractSN7):
         self.T = cfg['multi_temporal']
         assert self.T > 1
         self.eval_mode = eval_mode
-        self.items = list(self.aoi_ids)
+        self.items = 100 * list(self.aoi_ids)
 
     def __len__(self):
         return len(self.items)
@@ -275,12 +280,16 @@ class SN7CD(AbstractSN7):
         year_t2, month_t2 = timestamps[-1]['year'], timestamps[-1]['month']
         target = self.load_change_label(aoi_id, year_t1, month_t1, year_t2, month_t2)
         target = torch.from_numpy(target)
+        weight = torch.empty(target.shape)
+        for i, freq in enumerate(self.distribution):
+            weight[target == i] = 1 - freq
 
         output = {
             'image': {
                 'optical': image,
             },
             'target': target,
+            'weight': weight,
             'metadata': {}
         }
 

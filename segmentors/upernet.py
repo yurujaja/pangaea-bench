@@ -48,7 +48,7 @@ class UPerNet(nn.Module):
 
         self.in_channels = [cfg['in_channels'] for _ in range(4)]
         self.channels = cfg['channels']
-        self.num_classes = cfg['num_classes']
+        self.num_classes = 1 if cfg['binary'] else cfg['num_classes']
 
         # PSP Module
         self.psp_modules = PPM(

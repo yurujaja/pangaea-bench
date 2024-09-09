@@ -57,7 +57,7 @@ class UNetCD(nn.Module):
 
         self.align_corners = False
 
-        self.num_classes = cfg['num_classes']
+        self.num_classes = 1 if cfg['binary'] else cfg['num_classes']
         self.topology = encoder.topology
 
         self.decoder = Decoder(self.topology)
