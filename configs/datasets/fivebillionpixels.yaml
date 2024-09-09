@@ -1,5 +1,5 @@
 dataset_name: FiveBillionPixels
-root_path: /geomatics/gpuserver-1/vmarsocci/FiveBillionPixels/cropped
+root_path: ./data/FiveBillionPixels/cropped
 download_url: False 
 auto_download: False
 
