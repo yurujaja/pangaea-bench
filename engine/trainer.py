@@ -224,7 +224,11 @@ class SegTrainer(Trainer):
     @torch.no_grad()
     def compute_logging_metrics(self, logits, target):
         # logits = F.interpolate(logits, size=target.shape[1:], mode='bilinear')
-        pred = torch.argmax(logits, dim=1, keepdim=True)
+        num_classes = logits.shape[1]
+        if num_classes == 1:
+            pred = torch.sigmoid(logits) > 0.5
+        else:
+            pred = torch.argmax(logits, dim=1, keepdim=True)
         target = target.unsqueeze(1)
         ignore_mask = target == -1
         target[ignore_mask] = 0
