@@ -26,20 +26,28 @@ class DICELoss(torch.nn.Module):
         self.ignore_index = cfg["ignore_index"]
     
     def forward(self, logits, target):
-        # Convert logits to probabilities using softmax
-        probs = F.softmax(logits, dim=1)
-        
         num_classes = logits.shape[1]
+
+        # Convert logits to probabilities using softmax or sigmoid
+        if num_classes == 1:
+            probs = torch.sigmoid(logits)
+        else:
+            probs = F.softmax(logits, dim=1)
+        
         mask = (target != self.ignore_index)
         #mask_expand = mask.unsqueeze(1).expand_as(probs)
-        target_temp = target.clone()
-        target_temp[~mask] = 0
+        target = target.clone()
+        target[~mask] = 0
 
-        target_one_hot = F.one_hot(target_temp, num_classes=num_classes).permute(0, 3, 1, 2).float()
-        target_one_hot = target_one_hot * mask.unsqueeze(1).float()
-
-        intersection = torch.sum(probs * target_one_hot, dim=(2, 3))
-        union = torch.sum(probs + target_one_hot, dim=(2, 3))
+        if num_classes == 1:
+            target = target.unsqueeze(1)
+        else:
+            target = F.one_hot(target, num_classes=num_classes)
+            target = target.permute(0, 3, 1, 2)
+        
+        target = target.float() * mask.unsqueeze(1).float()
+        intersection = torch.sum(probs * target, dim=(2, 3))
+        union = torch.sum(probs + target, dim=(2, 3))
 
         dice_score = (2. * intersection + 1e-6) / (union + 1e-6)
         # dice_loss = 1 - dice_score.mean(dim=1).mean()
