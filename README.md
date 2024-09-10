@@ -1,3 +1,5 @@
+[![Tests](https://github.com/yurujaja/geofm-bench/actions/workflows/python-test.yml/badge.svg)](https://github.com/yurujaja/geofm-bench/actions/workflows/python-test.yml)
+
 ## What is New
 In general, the architecture of the whole codebase is refactored and a few bugs and errors are fixed by the way.
 
