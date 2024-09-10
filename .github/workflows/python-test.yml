@@ -42,7 +42,7 @@ jobs:
       run: echo "DATE=$(date +'%Y%m%d')" >> $GITHUB_ENV
     - uses: actions/cache@v2
       with:
-        path: /usr/share/miniconda/envs/my-env
+        path: /usr/share/miniconda/envs/gfm-bench8
         key: conda-${{ hashFiles('environment.yaml') }}-${{ env.DATE }}-${{ env.CACHE_NUMBER }}
       id: cache
 
