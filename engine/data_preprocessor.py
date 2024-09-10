@@ -113,12 +113,11 @@ class SegPreprocessor(RichDataset):
                 self.data_min[modality],
                 self.data_max[modality],
             )
-            (
-                self.data_mean[modality],
-                self.data_std[modality],
-                self.data_min[modality],
-                self.data_max[modality],
-            ) = new_stats
+
+            self.data_mean[modality] = new_stats[0]
+            self.data_std[modality] = new_stats[1]
+            self.data_min[modality] = new_stats[2]
+            self.data_max[modality] = new_stats[3]
 
     def __getitem__(self, index):
         data = self.dataset[index]
@@ -374,11 +373,8 @@ class NormalizeMeanStd(BaseAugment):
         super().__init__(dataset, cfg, local_cfg)
         self.data_mean_tensors = {}
         self.data_std_tensors = {}
-        for (
-            modality
-        ) in (
-            self.dataset_cfg.bands
-        ):  # Bands is a dict of {modality:[b1, b2, ...], ...} so it's keys are the modalaities in use
+        # Bands is a dict of {modality:[b1, b2, ...], ...} so it's keys are the modalaities in use
+        for modality in self.dataset_cfg.bands:  
             self.data_mean_tensors[modality] = torch.tensor(
                 self.data_mean[modality]
             ).reshape((-1, 1, 1, 1))
@@ -529,10 +525,9 @@ class RandomCrop(BaseAugment):
 
     def __getitem__(self, index):
         data = self.dataset[index]
+        # Use the first image to determine parameters
         i, j, h, w = T.RandomCrop.get_params(
-            data["image"][
-                list(data["image"].keys())[0]
-            ],  # Use the first image to determine parameters
+            data["image"][list(data["image"].keys())[0]],
             output_size=(self.size, self.size),
         )
         for k, v in data["image"].items():

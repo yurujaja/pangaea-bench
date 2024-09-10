@@ -62,14 +62,14 @@ class Trainer():
             if epoch % self.args.ckpt_interval == 0 and epoch != self.start_epoch:
                 self.save_model(epoch)
 
+        self.evaluator(self.model, 'final model')
+
         # save last model
         self.save_model(self.epochs, is_final=True)
-        
+
         # save best model
         if self.best_ckpt:
             self.save_model(self.best_ckpt["epoch"], is_best=True, checkpoint=self.best_ckpt)
-        
-        self.evaluator(self.model, 'final model')
 
 
     def train_one_epoch(self, epoch):

@@ -366,9 +366,9 @@ def main():
             test_evaluator = SegEvaluator(cfg, test_loader, exp_dir, device)
 
         model_ckpt_path = os.path.join(
-            exp_dir, next(f for f in os.listdir(exp_dir) if f.endswith("_final.pth"))
+            exp_dir, next(f for f in os.listdir(exp_dir) if f.endswith("_best.pth"))
         )
-        test_evaluator.evaluate(model, "final model", model_ckpt_path)
+        test_evaluator.evaluate(model, "best model", model_ckpt_path)
 
     if cfg.use_wandb and cfg.rank == 0:
         wandb.finish()
