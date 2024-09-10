@@ -546,3 +546,55 @@ class RandomCropToEncoder(RandomCrop):
         local_cfg.size = cfg.encoder.input_size
         super().__init__(dataset, cfg, local_cfg)
 
+
+
+@AUGMENTER_REGISTRY.register()
+class ImportanceRandomCrop(BaseAugment):
+    def __init__(self, dataset, cfg, local_cfg):
+        super().__init__(dataset, cfg, local_cfg)
+        self.size = local_cfg.size
+        self.padding = getattr(local_cfg, "padding", None)
+        self.pad_if_needed = getattr(local_cfg, "pad_if_needed", False)
+        self.fill = getattr(local_cfg, "fill", 0)
+        self.padding_mode = getattr(local_cfg, "padding_mode", "constant")
+        self.n_crops = 10  # TODO: put this one in config
+
+    def __getitem__(self, index):
+        data = self.dataset[index]
+
+        # dataset needs to provide a weighting layer
+        assert 'weight' in data.keys()
+
+        # candidates for random crop
+        crop_candidates, crop_weights = [], []
+        for _ in range(self.n_crops):
+            i, j, h, w = T.RandomCrop.get_params(
+                data["image"][
+                    list(data["image"].keys())[0]
+                ],  # Use the first image to determine parameters
+                output_size=(self.size, self.size),
+            )
+            crop_candidates.append((i, j, h, w))
+
+            crop_weight = T.functional.crop(data['weight'], i, j, h, w)
+            crop_weights.append(torch.sum(crop_weight).item())
+        
+        crop_weights = np.array(crop_weights) / sum(crop_weights)
+        crop_idx = np.random.choice(self.n_crops, p=crop_weights)
+        i, j, h, w = crop_candidates[crop_idx]
+
+        for k, v in data["image"].items():
+            if k not in self.ignore_modalities:
+                data["image"][k] = T.functional.crop(v, i, j, h, w)
+        data["target"] = T.functional.crop(data["target"], i, j, h, w)
+
+        return data
+
+
+@AUGMENTER_REGISTRY.register()
+class ImportanceRandomCropToEncoder(ImportanceRandomCrop):
+    def __init__(self, dataset, cfg, local_cfg):
+        if not local_cfg:
+            local_cfg = omegaconf.OmegaConf.create()
+        local_cfg.size = cfg.encoder.input_size
+        super().__init__(dataset, cfg, local_cfg)

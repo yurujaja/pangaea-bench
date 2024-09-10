@@ -1,5 +1,6 @@
 segmentor_name: UPerNetCD
 task_name: change-detection
+binary: True
   #task_model_args:
   #num_frames: 1
   #mt_strategy: "ltae" #activated only when if num_frames > 1

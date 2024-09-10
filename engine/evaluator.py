@@ -63,7 +63,10 @@ class SegEvaluator(Evaluator):
             target = target.to(self.device)
 
             logits = model(image, output_shape=target.shape[-2:])
-            pred = torch.argmax(logits, dim=1)
+            if logits.shape[1] == 1:
+                pred = (torch.sigmoid(logits) > 0.5).type(torch.int64).squeeze(dim=1)
+            else:
+                pred = torch.argmax(logits, dim=1)
             valid_mask = target != -1
             pred, target = pred[valid_mask], target[valid_mask]
             count = torch.bincount((pred * self.num_classes + target), minlength=self.num_classes ** 2)
