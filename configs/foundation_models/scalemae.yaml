@@ -17,7 +17,8 @@ encoder_model_args:
   num_heads: 16
   mlp_ratio: 4
   qkv_bias: True
-  input_res: 1.
+  
+input_res: 1.
 
 input_bands:
   optical:
