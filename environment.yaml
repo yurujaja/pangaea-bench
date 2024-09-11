@@ -28,3 +28,4 @@ dependencies:
   - omegaconf
   - pydataverse
   - pytest
+  - optuna
