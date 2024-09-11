@@ -361,6 +361,7 @@ def main():
         logger.info("Built {} dataset for evaluation.".format(dataset_name))
 
         if task_name == "regression":
+            # TODO: This doesn't work atm
             test_evaluator = RegEvaluator(cfg, test_loader, exp_dir, device)
         else:
             test_evaluator = SegEvaluator(cfg, test_loader, exp_dir, device)
