@@ -16,6 +16,7 @@ dependencies:
   - torchaudio
   - torchvision
   - tqdm
+  - tifffile
   - timm
   - einops
   - open-clip-torch

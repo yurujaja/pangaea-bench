@@ -1,9 +1,5 @@
-# -*- coding: utf-8 -*-
-''' 
-Adapted from: https://github.com/mvrl/rshf
-Modifications: modifications for compatibility with the benchmark
-Authors: Yuru Jia, Valerio Marsocci
-'''
+# Adapted from: https://github.com/bair-climate-initiative/scale-mae/
+
 from functools import partial
 from timm.models.vision_transformer import Block, PatchEmbed
 
