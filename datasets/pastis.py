@@ -1,16 +1,17 @@
 import json
-from torch.utils.data import Dataset
-import pandas as pd
-import numpy as np
 import os
-import geopandas as gpd
-import torch
-import rasterio
 from datetime import datetime
+
+import geopandas as gpd
+import numpy as np
+import pandas as pd
+import rasterio
+import torch
 from einops import rearrange
+from omegaconf import OmegaConf
+from torch.utils.data import Dataset
 
 from utils.registry import DATASET_REGISTRY
-from omegaconf import OmegaConf
 
 
 def prepare_dates(date_dict, reference_date):
@@ -292,8 +293,17 @@ class Pastis(Dataset):
 
         optical_ts = rearrange(output["s2"], "t c h w -> c t h w")
         sar_ts = rearrange(output["s1-asc"], "t c h w -> c t h w")
-        optical_ts = optical_ts[:, :self.grid_size, ...]
-        sar_ts = sar_ts[:, :self.grid_size, ...]
+
+        # select evenly spaced samples
+        optical_indexes = torch.linspace(
+            0, optical_ts.shape[1] - 1, self.grid_size, dtype=torch.long
+        )
+        sar_indexes = torch.linspace(
+            0, sar_ts.shape[1] - 1, self.grid_size, dtype=torch.long
+        )
+
+        optical_ts = optical_ts[:, optical_indexes]
+        sar_ts = sar_ts[:, sar_indexes]
 
         return {
             "image": {
@@ -303,7 +313,6 @@ class Pastis(Dataset):
             "target": output["label"],
             "metadata": {},
         }
-
 
     def __len__(self) -> int:
         return len(self.meta_patch) * self.nb_split * self.nb_split
@@ -321,7 +330,6 @@ class Pastis(Dataset):
 
 
 if __name__ == "__main__":
-
     class_prob = {
         "Background": 0.0,
         "Meadow": 31292,
