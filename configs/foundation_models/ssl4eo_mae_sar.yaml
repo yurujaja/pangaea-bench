@@ -1,0 +1,30 @@
+encoder_name: SSL4EO_MAE_SAR_Encoder
+foundation_model_name: ssl4eo_mae_vit_small_patch16
+encoder_weights: ./pretrained_models/B2_vits16_mae_ep99.pth
+download_url: https://huggingface.co/wangyi111/SSL4EO-S12/resolve/main/B2_vits16_mae_ep99.pth
+
+temporal_input: False
+
+num_layers: 12
+embed_dim: 384
+input_size: 224
+
+encoder_model_args:
+  img_size: 224
+  in_chans: 2
+  embed_dim: 384
+  patch_size: 16
+  num_heads: 6
+  depth: 12
+  mlp_ratio: 4
+
+input_bands:
+  sar:
+    - VV
+    - VH
+
+output_layers:
+  - 3
+  - 5
+  - 7
+  - 11

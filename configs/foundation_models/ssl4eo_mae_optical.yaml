@@ -33,9 +33,7 @@ input_bands:
     - B10
     - B11
     - B12
-  sar:
-    - VV
-    - VH
+
 
 output_layers:
   - 3

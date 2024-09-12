@@ -72,6 +72,7 @@ class RichDataset(torch.utils.data.Dataset):
         # Either use unly these, or only the input arguments.
         self.root_cfg = cfg
         self.dataset_cfg = cfg.dataset
+        self.encoder_cfg = cfg.encoder
         self.root_path = cfg.dataset.root_path
         self.classes = cfg.dataset.classes
         self.class_num = len(self.classes)
@@ -106,7 +107,7 @@ class SegPreprocessor(RichDataset):
         )
         # TO DO: other modalities
 
-        for modality in self.dataset_cfg.bands:
+        for modality in self.encoder_cfg.input_bands:
             new_stats = self.preprocessor[modality].preprocess_band_statistics(
                 self.data_mean[modality],
                 self.data_std[modality],
@@ -123,7 +124,8 @@ class SegPreprocessor(RichDataset):
         data = self.dataset[index]
 
         for k, v in data["image"].items():
-            data["image"][k] = self.preprocessor[k](v)
+            if k in self.encoder_cfg.input_bands:
+                data["image"][k] = self.preprocessor[k](v)
 
         data["target"] = data["target"].long()
         return data
@@ -138,7 +140,8 @@ class RegPreprocessor(SegPreprocessor):
         data = self.dataset[index]
 
         for k, v in data["image"].items():
-            data["image"][k] = self.preprocessor[k](v)
+            if k in self.encoder_cfg.input_bands:
+                data["image"][k] = self.preprocessor[k](v)
 
         data["target"] = data["target"].float()
         return data
@@ -293,7 +296,7 @@ class Tile(BaseAugment):
         tiled_data = {"image": {}, "target": None}
         tiled_data["image"] = {}
         for k, v in data["image"].items():
-            if k not in self.ignore_modalities:
+            if k not in self.ignore_modalities and k in self.encoder_cfg.input_bands:
                 tiled_data["image"][k] = v[
                     ..., h : h + self.output_size, w : w + self.output_size
                 ].clone()
@@ -340,12 +343,12 @@ class RandomFlip(BaseAugment):
         data = self.dataset[index]
         if random.random() < self.ud_probability:
             for k, v in data["image"].items():
-                if k not in self.ignore_modalities:
+                if k not in self.ignore_modalities and k in self.encoder_cfg.input_bands:
                     data["image"][k] = torch.fliplr(v)
             data["target"] = torch.fliplr(data["target"])
         if random.random() < self.lr_probability:
             for k, v in data["image"].items():
-                if k not in self.ignore_modalities:
+                if k not in self.ignore_modalities and k in self.encoder_cfg.input_bands:
                     data["image"][k] = torch.flipud(v)
             data["target"] = torch.flipud(data["target"])
         return data
@@ -361,7 +364,7 @@ class GammaAugment(BaseAugment):
     def __getitem__(self, index):
         data = self.dataset[index]
         if random.random() < self.probability:
-            for k, v in data["image"].items():
+            for k, v in data["image"].items() and k in self.encoder_cfg.input_bands:
                 if k not in self.ignore_modalities:
                     data["image"][k] = torch.pow(v, random.uniform(*self.gamma_range))
         return data
@@ -374,7 +377,7 @@ class NormalizeMeanStd(BaseAugment):
         self.data_mean_tensors = {}
         self.data_std_tensors = {}
         # Bands is a dict of {modality:[b1, b2, ...], ...} so it's keys are the modalaities in use
-        for modality in self.dataset_cfg.bands:  
+        for modality in self.encoder_cfg.input_bands:
             self.data_mean_tensors[modality] = torch.tensor(
                 self.data_mean[modality]
             ).reshape((-1, 1, 1, 1))
@@ -384,7 +387,7 @@ class NormalizeMeanStd(BaseAugment):
 
     def __getitem__(self, index):
         data = self.dataset[index]
-        for modality in data["image"]:
+        for modality in self.encoder_cfg.input_bands:
             if modality not in self.ignore_modalities:
                 data["image"][modality] = (
                     data["image"][modality] - self.data_mean_tensors[modality]
@@ -401,7 +404,7 @@ class NormalizeMinMax(BaseAugment):
         self.data_max_tensors = {}
         self.min = local_cfg.min
         self.max = local_cfg.max
-        for modality in self.dataset_cfg.bands:
+        for modality in self.encoder_cfg.input_bands:
             self.data_min_tensors[modality] = torch.tensor(
                 self.data_min[modality]
             ).reshape((-1, 1, 1, 1))
@@ -411,7 +414,7 @@ class NormalizeMinMax(BaseAugment):
 
     def __getitem__(self, index):
         data = self.dataset[index]
-        for modality in data["image"]:
+        for modality in self.encoder_cfg.input_bands:
             if modality not in self.ignore_modalities:
                 data["image"][modality] = (
                     (data["image"][modality] - self.data_min_tensors[modality])
@@ -460,20 +463,22 @@ class ColorAugmentation(BaseAugment):
         data = self.dataset[index]
 
         for k, v in data["image"].items():
-            brightness = random.uniform(-self.brightness, self.brightness)
-            if random.random() < self.br_probability:
-                if k not in self.ignore_modalities:
-                    data["image"][k] = self.adjust_brightness(
-                        data["image"][k], brightness, self.clip
+            if k not in self.ignore_modalities and k in self.encoder_cfg.input_bands:
+                brightness = random.uniform(-self.brightness, self.brightness)
+                if random.random() < self.br_probability:
+                    if k not in self.ignore_modalities:
+                        data["image"][k] = self.adjust_brightness(
+                            data["image"][k], brightness, self.clip
                     )
 
         for k, v in data["image"].items():
-            if random.random() < self.ct_probability:
-                contrast = random.uniform(1 - self.contrast, 1 + self.contrast)
-                if k not in self.ignore_modalities:
-                    data["image"][k] = self.adjust_contrast(
-                        data["image"][k], contrast, self.clip
-                    )
+            if k not in self.ignore_modalities and k in self.encoder_cfg.input_bands:
+                if random.random() < self.ct_probability:
+                    contrast = random.uniform(1 - self.contrast, 1 + self.contrast)
+                    if k not in self.ignore_modalities:
+                        data["image"][k] = self.adjust_contrast(
+                            data["image"][k], contrast, self.clip
+                        )
 
         return data
 
@@ -487,7 +492,7 @@ class Resize(BaseAugment):
     def __getitem__(self, index):
         data = self.dataset[index]
         for k, v in data["image"].items():
-            if k not in self.ignore_modalities:
+            if k not in self.ignore_modalities and k in self.encoder_cfg.input_bands:
                 data["image"][k] = T.Resize(self.size)(v)
 
         if data["target"].ndim == 2:
@@ -531,7 +536,7 @@ class RandomCrop(BaseAugment):
             output_size=(self.size, self.size),
         )
         for k, v in data["image"].items():
-            if k not in self.ignore_modalities:
+            if k not in self.ignore_modalities and k in self.encoder_cfg.input_bands:
                 data["image"][k] = T.functional.crop(v, i, j, h, w)
         data["target"] = T.functional.crop(data["target"], i, j, h, w)
 
@@ -584,7 +589,7 @@ class ImportanceRandomCrop(BaseAugment):
         i, j, h, w = crop_candidates[crop_idx]
 
         for k, v in data["image"].items():
-            if k not in self.ignore_modalities:
+            if k not in self.ignore_modalities and k in self.encoder_cfg.input_bands:
                 data["image"][k] = T.functional.crop(v, i, j, h, w)
         data["target"] = T.functional.crop(data["target"], i, j, h, w)
 
