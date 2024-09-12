@@ -1,5 +1,6 @@
 segmentor_name: UPerNet
 task_name: semantic-segmentation
+binary: False
 # time_frames: 2
 #task_model_args:
   #num_frames: 1

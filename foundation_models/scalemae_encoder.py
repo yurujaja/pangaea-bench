@@ -1,4 +1,4 @@
-# Obtained from: https://github.com/bair-climate-initiative/scale-mae/
+# Adapted from: https://github.com/bair-climate-initiative/scale-mae/
 
 from functools import partial
 from timm.models.vision_transformer import Block, PatchEmbed
@@ -36,6 +36,7 @@ class ScaleMAE_Encoder(nn.Module):
         num_heads=16,
         mlp_ratio=4.0,
         qkv_bias=True,
+        input_res=1.,
         norm_layer=partial(nn.LayerNorm, eps=1e-6),
 
     ):
@@ -50,6 +51,9 @@ class ScaleMAE_Encoder(nn.Module):
         self.img_size = img_size
         self.embed_dim = embed_dim
         self.patch_size = patch_size
+ 
+        input_res = cfg["input_res"]
+        self.input_res = torch.tensor([input_res]).float().cpu()
 
         self.patch_embed = PatchEmbedUnSafe(img_size, patch_size, in_chans, embed_dim)
         #num_patches = self.patch_embed.num_patches
@@ -125,15 +129,11 @@ class ScaleMAE_Encoder(nn.Module):
         B, _, h, w = x.shape
         x = self.patch_embed(x)
 
-        # hack: fixing input res may harm performance!!!
-        input_res = torch.tensor([1.]).float()
-        input_res = input_res.cpu()
-
         num_patches = int((h * w) / (self.patch_embed.patch_size[0] * self.patch_embed.patch_size[1]))
         pos_embed = get_2d_sincos_pos_embed_with_resolution(
             x.shape[-1],
             int(num_patches ** 0.5),
-            input_res,
+            self.input_res,
             cls_token=True,
             device=x.device,
         )

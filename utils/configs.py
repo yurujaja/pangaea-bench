@@ -39,6 +39,7 @@ def load_configs(parser:argparse.ArgumentParser) -> OmegaConf:
             encoder_cfg["input_bands"] = dataset_cfg['bands']
 
         segmentor_cfg["loss"]['distribution'] = dataset_cfg['distribution']
+        segmentor_cfg["loss"]['ignore_index'] = dataset_cfg['ignore_index']
 
         file_cfg["encoder"] = encoder_cfg
         file_cfg["dataset"] = dataset_cfg

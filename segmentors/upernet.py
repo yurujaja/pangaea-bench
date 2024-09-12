@@ -1,13 +1,7 @@
-# -*- coding: utf-8 -*-
-
-from functools import partial
 import torch.nn.functional as F
 import torch
 import torch.nn as nn
 
-
-import os
-import math
 
 from .ltae import LTAE2d
 
@@ -48,7 +42,7 @@ class UPerNet(nn.Module):
 
         self.in_channels = [cfg['in_channels'] for _ in range(4)]
         self.channels = cfg['channels']
-        self.num_classes = cfg['num_classes']
+        self.num_classes = 1 if cfg['binary'] else cfg['num_classes']
 
         # PSP Module
         self.psp_modules = PPM(
@@ -199,8 +193,8 @@ class MTUPerNet(UPerNet):
         if self.encoder.model_name in ["satlas_pretrain"]:
             self.multi_temporal_strategy = None
         if self.multi_temporal_strategy == "ltae":
-            self.tmap = LTAE2d(positional_encoding=False, in_channels=self.encoder.embed_dim, 
-                                        mlp=[self.encoder.embed_dim, self.encoder.embed_dim], d_model=self.encoder.embed_dim)
+            self.tmap = LTAE2d(positional_encoding=False, in_channels=cfg['in_channels'],
+                                        mlp=[cfg['in_channels'], cfg['in_channels']], d_model=cfg['in_channels'])
         elif self.multi_temporal_strategy == "linear":
             self.tmap = nn.Linear(self.multi_temporal, 1)
         else:

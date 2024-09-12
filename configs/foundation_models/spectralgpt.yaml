@@ -1,7 +1,8 @@
 encoder_name: SpectralGPT_Encoder
 foundation_model_name: SpectralGPT
-encoder_weights: ./pretrained_models/SpectralGPT.pth
-download_url: https://zenodo.org/records/8412455/files/SpectralGPT.pth
+encoder_weights: ./pretrained_models/SpectralGPT+.pth
+download_url: https://zenodo.org/records/8412455/files/SpectralGPT+.pth
+
 
 temporal_input: False
 

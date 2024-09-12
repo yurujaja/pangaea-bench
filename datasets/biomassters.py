@@ -98,14 +98,3 @@ class BioMassters(torch.utils.data.Dataset):
     @staticmethod
     def download(dataset_config:dict, silent=False):
         pass
-
-
-if __name__ == '__main__':
-
-    dataset = BioMassters(cfg, split = "test")
-
-    train_dict = dataset.__getitem__(0)
-
-    print(train_dict["image"]["optical"].shape)
-    print(train_dict["image"]["sar"].shape)
-    print(train_dict["target"].shape)

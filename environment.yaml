@@ -1,8 +1,9 @@
 name: gfm-bench8
 channels:
   - pytorch
-  - conda-forge
   - nvidia
+  - conda-forge
+  - nodefaults
 dependencies:
   - python=3.10
   - geopandas
@@ -15,6 +16,7 @@ dependencies:
   - torchaudio
   - torchvision
   - tqdm
+  - tifffile
   - timm
   - einops
   - open-clip-torch
@@ -26,3 +28,4 @@ dependencies:
   - google-cloud-storage
   - omegaconf
   - pydataverse
+  - pytest

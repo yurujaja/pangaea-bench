@@ -235,7 +235,7 @@ def main():
             model.module.model_name, encoder.model_name
         )
     )
-
+    collate_fn = get_collate_fn(cfg)
     # training
     collate_fn = get_collate_fn(cfg)
     if not cfg.eval_dir:
@@ -248,7 +248,7 @@ def main():
             logger.info(f"Created a subset of the train dataset, with {perc}% of the labels available")
         else:
             logger.info(f"The entire train dataset will be used.")
-        
+
         # get train val data loaders
         train_loader = DataLoader(
             train_dataset,
@@ -362,14 +362,15 @@ def main():
         logger.info("Built {} dataset for evaluation.".format(dataset_name))
 
         if task_name == "regression":
+            # TODO: This doesn't work atm
             test_evaluator = RegEvaluator(cfg, test_loader, exp_dir, device)
         else:
             test_evaluator = SegEvaluator(cfg, test_loader, exp_dir, device)
 
         model_ckpt_path = os.path.join(
-            exp_dir, next(f for f in os.listdir(exp_dir) if f.endswith("_final.pth"))
+            exp_dir, next(f for f in os.listdir(exp_dir) if f.endswith("_best.pth"))
         )
-        test_evaluator.evaluate(model, "final model", model_ckpt_path)
+        test_evaluator.evaluate(model, "best model", model_ckpt_path)
 
     if cfg.use_wandb and cfg.rank == 0:
         wandb.finish()

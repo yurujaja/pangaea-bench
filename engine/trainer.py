@@ -1,5 +1,6 @@
 import os
 import time
+import operator
 
 import torch
 from torch.nn import functional as F
@@ -28,6 +29,8 @@ class Trainer():
         self.training_stats = {name: RunningAverageMeter(length=self.batch_per_epoch) for name in ['loss', 'data_time', 'batch_time', 'eval_time']}
         self.training_metrics = {}
         self.best_ckpt = None
+        self.best_metric_key = None
+        self.best_metric_comp = operator.gt
         self.exp_dir = exp_dir
         self.device = device
 
@@ -51,8 +54,9 @@ class Trainer():
         for epoch in range(self.start_epoch, self.epochs):
             # train the network for one epoch     
             if epoch % self.args.eval_interval == 0:
-                _, used_time = self.evaluator(self.model, f'epoch {epoch}')
+                metrics, used_time = self.evaluator(self.model, f'epoch {epoch}')
                 self.training_stats['eval_time'].update(used_time)
+                self.set_best_checkpoint(metrics, epoch)
 
             self.logger.info("============ Starting epoch %i ... ============" % epoch)
             # set sampler
@@ -62,14 +66,16 @@ class Trainer():
             if epoch % self.args.ckpt_interval == 0 and epoch != self.start_epoch:
                 self.save_model(epoch)
 
+        metrics, used_time = self.evaluator(self.model, 'final model')
+        self.training_stats['eval_time'].update(used_time)
+        self.set_best_checkpoint(metrics, self.epochs)
+
         # save last model
         self.save_model(self.epochs, is_final=True)
-        
+
         # save best model
         if self.best_ckpt:
             self.save_model(self.best_ckpt["epoch"], is_best=True, checkpoint=self.best_ckpt)
-        
-        self.evaluator(self.model, 'final model')
 
 
     def train_one_epoch(self, epoch):
@@ -139,7 +145,6 @@ class Trainer():
     
     
     def load_model(self, resume_path):
-
         model_dict = torch.load(resume_path, map_location=self.device)
         if 'model' in model_dict:
             self.model.module.load_state_dict(model_dict["model"])
@@ -156,12 +161,16 @@ class Trainer():
     def compute_loss(self, logits, target):
         pass
 
+    def set_best_checkpoint(self, eval_metrics, epoch):
+        if self.best_metric_comp(eval_metrics[self.best_metric_key], self.best_metric):
+            self.best_metric = eval_metrics[self.best_metric_key]
+            self.best_ckpt = self.get_checkpoint(epoch)
+
     @torch.no_grad()
     def compute_logging_metrics(self, logits, target):
         pass
 
     def log(self, batch_idx, epoch):
-
         #TO DO: upload to wandb
         left_batch_this_epoch = self.batch_per_epoch - batch_idx
         left_batch_all = self.batch_per_epoch * (self.epochs - epoch - 1) + left_batch_this_epoch
@@ -208,13 +217,8 @@ class SegTrainer(Trainer):
 
         self.training_metrics = {name: RunningAverageMeter(length=100) for name in ['Acc', 'mAcc', 'mIoU']}
         self.best_metric = float('-inf')
-
-    def train_one_epoch(self, epoch):
-        super().train_one_epoch(epoch)
-
-        if self.training_metrics['mIoU'].avg > self.best_metric:
-            self.best_metric = self.training_metrics['mIoU'].avg
-            self.best_ckpt = self.get_checkpoint(epoch)
+        self.best_metric_key = 'mIoU'
+        self.best_metric_comp = operator.gt
 
     def compute_loss(self, logits, target):
         loss = self.criterion(logits, target)
@@ -224,14 +228,21 @@ class SegTrainer(Trainer):
     @torch.no_grad()
     def compute_logging_metrics(self, logits, target):
         # logits = F.interpolate(logits, size=target.shape[1:], mode='bilinear')
-        pred = torch.argmax(logits, dim=1, keepdim=True)
+        num_classes = logits.shape[1]
+        if num_classes == 1:
+            pred = (torch.sigmoid(logits) > 0.5).type(torch.int64)
+        else:
+            pred = torch.argmax(logits, dim=1, keepdim=True)
         target = target.unsqueeze(1)
         ignore_mask = target == -1
         target[ignore_mask] = 0
-        ignore_mask = ignore_mask.expand(-1, logits.shape[1], -1, -1)
+        ignore_mask = ignore_mask.expand(-1, num_classes if num_classes > 1 else 2, -1, -1)
 
-        binary_pred = torch.zeros(logits.shape, dtype=bool, device=self.device)
-        binary_target = torch.zeros(logits.shape, dtype=bool, device=self.device)
+        dims = list(logits.shape)
+        if num_classes == 1:
+            dims[1] = 2
+        binary_pred = torch.zeros(dims, dtype=bool, device=self.device)
+        binary_target = torch.zeros(dims, dtype=bool, device=self.device)
         binary_pred.scatter_(dim=1, index=pred, src=torch.ones_like(binary_pred))
         binary_target.scatter_(dim=1, index=target, src=torch.ones_like(binary_target))
         binary_pred[ignore_mask] = 0
@@ -255,15 +266,9 @@ class RegTrainer(Trainer):
 
         self.training_metrics = {name: RunningAverageMeter(length=100) for name in ['MSE']}
         self.best_metric = float('inf')
+        self.best_metric_key = 'MSE'
+        self.best_metric_comp = operator.lt
 
-    def train_one_epoch(self, epoch):
-        super().train_one_epoch(epoch)
-
-        if self.training_metrics['MSE'].avg < self.best_metric:
-            self.best_metric = self.training_metrics['mIoU'].avg
-            self.best_ckpt = self.get_checkpoint(epoch)
-
-            
     def compute_loss(self, logits, target):
         loss = self.criterion(logits.squeeze(dim=1), target)
 

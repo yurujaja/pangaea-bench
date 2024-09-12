@@ -1,9 +1,4 @@
-# -*- coding: utf-8 -*-
-''' 
-Adapted from: https://github.com/VSainteuf/utae-paps
-Modifications: minimal modifications
-Authors: Yuru Jia, Valerio Marsocci
-'''
+# Adapted from: https://github.com/VSainteuf/utae-paps
 
 import copy
 
