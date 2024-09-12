@@ -256,8 +256,12 @@ class SiamUPerNet(UPerNet):
         """Forward function for change detection."""
 
         if self.encoder.model_name != "Prithvi":
-            img1 = {k: v[:,:,0,:,:] for k, v in img.items()}
-            img2 = {k: v[:,:,1,:,:] for k, v in img.items()}
+            if self.encoder.model_name == "SpectralGPT":
+                img1 = {k: v[:,:,[0],:,:].repeat(1,1,1,1,1) for k, v in img.items()}
+                img2 = {k: v[:,:,[1],:,:].repeat(1,1,1,1,1) for k, v in img.items()}
+            else:
+                img1 = {k: v[:,:,0,:,:] for k, v in img.items()}
+                img2 = {k: v[:,:,1,:,:] for k, v in img.items()}
 
             if not self.finetune:
                 with torch.no_grad():

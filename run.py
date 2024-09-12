@@ -204,6 +204,8 @@ def main():
 
     # prepare the foundation model
     download_model(cfg.encoder)
+    if cfg.encoder.encoder_name == "SpectralGPT_Encoder" and cfg.segmentor.segmentor_name == "UPerNetCD":
+        cfg.encoder.multi_temporal=1
     encoder = ENCODER_REGISTRY.get(cfg.encoder.encoder_name)(
         cfg.encoder, **cfg.encoder.encoder_model_args
     )
