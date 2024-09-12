@@ -31,7 +31,7 @@ class xView2(Dataset):
         self.bands = ["B4", "B3", "B2"]
         self.means = torch.tensor([66.7703, 88.4452, 85.1047])[:, None, None, None] # shape [1,3,1,1]
         self.stds =  torch.tensor([48.3066, 51.9129, 62.7612])[:, None, None, None] # shape [1,3,1,1]
-
+        self.distribution = [0.9415, 0.0448, 0.0049, 0.0057, 0.0031]
         self.all_files = self.get_all_files()
         
 
@@ -92,12 +92,16 @@ class xView2(Dataset):
         # img_post = torch.from_numpy(img_post.transpose((2, 0, 1))).float()
         msk = torch.from_numpy(msk).float()
 
+        weight = torch.empty(msk.shape)
+        for i, freq in enumerate(self.distribution):
+            weight[msk == i] = 1 - freq
 
         return {
             'image': {
                     'optical': img,
                     },
             'target': msk,  
+            'weight': weight,
             'metadata': {"filename":fn}
         }
 
