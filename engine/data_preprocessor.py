@@ -17,7 +17,7 @@ from utils.registry import AUGMENTER_REGISTRY
 
 
 def get_collate_fn(cfg: omegaconf.DictConfig) -> Callable:
-    modalities = cfg.dataset.bands.keys()
+    modalities = cfg.encoder.input_bands.keys()
 
     def collate_fn(
         batch: dict[dict[str, torch.Tensor]]
