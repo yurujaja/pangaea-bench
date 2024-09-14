@@ -308,7 +308,7 @@ class SN7CD(AbstractSN7):
         assert self.T > 1
 
         self.eval_mode = eval_mode
-        self.multiplier = 1 if eval_mode else cfg['dataset_multiplier']  # TODO: get this from config
+        self.multiplier = 1 if eval_mode else cfg['dataset_multiplier']
 
         self.split = split
         self.items = []
