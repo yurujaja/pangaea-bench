@@ -1,7 +1,6 @@
-segmentor_name: UPerNetCD
+segmentor_name: SiamDiffUPerNet
 task_name: change-detection
 binary: False
-strategy: 'diff'
 #task_model_args:
   #num_frames: 1
   #mt_strategy: "ltae" #activated only when if num_frames > 1

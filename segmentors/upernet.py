@@ -239,11 +239,10 @@ class MTUPerNet(UPerNet):
         return output
 
 
-@SEGMENTOR_REGISTRY.register()
-class UPerNetCD(UPerNet):
-    def __init__(self, args, cfg, encoder, pool_scales=(1, 2, 3, 6)):
+class SiamUPerNet(UPerNet):
+    def __init__(self, args, cfg, encoder, pool_scales, strategy):
 
-        self.strategy = cfg['strategy']
+        self.strategy = strategy
         if self.strategy == 'diff':
             self.feature_multiplier = 1
         elif self.strategy == 'concat':
@@ -297,6 +296,21 @@ class UPerNetCD(UPerNet):
         output = F.interpolate(output, size=output_shape, mode='bilinear')
 
         return output
+
+
+@SEGMENTOR_REGISTRY.register()
+class SiamDiffUPerNet(SiamUPerNet):
+    # Siamese UPerNet for change detection with feature differencing strategy
+    def __init__(self, args, cfg, encoder, pool_scales=(1, 2, 3, 6)):
+        super().__init__(args, cfg, encoder, pool_scales, 'diff')
+
+
+@SEGMENTOR_REGISTRY.register()
+class SiamConcUPerNet(SiamUPerNet):
+    # Siamese UPerNet for change detection with feature concatenation strategy
+    def __init__(self, args, cfg, encoder, pool_scales=(1, 2, 3, 6)):
+        super().__init__(args, cfg, encoder, pool_scales, 'concat')
+
 
 class PPM(nn.ModuleList):
     """Pooling Pyramid Module used in PSPNet.

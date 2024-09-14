@@ -8,6 +8,7 @@ from collections import OrderedDict
 from typing import Sequence
 from utils.registry import SEGMENTOR_REGISTRY
 
+
 @SEGMENTOR_REGISTRY.register()
 class UNet(nn.Module):
     """
@@ -40,12 +41,11 @@ class UNet(nn.Module):
         return output
 
 
-@SEGMENTOR_REGISTRY.register()
-class UNetCD(nn.Module):
+class SiamUNet(nn.Module):
     """
     """
 
-    def __init__(self, args, cfg, encoder):
+    def __init__(self, args, cfg, encoder, strategy):
         super().__init__()
 
         # self.frozen_backbone = frozen_backbone
@@ -57,7 +57,7 @@ class UNetCD(nn.Module):
         self.align_corners = False
 
         self.num_classes = 1 if cfg['binary'] else cfg['num_classes']
-        self.strategy = cfg['strategy']
+        self.strategy = strategy
         if self.strategy == 'diff':
             self.topology = encoder.topology
         elif self.strategy == 'concat':
@@ -87,6 +87,20 @@ class UNetCD(nn.Module):
         feat = self.decoder(feat)
         output = self.conv_seg(feat)
         return output
+
+
+@SEGMENTOR_REGISTRY.register()
+class SiamDiffUNet(SiamUNet):
+    # Siamese UNet for change detection with feature differencing strategy
+    def __init__(self, args, cfg, encoder):
+        super().__init__(args, cfg, encoder, 'diff')
+
+
+@SEGMENTOR_REGISTRY.register()
+class SiamConcUNet(SiamUNet):
+    # Siamese UNet for change detection with feature concatenation strategy
+    def __init__(self, args, cfg, encoder):
+        super().__init__(args, cfg, encoder, 'concat')
 
 
 class Decoder(nn.Module):
