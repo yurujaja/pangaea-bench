@@ -49,7 +49,6 @@ class UNetCD(nn.Module):
         super().__init__()
 
         # self.frozen_backbone = frozen_backbone
-
         self.model_name = 'UNetCD'
         self.encoder = encoder
         self.finetune = args.finetune
@@ -58,8 +57,14 @@ class UNetCD(nn.Module):
         self.align_corners = False
 
         self.num_classes = 1 if cfg['binary'] else cfg['num_classes']
-        self.topology = encoder.topology
-
+        self.strategy = cfg['strategy']
+        if self.strategy == 'diff':
+            self.topology = encoder.topology
+        elif self.strategy == 'concat':
+            self.topology = [2 * features for features in encoder.topology]
+        else:
+            raise NotImplementedError
+        
         self.decoder = Decoder(self.topology)
         self.conv_seg = OutConv(self.topology[0], self.num_classes)
 
@@ -72,7 +77,13 @@ class UNetCD(nn.Module):
         feat1 = self.encoder(img1)
         feat2= self.encoder(img2)
  
-        feat = [f2 - f1 for f2, f1 in zip(feat1, feat2)]
+        if self.strategy == 'diff':
+            feat = [f2 - f1 for f1, f2 in zip(feat1, feat2)]
+        elif self.strategy == 'concat':
+            feat = [torch.concat((f1, f2), dim=1) for f1, f2 in zip(feat1, feat2)]
+        else:
+            raise NotImplementedError
+        
         feat = self.decoder(feat)
         output = self.conv_seg(feat)
         return output

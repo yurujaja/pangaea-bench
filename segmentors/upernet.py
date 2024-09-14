@@ -19,7 +19,7 @@ class UPerNet(nn.Module):
             Module applied on the last feature. Default: (1, 2, 3, 6).
     """
 
-    def __init__(self, args, cfg, encoder, pool_scales=(1, 2, 3, 6)):
+    def __init__(self, args, cfg, encoder, pool_scales=(1, 2, 3, 6), feature_multiplier: int = 1):
         super().__init__()
 
         # self.frozen_backbone = frozen_backbone
@@ -27,6 +27,7 @@ class UPerNet(nn.Module):
         self.model_name = 'UPerNet'
         self.encoder = encoder
         self.finetune = args.finetune
+        self.feature_multiplier = feature_multiplier
 
         if not self.finetune:
             for param in self.encoder.parameters():
@@ -36,11 +37,11 @@ class UPerNet(nn.Module):
         #     for param in self.backbone.parameters():
         #         param.requires_grad = False
 
-        self.neck = Feature2Pyramid(embed_dim=cfg['in_channels'], rescales=[4, 2, 1, 0.5])
+        self.neck = Feature2Pyramid(embed_dim=cfg['in_channels'] * feature_multiplier, rescales=[4, 2, 1, 0.5])
 
         self.align_corners = False
 
-        self.in_channels = [cfg['in_channels'] for _ in range(4)]
+        self.in_channels = [cfg['in_channels'] * feature_multiplier for _ in range(4)]
         self.channels = cfg['channels']
         self.num_classes = 1 if cfg['binary'] else cfg['num_classes']
 
@@ -156,8 +157,6 @@ class UPerNet(nn.Module):
         feats = self.fpn_bottleneck(fpn_outs)
         return feats
 
-
-
     def forward(self, img, output_shape=None):
         """Forward function."""
         # if self.freezed_backbone:
@@ -238,12 +237,22 @@ class MTUPerNet(UPerNet):
         output = F.interpolate(output, size=output_shape, mode='bilinear')
 
         return output
-    
+
+
 @SEGMENTOR_REGISTRY.register()
 class UPerNetCD(UPerNet):
     def __init__(self, args, cfg, encoder, pool_scales=(1, 2, 3, 6)):
-        super().__init__(args, cfg, encoder, pool_scales=(1, 2, 3, 6))   
 
+        self.strategy = cfg['strategy']
+        if self.strategy == 'diff':
+            self.feature_multiplier = 1
+        elif self.strategy == 'concat':
+            self.feature_multiplier = 2
+        else:
+            raise NotImplementedError
+        
+        super().__init__(args, cfg, encoder, pool_scales=pool_scales, feature_multiplier=self.feature_multiplier) 
+        
     def forward(self, img, output_shape=None):
         """Forward function for change detection."""
 
@@ -266,13 +275,17 @@ class UPerNetCD(UPerNet):
             else:
                 feats = self.encoder(img)
         
-            feat1 = []
-            feat2 = []
+            feat1, feat2 = [], []
             for i in range(len(feats)):
                 feat1.append(feats[i][:,:,0, :, :].squeeze(2))
                 feat2.append(feats[i][:,:,1, :, :].squeeze(2))
  
-        feat = [f2 - f1 for f2, f1 in zip(feat1, feat2)]
+        if self.strategy == 'diff':
+            feat = [f2 - f1 for f1, f2 in zip(feat1, feat2)]
+        elif self.strategy == 'concat':
+            feat = [torch.concat((f1, f2), dim=1) for f1, f2 in zip(feat1, feat2)]
+        else:
+            raise NotImplementedError
 
         feat = self.neck(feat)
         feat = self._forward_feature(feat)
