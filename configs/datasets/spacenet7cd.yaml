@@ -12,7 +12,7 @@ j_split: 512
 multi_temporal: 2
 multi_modal: False
 
-dataset_multiplier: 10  # multiplies sample in dataset during training
+dataset_multiplier: 1  # multiplies sample in dataset during training
 
 # classes
 ignore_index: -1
