@@ -98,28 +98,28 @@ SN7_TEST = [
 
 class AbstractSN7(torch.utils.data.Dataset):
 
-    def __init__(self, cfg, split):
+    def __init__(self, cfg):
         super().__init__()
         self.root_path = Path(cfg['root_path'])
         metadata_file = self.root_path / 'metadata_train.json'
         with open(metadata_file, 'r') as f:
             self.metadata = json.load(f)
 
+        self.img_size = 1024  # size of the SpaceNet 7 images
+        # unpacking config
+        self.tile_size = cfg['img_size']  # size used for tiling the images
+        assert self.img_size % self.tile_size == 0
+
         self.data_mean = cfg['data_mean']
         self.data_std = cfg['data_std']
         self.classes = cfg['classes']
-        self.class_num = len(self.classes)
         self.distribution = cfg['distribution']
-        self.split = split
+        self.domain_shift = cfg['domain_shift']
+        self.i_split = cfg['i_split']
+        self.j_split = cfg['j_split']
 
-        if split == 'train':
-            self.aoi_ids = SN7_TRAIN
-        elif split == 'val':
-            self.aoi_ids = SN7_VAL
-        elif split == 'test':
-            self.aoi_ids = SN7_TEST
-        else:
-            raise Exception('Invalid split')
+        self.class_num = len(self.classes)
+        self.sn7_aois = list(SN7_TRAIN) + list(SN7_VAL) + list(SN7_TEST)
 
     @abstractmethod
     def __getitem__(self, index: int) -> dict:
@@ -195,14 +195,69 @@ class AbstractSN7(torch.utils.data.Dataset):
 @DATASET_REGISTRY.register()
 class SN7MAPPING(AbstractSN7):
     def __init__(self, cfg, split):
-        super().__init__(cfg, split)
+        super().__init__(cfg)
 
+
+        self.split = split
         self.items = []
-        # adding timestamps (only if label exists and not masked) for each AOI
-        for aoi_id in self.aoi_ids:
-            timestamps = list(self.metadata[aoi_id])
-            timestamps = [ts for ts in timestamps if not ts['mask'] and ts['label']]
-            self.items.extend(timestamps)
+
+        if self.domain_shift:  # split by AOI ids
+            if split == 'train':
+                self.aoi_ids = list(SN7_TRAIN)
+            elif split == 'val':
+                self.aoi_ids = list(SN7_VAL)
+            elif split == 'test':
+                self.aoi_ids = list(SN7_TEST)
+            else:
+                raise Exception('Unkown split')
+
+            # adding timestamps (only if label exists and not masked) for each AOI
+            for aoi_id in self.aoi_ids:
+                timestamps = list(self.metadata[aoi_id])
+                for timestamp in timestamps:
+                    if not timestamp['mask'] and timestamp['label']:
+                        item = {
+                            'aoi_id': timestamp['aoi_id'],
+                            'year': timestamp['year'],
+                            'month': timestamp['month'],
+                        }
+                        # tiling the timestamps
+                        for i in range(0, self.img_size, self.tile_size):
+                            for j in range(0, self.img_size, self.tile_size):
+                                item['i'] = i
+                                item['j'] = j
+                                self.items.append(dict(item))
+        
+        else:  # within-scenes split
+            assert self.i_split % self.tile_size == 0 and self.j_split % self.tile_size == 0
+            assert self.tile_size <= self.i_split and self.tile_size <= self.j_split
+            self.aoi_ids = list(self.sn7_aois)
+            for aoi_id in self.aoi_ids:
+                timestamps = list(self.metadata[aoi_id])
+                for timestamp in timestamps:
+                    if not timestamp['mask'] and timestamp['label']:
+                        item = {
+                            'aoi_id': timestamp['aoi_id'],
+                            'year': timestamp['year'],
+                            'month': timestamp['month'],
+                        }
+                        if split == 'train':
+                            i_min, i_max = 0, self.i_split
+                            j_min, j_max = 0, self.img_size
+                        elif split == 'val':
+                            i_min, i_max = self.i_split, self.img_size
+                            j_min, j_max = 0, self.j_split
+                        elif split == 'test':
+                            i_min, i_max = self.i_split, self.img_size
+                            j_min, j_max = self.j_split, self.img_size
+                        else:
+                            raise Exception('Unkown split')
+                        # tiling the timestamps
+                        for i in range(i_min, i_max, self.tile_size):
+                            for j in range(j_min, j_max, self.tile_size):
+                                item['i'] = i
+                                item['j'] = j
+                                self.items.append(dict(item))
 
     def __len__(self):
         return len(self.items)
@@ -214,6 +269,11 @@ class SN7MAPPING(AbstractSN7):
 
         image = self.load_planet_mosaic(aoi_id, year, month)
         target = self.load_building_label(aoi_id, year, month)
+
+        # cut to tile
+        i, j = item['i'], item['j']
+        image = image[:, i:i + self.tile_size, j:j + self.tile_size]
+        target = target[i:i + self.tile_size, j:j + self.tile_size]
 
         image = torch.from_numpy(image)
         target = torch.from_numpy(target)
