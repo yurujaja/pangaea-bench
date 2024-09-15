@@ -37,12 +37,29 @@ In engines, basic modules in the training pipeline are defined including data_pr
 1. Add the other datasets and foundation models following the existing examples in this codebase. Meanwhile, check the correctness of the original datasets before copypasting. [IMPORTANT]
 2. More data augmentation need to be done. It wraps the dataset class by a configurable augmentor to perform both data preprocessing and augmentation. In this way, we avoid preprocessing data in the main process, which is slow.
 
-
 ## Setup
-Should be the same as the v1 version of the code, maybe some dependencies can be removed
+Clone the repository:
+```
+git clone git@github.com:yurujaja/geofm-bench.git
+cd geofm-bench
+```
 
+Dependencies:
+```
+conda env create -f environment.yaml
+conda activate geofm-bench8
+```
 
-## Example
+Optional: install Mamba (https://github.com/conda-forge/miniforge/releases/) for faster resolution times
+```
+wget https://github.com/conda-forge/miniforge/releases/download/24.3.0-0/Mambaforge-24.3.0-0-Linux-x86_64.sh
+./Mambaforge-24.3.0-0-Linux-x86_64.sh
+
+mamba env create -f environment.yaml
+mamba activate geofm-bench8
+```
+
+## Training
 ### Training: Single Temporal
 Set `config`, `encoder_config`, `dataset_config`, `segmentor_config` and `augmentation_config` and start the training process on single gpu:
 ```
