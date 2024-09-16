@@ -1,8 +1,7 @@
 [![Tests](https://github.com/yurujaja/geofm-bench/actions/workflows/python-test.yml/badge.svg)](https://github.com/yurujaja/geofm-bench/actions/workflows/python-test.yml)
 
-## What is New
-In general, the architecture of the whole codebase is refactored and a few bugs and errors are fixed by the way.
-
+## Introduction
+(TBD)
 
 ### engines
 In engines, basic modules in the training pipeline are defined including data_preprocessor, trainer and evaluator.
@@ -30,21 +29,52 @@ In engines, basic modules in the training pipeline are defined including data_pr
 4. So far, we have UPerNet for unitemporal semantic segmentation, UPerNetCD for change detection and MTUPerNet for multitemporal semantic segmentation
 5. for multi-temporal, L-TAE and linear projection are supported
 
-### Other comments
-1. In the segmentor config, different losses, optimizers and schedulers can be picked (you have to define them in the respective utils file)
+All of these parameters can also be set in the run config file.
 
-## What is still missing
-1. Add the other datasets and foundation models following the existing examples in this codebase. Meanwhile, check the correctness of the original datasets before copypasting. [IMPORTANT]
-2. More data augmentation need to be done. It wraps the dataset class by a configurable augmentor to perform both data preprocessing and augmentation. In this way, we avoid preprocessing data in the main process, which is slow.
+To use more gpus or nodes, set `--nnodes` and `--nproc_per_node` correspondingly, see:
+https://pytorch.org/docs/stable/elastic/run.html
 
+To use mixed precision training, specify either `--fp16` for float16 and or `--bf16` for bfloat16
 
-## Setup
-Should be the same as the v1 version of the code, maybe some dependencies can be removed
+For fine-tuning instead of linear probing, specify `--finetune`.
 
+## 🛠️ Setup
+Clone the repository:
+```
+git clone git@github.com:yurujaja/geofm-bench.git
+cd geofm-bench
+```
 
-## Example
-### Training: Single Temporal
-Set `config`, `encoder_config`, `dataset_config`, `segmentor_config` and `augmentation_config` and start the training process on single gpu:
+**Dependencies**
+
+Use either Conda or Mamba:
+```
+conda env create -f environment.yaml
+conda activate geofm-bench8
+```
+
+Optional: install [Mamba](https://github.com/conda-forge/miniforge/releases/) for faster resolution times
+```
+wget https://github.com/conda-forge/miniforge/releases/download/24.3.0-0/Mambaforge-24.3.0-0-Linux-x86_64.sh
+./Mambaforge-24.3.0-0-Linux-x86_64.sh
+
+mamba env create -f environment.yaml
+mamba activate geofm-bench8
+```
+
+## 🏋️ Training
+There are 5 basic component types in our config system:
+- `config`: Information of training settings such as batch size, epochs, use wandb. `limited_label` is to indicate the percentage of dataset used for training, for example, `-1` means the full training dataset is used while `0.5` means 50% used. 
+- `encoder_config`: GFM encoder related parameters. `output_layers` is used for which layers are used for Upernet decoder. 
+- `dataset_config`: Information of downstream datasets such as image size, band_statistics, etc. 
+- `segmentor_config`: Downstream task decoder fine-tuning related parameters, including the head type, loss, optimizer, scheduler, etc.
+- `augmentation_config`: Both preprocessing and augmentations steps required for the dataset, such as bands adaptation, normalization, resize/crop.
+
+We provide several examples of command lines to initilize different training tasks on single gpu.
+### 💻 Decoder Finetuning
+**Single Temporal Semantic Segmentation** 
+
+Take MADOS dataset, Prithvi Encoder and Upernet Decoder as example:
 ```
 torchrun --nnodes=1 --nproc_per_node=1 run.py  \
 --config configs/run/default.yaml  \
@@ -55,7 +85,8 @@ torchrun --nnodes=1 --nproc_per_node=1 run.py  \
 --num_workers 4 --eval_interval 1  --use_wandb
 ```
 
-### Training: Multi Temporal
+**Multi Temporal Semantic Segmentation**
+
 Multi-temporal model `configs/segmentors/upernet_mt.yaml` should be used. In addition, in the dataset config, indicate the number of time frames, e.g., `multi_temporal: 6`
 ```
 torchrun --nnodes=1 --nproc_per_node=1 run.py  \
@@ -63,23 +94,35 @@ torchrun --nnodes=1 --nproc_per_node=1 run.py  \
 --encoder_config configs/foundation_models/prithvi.yaml  \
 --dataset_config configs/datasets/croptypemapping.yaml   \
 --segmentor_config configs/segmentors/upernet_mt.yaml \
---augmentation_config configs/augmentations/segmentation_default.yaml  \
+--augmentation_config configs/augmentations/ctm.yaml  \
 --num_workers 4 --eval_interval 1 --use_wandb
 ```
 
-### Evaluation
+**Multi Temporal Change Detection** 
+```
+torchrun ...
+```
+
+**Multi Temporal Regression** 
+```
+torchrun ...
+```
+
+### 💻 Fully Supervised Training
+**Single Temporal Change Detection** 
+```
+torchrun ...
+```
+## 🏃 Evaluation 
+Indicate the `eval_dir` where the checkpoints and configurations are stored.
 ```
 torchrun --nnodes=1 --nproc_per_node=1 run.py --batch_size 1 --eval_dir work-dir/the-folder-where-your-exp-is-saved
 ```
 
-All of these parameters can also be set in the run config file.
 
-To use more gpus or nodes, set `--nnodes` and `--nproc_per_node` correspondingly, see:
-https://pytorch.org/docs/stable/elastic/run.html
+## ✏️ Contributing
+We appreciate all contributions to improve xxx. Please refer to [Contributing Guidelines](.github/CONTRIBUTING.md)
 
-To use mixed precision training, specify either `--fp16` for float16 and or `--bf16` for bfloat16
-
-For fine-tuning instead of linear probing, specify `--finetune`.
 
 
 
@@ -91,4 +134,4 @@ For fine-tuning instead of linear probing, specify `--finetune`.
 | Prithvi | HLSBurnScars | 80     | 86.208 |
 | Prithvi | Sen1Floods11 | 80     | 87.217 |
 
-
+## 💡 Acknowledgements
