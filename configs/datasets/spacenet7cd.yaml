@@ -3,9 +3,16 @@ root_path: ./data/spacenet7
 download_url: https://drive.google.com/uc?id=1BADSEjxYKFZZlM-tEkRUfHvHi5XdaVV9
 auto_download: True
 
-img_size: 1024
+img_size: 256  # the image size is used to tile the SpaceNet 7 images (1024, 1024)
+domain_shift: False
+# parameters for within-scene splits (no domain shift)
+i_split: 768
+j_split: 512
+
 multi_temporal: 2
 multi_modal: False
+
+dataset_multiplier: 1  # multiplies sample in dataset during training
 
 # classes
 ignore_index: -1

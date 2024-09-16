@@ -4,7 +4,7 @@ download_url: https://drive.google.com/uc?id=1BADSEjxYKFZZlM-tEkRUfHvHi5XdaVV9
 auto_download: True
 
 img_size: 256  # the image size is used to tile the SpaceNet 7 images (1024, 1024)
-domain_shift: False
+domain_shift: True
 # parameters for within-scene splits (no domain shift)
 i_split: 768
 j_split: 512

@@ -171,7 +171,10 @@ def main():
             project="geofm-bench",
             name=exp_name,
             config=OmegaConf.to_container(cfg, resolve=True),
+            resume='allow',
+            id=cfg.get('wandb_run_id'),
         )
+        cfg['wandb_run_id'] = wandb.run.id
 
     # get datasets
     dataset = DATASET_REGISTRY.get(cfg.dataset.dataset_name)
@@ -255,7 +258,8 @@ def main():
             batch_size=cfg.batch_size,  # cfg.dataset["batch"],
             num_workers=cfg.num_workers,
             pin_memory=True,
-            persistent_workers=True,
+            # persistent_workers=True causes memory leak
+            persistent_workers=False,
             worker_init_fn=seed_worker,
             generator=get_generator(cfg.seed),
             drop_last=True,
@@ -268,7 +272,7 @@ def main():
             num_workers=cfg.num_workers,
             pin_memory=True,
             persistent_workers=False,
-            # worker_init_fn=seed_worker,
+            worker_init_fn=seed_worker,
             # generator=g,
             drop_last=False,
             collate_fn=collate_fn,
