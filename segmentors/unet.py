@@ -8,6 +8,7 @@ from collections import OrderedDict
 from typing import Sequence
 from utils.registry import SEGMENTOR_REGISTRY
 
+
 @SEGMENTOR_REGISTRY.register()
 class UNet(nn.Module):
     """
@@ -40,16 +41,14 @@ class UNet(nn.Module):
         return output
 
 
-@SEGMENTOR_REGISTRY.register()
-class UNetCD(nn.Module):
+class SiamUNet(nn.Module):
     """
     """
 
-    def __init__(self, args, cfg, encoder):
+    def __init__(self, args, cfg, encoder, strategy):
         super().__init__()
 
         # self.frozen_backbone = frozen_backbone
-
         self.model_name = 'UNetCD'
         self.encoder = encoder
         self.finetune = args.finetune
@@ -58,8 +57,14 @@ class UNetCD(nn.Module):
         self.align_corners = False
 
         self.num_classes = 1 if cfg['binary'] else cfg['num_classes']
-        self.topology = encoder.topology
-
+        self.strategy = strategy
+        if self.strategy == 'diff':
+            self.topology = encoder.topology
+        elif self.strategy == 'concat':
+            self.topology = [2 * features for features in encoder.topology]
+        else:
+            raise NotImplementedError
+        
         self.decoder = Decoder(self.topology)
         self.conv_seg = OutConv(self.topology[0], self.num_classes)
 
@@ -72,10 +77,30 @@ class UNetCD(nn.Module):
         feat1 = self.encoder(img1)
         feat2= self.encoder(img2)
  
-        feat = [f2 - f1 for f2, f1 in zip(feat1, feat2)]
+        if self.strategy == 'diff':
+            feat = [f2 - f1 for f1, f2 in zip(feat1, feat2)]
+        elif self.strategy == 'concat':
+            feat = [torch.concat((f1, f2), dim=1) for f1, f2 in zip(feat1, feat2)]
+        else:
+            raise NotImplementedError
+        
         feat = self.decoder(feat)
         output = self.conv_seg(feat)
         return output
+
+
+@SEGMENTOR_REGISTRY.register()
+class SiamDiffUNet(SiamUNet):
+    # Siamese UNet for change detection with feature differencing strategy
+    def __init__(self, args, cfg, encoder):
+        super().__init__(args, cfg, encoder, 'diff')
+
+
+@SEGMENTOR_REGISTRY.register()
+class SiamConcUNet(SiamUNet):
+    # Siamese UNet for change detection with feature concatenation strategy
+    def __init__(self, args, cfg, encoder):
+        super().__init__(args, cfg, encoder, 'concat')
 
 
 class Decoder(nn.Module):

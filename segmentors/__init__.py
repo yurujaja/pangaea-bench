@@ -1,5 +1,5 @@
-from .upernet import UPerNet, UPerNetCD, MTUPerNet
+from .upernet import UPerNet, SiamDiffUPerNet, SiamConcUPerNet, MTUPerNet
 from .ltae import LTAE2d
-from .unet import UNet, UNetCD
+from .unet import UNet, SiamDiffUNet, SiamConcUNet
 
-all = ['UPerNet', 'UPerNetCD', 'MTUPerNet', 'UNet', 'UNetCD']
+all = ['UPerNet', 'SiamDiffUPerNet', 'SiamConcUPerNet', 'MTUPerNet', 'UNet', 'SiamDiffUNet', 'SiamConcatUNet']
