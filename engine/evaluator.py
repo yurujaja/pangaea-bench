@@ -170,14 +170,11 @@ class RegEvaluator(Evaluator):
 
     @torch.no_grad()
     def evaluate(self, model, model_name='model'):
-        # TODO: Rework this to allow evaluation only runs
-        # Move common parts to parent class, and get loss function from the registry.
         t = time.time()
 
         model.eval()
 
         tag = f'Evaluating {model_name} on {self.split} set'
-        # confusion_matrix = torch.zeros((self.num_classes, self.num_classes), device=self.device)
 
         for batch_idx, data in enumerate(tqdm(self.val_loader, desc=tag)):
             image, target = data['image'], data['target']
@@ -186,14 +183,8 @@ class RegEvaluator(Evaluator):
 
             logits = model(image, output_shape=target.shape[-2:]).squeeze(dim=1)
             mse = F.mse_loss(logits, target)
-            # pred = torch.argmax(logits, dim=1)
-            # valid_mask = target != -1
-            # pred, target = pred[valid_mask], target[valid_mask]
-            # count = torch.bincount((pred * self.num_classes + target), minlength=self.num_classes ** 2)
-            # confusion_matrix += count.view(self.num_classes, self.num_classes)
 
-        # torch.distributed.all_reduce(confusion_matrix, op=torch.distributed.ReduceOp.SUM)
-        metrics = {"MSE" : mse.item, "RMSE" : torch.sqrt(mse).item}
+        metrics = {"MSE" : mse.item(), "RMSE" : torch.sqrt(mse).item()}
         self.log_metrics(metrics)
 
         used_time = time.time() - t
@@ -204,17 +195,8 @@ class RegEvaluator(Evaluator):
     def __call__(self, model, model_name='model'):
         return self.evaluate(model, model_name)
 
-
-    # def compute_metrics(self, confusion_matrix):
-    #     iou = torch.diag(confusion_matrix) / (confusion_matrix.sum(dim=1) + confusion_matrix.sum(dim=0) - torch.diag(confusion_matrix)) * 100
-    #     iou = iou.cpu()
-    #     metrics = {'IoU': [iou[i].item() for i in range(self.num_classes)], 'mIoU': iou.mean().item()}
-
-    #     return metrics
-
     def log_metrics(self, metrics):
         header = "------- MSE and RMSE --------\n"
-        # iou = '\n'.join(c.ljust(self.max_name_len, ' ') + '\t{:>7}'.format('%.3f' % num) for c, num in zip(self.classes, metrics['MSE'])) + '\n'
         mse = "-------------------\n" + 'MSE \t{:>7}'.format('%.3f' % metrics['MSE'])+'\n'
         rmse = "-------------------\n" + 'RMSE \t{:>7}'.format('%.3f' % metrics['RMSE'])
         self.logger.info(header+mse+rmse)
