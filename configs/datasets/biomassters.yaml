@@ -1,14 +1,14 @@
 dataset_name: BioMassters
-root_path: /geomatics/gpuserver-0/vmarsocci/biomassters
-download_url: #https://huggingface.co/datasets/ibm-nasa-geospatial/hls_burn_scars/resolve/main/hls_burn_scars.tar.gz?download=true
+root_path: /geoinfo_vol1/home/r/i/rtu/
+# download_url: #https://huggingface.co/datasets/ibm-nasa-geospatial/hls_burn_scars/resolve/main/hls_burn_scars.tar.gz?download=true
 auto_download: False
 img_size: 256
-multi_temporal: 12
+temporal: 12 #6 (summer month if multi_temp false), 12
+multi_temporal: True
 multi_modal: True
 
-
 # classes
-# ignore_index: -1
+ignore_index: -1
 num_classes: 1
 classes:
   - regression
@@ -25,29 +25,39 @@ bands:
     - B2
     - B3
     - B4
-    # - B5
-    # - B6
-    # - B7
-    # - B8
-    # - B8a
-    # - B11
-    # - B12
+    - B5
+    - B6
+    - B7
+    - B8
+    - B8A
+    - B11
+    - B12
+    - CLP
   sar:
     - ASC_VV
     - ASC_VH
     - DSC_VV
     - DSC_VH
 
+# TODO: fix the normalization 
 data_mean:
   optical:
-    - 66.7703
-    - 88.4452
-    - 85.1047
-  # sar:
+#     - 66.7703
+#     - 88.4452
+#     - 85.1047
+  sar:
 
 data_std:
   optical:
-    - 48.3066
-    - 51.9129
-    - 62.7612
-  # sar:
+#     - 48.3066
+#     - 51.9129
+#     - 62.7612
+  sar:
+ 
+data_min:
+  optical: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  sar: [-25, -62, -25, -60]
+
+data_max:
+  optical: [19616., 18400., 17536., 17097., 16928., 16768., 16593., 16492., 15401., 15226.,   255.]
+  sar: [29,  28,  30,  22]
