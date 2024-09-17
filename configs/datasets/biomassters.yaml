@@ -1,5 +1,5 @@
 dataset_name: BioMassters
-root_path: /geoinfo_vol1/home/r/i/rtu/
+root_path: /geoinfo_vol1/home/r/i/ru/
 # download_url: #https://huggingface.co/datasets/ibm-nasa-geospatial/hls_burn_scars/resolve/main/hls_burn_scars.tar.gz?download=true
 auto_download: False
 img_size: 256
