@@ -121,3 +121,11 @@ def _nest(
                 nested[key] = val
 
     return dict(nested) if nested else None
+
+
+def ensure_compatible_configs(cfg:OmegaConf) -> OmegaConf:
+    # SpectralGPT_Encoder can handle multi-temporal input, but in change detection, we encode each time step separately,
+    # to then compute the change from the different feature representations. 
+    if cfg.encoder.encoder_name == "SpectralGPT_Encoder" and cfg.segmentor.task_name == "change-detection":
+        cfg.encoder.multi_temporal=1
+    return cfg
