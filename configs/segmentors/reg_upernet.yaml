@@ -1,7 +1,6 @@
-segmentor_name: MTUPerNet_regress
+segmentor_name: UPerNet_regress
 task_name: regression
-multi_temporal_strategy: linear
-time_frames: 12
+# time_frames: 2
 #task_model_args:
   #num_frames: 1
   #mt_strategy: "ltae" #activated only when if num_frames > 1
@@ -11,7 +10,7 @@ time_frames: 12
 channels: 512
 
 loss: 
-  loss_name: MSELoss
+  loss_name: MSELoss # WeightedCrossEntropy
   ignore_index: -1
 
 optimizer:
