@@ -18,6 +18,7 @@ class Evaluator():
         self.split = self.val_loader.dataset.split
         self.num_classes = len(self.classes)
         self.max_name_len = max([len(name) for name in self.classes])
+        self.ignore_index = args["dataset"]["ignore_index"]
 
         if args.use_wandb:
             import wandb
@@ -67,7 +68,7 @@ class SegEvaluator(Evaluator):
                 pred = (torch.sigmoid(logits) > 0.5).type(torch.int64).squeeze(dim=1)
             else:
                 pred = torch.argmax(logits, dim=1)
-            valid_mask = target != -1
+            valid_mask = target != self.ignore_index
             pred, target = pred[valid_mask], target[valid_mask]
             count = torch.bincount((pred * self.num_classes + target), minlength=self.num_classes ** 2)
             confusion_matrix += count.view(self.num_classes, self.num_classes)
