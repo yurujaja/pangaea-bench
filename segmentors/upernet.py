@@ -239,7 +239,7 @@ class MTUPerNet(UPerNet):
         return output
 
 @SEGMENTOR_REGISTRY.register()
-class UPerNet_regress(nn.Module):
+class RegUPerNet(nn.Module):
     """Unified Perceptual Parsing for Scene Understanding.
 
     This head is the implementation of `UPerNet
@@ -255,7 +255,7 @@ class UPerNet_regress(nn.Module):
 
         # self.frozen_backbone = frozen_backbone
 
-        self.model_name = 'UPerNet_regress'
+        self.model_name = 'RegUPerNet'
         self.encoder = encoder
         self.finetune = args.finetune
 
@@ -416,7 +416,7 @@ class UPerNet_regress(nn.Module):
         return output
 
 @SEGMENTOR_REGISTRY.register()
-class MTUPerNet_regress(UPerNet_regress):
+class RegMTUPerNet(UPerNet):
     def __init__(self, args, cfg, encoder, pool_scales=(1, 2, 3, 6)):
         super().__init__(args, cfg, encoder, pool_scales=(1, 2, 3, 6))   
 

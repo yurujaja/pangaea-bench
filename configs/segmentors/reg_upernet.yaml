@@ -1,4 +1,4 @@
-segmentor_name: UPerNet_regress
+segmentor_name: RegUPerNet
 task_name: regression
 # time_frames: 2
 #task_model_args:

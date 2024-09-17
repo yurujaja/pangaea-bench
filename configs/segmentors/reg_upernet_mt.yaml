@@ -1,4 +1,4 @@
-segmentor_name: MTUPerNet_regress
+segmentor_name: RegMTUPerNet
 task_name: regression
 multi_temporal_strategy: linear
 time_frames: 12
