@@ -169,7 +169,7 @@ class FiveBillionPixels(torch.utils.data.Dataset):
     def get_splits(dataset_config):
         dataset_train = FiveBillionPixels(dataset_config, split="train", is_train=True)
         dataset_val = FiveBillionPixels(dataset_config, split="val", is_train=False)
-        dataset_test = dataset_val
+        dataset_test = FiveBillionPixels(dataset_config, split="test", is_train=False)
         return dataset_train, dataset_val, dataset_test
     
     @staticmethod

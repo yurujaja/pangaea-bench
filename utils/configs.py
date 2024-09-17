@@ -11,10 +11,23 @@ def load_configs(parser:argparse.ArgumentParser) -> OmegaConf:
     cli_provided, cli_defaults = omegaconf_from_argparse(parser)
     all_cli = OmegaConf.merge(cli_defaults, cli_provided)
 
+    # print(all_cli)
+
     if all_cli.eval_dir:
         # Just load the dumped config file if we are evaluating
         eval_config_path = pathlib.Path(all_cli.eval_dir) / 'configs'
         file_cfg = OmegaConf.load(eval_config_path/"config.yaml")
+
+        # if all_cli.config:
+        # to do the test on different datasets (with same number of classes)
+        bootstrap_cfg = OmegaConf.merge(cli_defaults, file_cfg, cli_provided)
+        if bootstrap_cfg.augmentation_config_path is not None:
+            augmentation_cfg = OmegaConf.load(bootstrap_cfg.augmentation_config_path)
+            file_cfg["augmentation"] = augmentation_cfg
+        if bootstrap_cfg.augmentation_config_path is not None: 
+            dataset_cfg = OmegaConf.load(bootstrap_cfg.dataset_config_path) 
+            file_cfg["dataset"] = dataset_cfg            
+
         cfg = OmegaConf.merge(cli_defaults, file_cfg, cli_provided)
 
     elif all_cli.config:
