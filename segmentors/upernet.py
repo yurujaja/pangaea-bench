@@ -257,8 +257,9 @@ class SiamUPerNet(UPerNet):
 
         if self.encoder.model_name != "Prithvi":
             if self.encoder.model_name == "SpectralGPT":
-                img1 = {k: v[:,:,[0],:,:].repeat(1,1,1,1,1) for k, v in img.items()}
-                img2 = {k: v[:,:,[1],:,:].repeat(1,1,1,1,1) for k, v in img.items()}
+                # Retains the temporal dimension
+                img1 = {k: v[:,:,[0],:,:] for k, v in img.items()}
+                img2 = {k: v[:,:,[1],:,:] for k, v in img.items()}
             else:
                 img1 = {k: v[:,:,0,:,:] for k, v in img.items()}
                 img2 = {k: v[:,:,1,:,:] for k, v in img.items()}

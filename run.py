@@ -30,7 +30,7 @@ import utils.schedulers
 import utils.losses
 from utils.utils import fix_seed, get_generator, seed_worker, prepare_input
 from utils.logger import init_logger
-from utils.configs import load_configs, ensure_compatible_configs
+from utils.configs import load_configs
 from utils.registry import (
     ENCODER_REGISTRY,
     SEGMENTOR_REGISTRY,
@@ -120,7 +120,6 @@ parser.add_argument('--local_world_size', type=int,
 
 def main():
     cfg = load_configs(parser)
-    cfg = ensure_compatible_configs(cfg)
 
     # fix all random seeds
     fix_seed(cfg.seed)
