@@ -214,12 +214,12 @@ class MTUPerNet(UPerNet):
                 if not self.finetune:
                     with torch.no_grad():
                         if self.encoder.model_name in ["SpectralGPT"]:
-                            feats.append(self.encoder({k: v[:,:,[i],:,:].repeat(1,1,1,1,1) for k, v in img.items()}))
+                            feats.append(self.encoder({k: v[:,:,[i],:,:] for k, v in img.items()}))
                         else:
                             feats.append(self.encoder({k: v[:,:,i,:,:] for k, v in img.items()}))
                 else:
                     if self.encoder.model_name in ["SpectralGPT"]:
-                        feats.append(self.encoder({k: v[:,:,[i],:,:].repeat(1,1,1,1,1) for k, v in img.items()}))
+                        feats.append(self.encoder({k: v[:,:,[i],:,:] for k, v in img.items()}))
                     else:
                         feats.append(self.encoder({k: v[:,:,i,:,:] for k, v in img.items()}))  
 
