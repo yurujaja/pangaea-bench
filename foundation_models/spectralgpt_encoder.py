@@ -35,7 +35,7 @@ class SpectralGPT_Encoder(Base_Encoder):
 
         self.model_name = "SpectralGPT"
         self.output_layers = cfg['output_layers']
-        self.num_frames = cfg['multi_temporal'] if cfg['multi_temporal'] else 1
+        self.num_frames = 1
 
         self.patch_embed = PatchEmbed(
             img_size, patch_size, self.num_frames, embed_dim, in_chans, t_patch_size) 
