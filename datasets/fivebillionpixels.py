@@ -34,90 +34,33 @@ class FiveBillionPixels(torch.utils.data.Dataset):
         """
         super().__init__()
         self._base_dir = cfg['root_path']
-        # print(os.path.join(self._base_dir, split, 'imgs', '*.tif'))
-        # print(os.path.join(self._base_dir, split, 'labels', '*.tif'))
-        # print(self._image_dir)
-        # print(self._label_dir)
-        # _splits_dir = os.path.join(self._base_dir, 'list')
-        # self.split = [split]
-
-        # self.args = args
-
-        # self.im_ids = []
-        # self.images = []
-        # self.labels = []
-
-        # for splt in self.split:
-        #     with open(os.path.join(os.path.join(_splits_dir, splt + '.txt')), "r") as f:
-        #         lines = f.read().splitlines()
-
-        #     if splt == 'train':
-        #         lines = random.sample(lines, len(os.listdir(os.path.join(args.target_dir, args.target))))
-        #     elif split == 'val':
-        #         lines = random.sample(lines, 500)
-        # self.root_path = cfg['root_path']
         self.data_mean = cfg['data_mean']
         self.data_std = cfg['data_std']
         self.classes = cfg['classes']
+        self.use_cmyk = cfg['use_cmyk']
         self.class_num = len(self.classes)
         self.split = split
         self.is_train = is_train
 
         self._image_dir = sorted(glob(os.path.join(self._base_dir, self.split, 'imgs', '*.tif')))
         self._label_dir = sorted(glob(os.path.join(self._base_dir, self.split, 'labels', '*.tif')))
-        # print(split)
-        # print(os.path.join(self._base_dir, self.split, 'imgs', '*.tif'))
-        # print(os.path.join(self._base_dir, self.split, 'labels', '*.png'))
-        # print(self._image_dir)
-        # print((self._label_dir))
-        # print(len(self._image_dir))
-        # print(len(self._label_dir))
-
-        # self.split_mapping = {'train': 'training', 'val': 'validation', 'test': 'validation'}
-
-        # self.image_list = sorted(glob(os.path.join(self.root_path, self.split_mapping[self.split], '*merged.tif')))
-        # self.target_list = sorted(glob(os.path.join(self.root_path, self.split_mapping[self.split], '*mask.tif')))
-
-
-        # for ii, line in enumerate(lines):
-        #     _image = os.path.join(self._image_dir, line + ".tif")
-        #     _label = os.path.join(self._label_dir, line + ".png")
-        #     assert os.path.isfile(_image)
-        #     assert os.path.isfile(_label)
-        #     self.im_ids.append(line)
-        #     self.images.append(_image)
-        #     self.labels.append(_label)
-
-        # assert (len(self.images) == len(self.labels))
-
-        # Display stats
-        # print('Number of images in {}: {:d}'.format(split, len(self.images)))
 
     def __len__(self):
         return len(self._image_dir)
 
     def __getitem__(self, index):
-        # _img, _target = self._make_img_gt_point_pair(index)
-        # print(index)
-        # image = Image.open(self._image_dir[index]).convert('CMYK') #check it also on the normalization
-        # target = Image.open(self._label_dir[index])
 
-        image = tiff.imread(self._image_dir[index])#.convert('CMYK') #check it also on the normalization
-        target = tiff.imread(self._label_dir[index]) #, cv2.IMREAD_UNCHANGED)
-
-        # image = TF.pil_to_tensor(image)
-        # target = TF.pil_to_tensor(target).squeeze(0).to(torch.int64)
-
-        image = image.astype(np.float32)  # Convert to float32
+        if self.use_cmyk:
+            image = Image.open(self._image_dir[index]).convert('CMYK')
+            image = TF.pil_to_tensor(image)
+        else:
+            image = tiff.imread(self._image_dir[index])#.convert('CMYK') #check it also on the normalization
+            image = image.astype(np.float32)  # Convert to float32
+            image = torch.from_numpy(image).permute(2, 0, 1)
+        
+        target = tiff.imread(self._label_dir[index])
         target = target.astype(np.int64)  # Convert to int64 (since it's a mask)
-
-        # Tile the image and target to the fixed size specified in the config
-        # image, target = self.tile_image_and_mask(image, target, self.img_size)
-
-        image = torch.from_numpy(image).permute(2, 0, 1)
         target = torch.from_numpy(target).long()
-        # print(image.shape)
-        # print(target.shape)
 
         output = {
             'image': {

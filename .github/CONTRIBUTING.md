@@ -6,6 +6,7 @@ We welcome all forms of contributions, including but not limited to the followin
 - Incorporate downstream datasets
 - Add new decoder heads
 - Fix typo or bugs
+- Add new decoders
 
 ### Workflow
 
@@ -16,6 +17,37 @@ We welcome all forms of contributions, including but not limited to the followin
 
 Note: For significant modifications or any bugs spotting, please consider opening an issue for discussion beforehand.
 
+## Code structure 
+
+### engines
+In engines, basic modules in the training pipeline are defined including data_preprocessor, trainer and evaluator.
+1. data_preprocessor selects the bands needed by an encoder and pads unavailable bands with zeros, and different augmentations.
+2. trainer supports mixed precision/distributed training and print training stats and metrics in real time.
+3. evaluator can be called independently and evaluate a model also in distributed way and compute per class metrics.
+
+### datasets
+1. The implementations are simplified and standardized.
+2. Dataset metas are read from configs, including newly added classes (name), ignore_index, and so on.
+3. To add (register) a new dataset implementation, use the decorator ```@DATASET_REGISTRY.register()```.
+
+### foundation_models
+1. Support multi-stage output that may be needed by segmentors, specified by output layers in encoder config.
+2. All the encoder should work properly.
+3. To add (register) a new encoder implementation, use the decorator ```@ENCODER_REGISTRY.register()```.
+
+### segmentors
+1. The UperNet implementation is based on [mmsegmentation](https://github.com/open-mmlab/mmsegmentation/tree/main)
+2. To add (register) a new encoder implementation, use the decorator ```@SEGMENTOR_REGISTRY.register()```.
+3. So far, we have UPerNet for unitemporal semantic segmentation, UPerNetCD for change detection and MTUPerNet for multitemporal semantic segmentation
+4. for multi-temporal, L-TAE and linear projection are supported
+
+### augmentations
+1. All the available augmentations are in ```data_preproessor.py```
+2. To add (register) a new augmentation implementation, use the decorator ```@AUGMENTER_REGISTRY.register()```.
+
+All the parameters can also be set in the run config file.
+
+## Adding new features
 
 ### Adding a new geospatial foundation model
 1. Inside the `foundation_models` folder:
