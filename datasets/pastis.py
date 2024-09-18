@@ -1,3 +1,8 @@
+###
+# Modified version of the PASTIS-HD dataset
+# original code https://github.com/gastruc/OmniSat/blob/main/src/data/Pastis.py
+###
+
 import json
 import os
 from datetime import datetime
@@ -294,16 +299,21 @@ class Pastis(Dataset):
         optical_ts = rearrange(output["s2"], "t c h w -> c t h w")
         sar_ts = rearrange(output["s1-asc"], "t c h w -> c t h w")
 
-        # select evenly spaced samples
-        optical_indexes = torch.linspace(
-            0, optical_ts.shape[1] - 1, self.grid_size, dtype=torch.long
-        )
-        sar_indexes = torch.linspace(
-            0, sar_ts.shape[1] - 1, self.grid_size, dtype=torch.long
-        )
+        if self.grid_size == 1:
+            # we only take the last frame
+            optical_ts = optical_ts[:, -1]
+            sar_ts = sar_ts[:, -1]
+        else:
+            # select evenly spaced samples
+            optical_indexes = torch.linspace(
+                0, optical_ts.shape[1] - 1, self.grid_size, dtype=torch.long
+            )
+            sar_indexes = torch.linspace(
+                0, sar_ts.shape[1] - 1, self.grid_size, dtype=torch.long
+            )
 
-        optical_ts = optical_ts[:, optical_indexes]
-        sar_ts = sar_ts[:, sar_indexes]
+            optical_ts = optical_ts[:, optical_indexes]
+            sar_ts = sar_ts[:, sar_indexes]
 
         return {
             "image": {
