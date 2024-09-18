@@ -202,25 +202,31 @@ class MTUPerNet(UPerNet):
     def forward(self, img, output_shape=None):
         """Forward function for change detection."""
 
-        if self.encoder.model_name not in ["Prithvi", "satlas_pretrain", "SpectralGPT"]:
-            feats = []
-            for i in range(self.multi_temporal):
-                if not self.finetune:
-                    with torch.no_grad():
-                        feats.append(self.encoder({k: v[:,:,i,:,:] for k, v in img.items()}))
-                else:
-                    feats.append(self.encoder({k: v[:,:,i,:,:] for k, v in img.items()}))   
-
-            feats = [list(i) for i in zip(*feats)]                
-            feats = [torch.stack(feat_layers, dim = 2) for feat_layers in feats] 
-        else:
+        if self.encoder.model_name in ["Prithvi", "satlas_pretrain"]:
             if not self.finetune:
                 with torch.no_grad():
                     feats = self.encoder(img)
             else:
                 feats = self.encoder(img)
+        else:
+            feats = []
+            for i in range(self.multi_temporal):
+                if not self.finetune:
+                    with torch.no_grad():
+                        if self.encoder.model_name in ["SpectralGPT"]:
+                            feats.append(self.encoder({k: v[:,:,[i],:,:].repeat(1,1,1,1,1) for k, v in img.items()}))
+                        else:
+                            feats.append(self.encoder({k: v[:,:,i,:,:] for k, v in img.items()}))
+                else:
+                    if self.encoder.model_name in ["SpectralGPT"]:
+                        feats.append(self.encoder({k: v[:,:,[i],:,:].repeat(1,1,1,1,1) for k, v in img.items()}))
+                    else:
+                        feats.append(self.encoder({k: v[:,:,i,:,:] for k, v in img.items()}))  
 
-        if self.encoder.model_name not in ["satlas_pretrain", "SpectralGPT"]:
+            feats = [list(i) for i in zip(*feats)]                
+            feats = [torch.stack(feat_layers, dim = 2) for feat_layers in feats]
+        
+        if self.encoder.model_name not in ["satlas_pretrain"]:
             for i in range(len(feats)):
                 if self.multi_temporal_strategy == "ltae":
                     feats[i] = self.tmap(feats[i])
