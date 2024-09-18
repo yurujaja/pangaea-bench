@@ -1,17 +1,13 @@
-import random
-
+import logging
 import math
-
-import torch
-import torch.nn.functional as F
-import torchvision.transforms as T
+import random
 from typing import Callable
 
 import numpy as np
-import logging
-
 import omegaconf
-
+import torch
+import torch.nn.functional as F
+import torchvision.transforms as T
 
 from utils.registry import AUGMENTER_REGISTRY
 
@@ -20,7 +16,7 @@ def get_collate_fn(cfg: omegaconf.DictConfig) -> Callable:
     modalities = cfg.encoder.input_bands.keys()
 
     def collate_fn(
-        batch: dict[dict[str, torch.Tensor]]
+        batch: dict[dict[str, torch.Tensor]],
     ) -> dict[dict[str, torch.Tensor]]:
         """Collate function for torch DataLoader
         args:
@@ -153,9 +149,19 @@ class BandAdaptor:
         self.input_bands = getattr(cfg.encoder.input_bands, modality, [])
         self.encoder_name = cfg.encoder.encoder_name
 
-        self.used_bands_mask = torch.tensor([b in self.input_bands for b in self.dataset_bands], dtype=torch.bool)
-        self.avail_bands_mask = torch.tensor([b in self.dataset_bands for b in self.input_bands], dtype=torch.bool)
-        self.avail_bands_indices = torch.tensor([self.dataset_bands.index(b) if b in self.dataset_bands else -1 for b in self.input_bands], dtype=torch.long)
+        self.used_bands_mask = torch.tensor(
+            [b in self.input_bands for b in self.dataset_bands], dtype=torch.bool
+        )
+        self.avail_bands_mask = torch.tensor(
+            [b in self.dataset_bands for b in self.input_bands], dtype=torch.bool
+        )
+        self.avail_bands_indices = torch.tensor(
+            [
+                self.dataset_bands.index(b) if b in self.dataset_bands else -1
+                for b in self.input_bands
+            ],
+            dtype=torch.long,
+        )
 
         self.need_padded = self.avail_bands_mask.sum() < len(self.input_bands)
 
@@ -185,10 +191,18 @@ class BandAdaptor:
             )
 
     def preprocess_band_statistics(self, data_mean, data_std, data_min, data_max):
-        data_mean = [data_mean[i] if i != -1 else 0.0 for i in self.avail_bands_indices.tolist()]
-        data_std = [data_std[i] if i != -1 else 1.0 for i in self.avail_bands_indices.tolist()]
-        data_min = [data_min[i] if i != -1 else -1.0 for i in self.avail_bands_indices.tolist()]
-        data_max = [data_max[i] if i != -1 else 1.0 for i in self.avail_bands_indices.tolist()]
+        data_mean = [
+            data_mean[i] if i != -1 else 0.0 for i in self.avail_bands_indices.tolist()
+        ]
+        data_std = [
+            data_std[i] if i != -1 else 1.0 for i in self.avail_bands_indices.tolist()
+        ]
+        data_min = [
+            data_min[i] if i != -1 else -1.0 for i in self.avail_bands_indices.tolist()
+        ]
+        data_max = [
+            data_max[i] if i != -1 else 1.0 for i in self.avail_bands_indices.tolist()
+        ]
         return data_mean, data_std, data_min, data_max
 
     def preprocess_single_timeframe(self, image):
@@ -312,19 +326,19 @@ class Tile(BaseAugment):
 
         # Ignore overlapping borders
         if h_index != 0:
-            tiled_data["target"][
-                ..., 0:h_label_offset, :
-            ] = self.dataset_cfg.ignore_index
+            tiled_data["target"][..., 0:h_label_offset, :] = (
+                self.dataset_cfg.ignore_index
+            )
         if w_index != 0:
             tiled_data["target"][..., 0:w_label_offset] = self.dataset_cfg.ignore_index
         if h_index != self.tiles_per_dim - 1:
-            tiled_data["target"][
-                ..., self.output_size - h_label_offset :, :
-            ] = self.dataset_cfg.ignore_index
+            tiled_data["target"][..., self.output_size - h_label_offset :, :] = (
+                self.dataset_cfg.ignore_index
+            )
         if w_index != self.tiles_per_dim - 1:
-            tiled_data["target"][
-                ..., self.output_size - w_label_offset :
-            ] = self.dataset_cfg.ignore_index
+            tiled_data["target"][..., self.output_size - w_label_offset :] = (
+                self.dataset_cfg.ignore_index
+            )
 
         return tiled_data
 
