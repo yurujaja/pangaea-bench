@@ -1,42 +1,47 @@
 [![Tests](https://github.com/yurujaja/geofm-bench/actions/workflows/python-test.yml/badge.svg)](https://github.com/yurujaja/geofm-bench/actions/workflows/python-test.yml)
 
-## Introduction
-(TBD)
+## 📚 Introduction
 
-### engines
-In engines, basic modules in the training pipeline are defined including data_preprocessor, trainer and evaluator.
-1. data_preprocessor replaced the previous adaptation.py, i.e., selects the bands needed by an encoder and pads unavailable bands with zeros, and different augmentations.
-2. trainer now support mixed precision/distributed training and print training stats and metrics in real time.
-3. evaluator can be called independently and evaluate a model also in distributed way and compute per class metrics.
-4. see run.py for how to assemble these modules and concatenate them
+While geospatial foundation models (GFMs) have proliferated rapidly, their evaluations remain inconsistent and narrow. Existing works often utilize suboptimal downstream datasets (e.g., EuroSAT) and tasks (e.g., land cover classification), which constrain comparability and real-world usability. Additionally, a lack of diversity in evaluation protocols, including image resolution and sensor types, further complicates the extensive assessments of GFM performance. To bridge this gap, we propose a standardized evaluation protocol that incorporates a wide-ranging selection of datasets, tasks, resolutions, and sensor types, establishing a robust and widely applicable benchmark for GFMs.
 
-### datasets
-1. The implementations are simplified and standardized (I try my best).
-2. Dataset metas are read from configs, including newly added classes (name), ignore_index, and so on.
-3.Mados, sen1floods, hlsburnscars, xView2, biomasster are supported by this branch currently.
-4. To add (register) a new dataset implementation, use the decorator @DATASET_REGISTRY.register().
+In this repo, you can find the code to benchmark GFMs. For the moment we included several GFMs that present different approach. We look forward to adding new models and datasets.
 
-### foundation_models
-1. Remove all irrelevant modules and functions used in pre-training. Only keep the essential modules in encoders for extracting features.
-2. Support multi-stage output that may be needed by segmentors, specified by output layers in encoder config.
-3. All the encoder should work properly.
-4. To add (register) a new encoder implementation, use the decorator @ENCODER_REGISTRY.register().
+For the moment, we support the following **models**:
 
-### segmentors
-1. Now the UperNet implementation is based on mmsegmentation, which is more likely correct: https://github.com/open-mmlab/mmsegmentation/tree/main
-2. We can copypaste more segmentors later.
-3. To add (register) a new encoder implementation, use the decorator @SEGMENTOR_REGISTRY.register().
-4. So far, we have UPerNet for unitemporal semantic segmentation, UPerNetCD for change detection and MTUPerNet for multitemporal semantic segmentation
-5. for multi-temporal, L-TAE and linear projection are supported
+|             | Paper | GitHub | Keywords |
+|:-----------:|:-----:|:------:|:--------:|
+|  SSL4EOS12  |       |        |          |
+|  Scale-MAE  |       |        |          |
+|  SatlasNet  |       |        |          |
+|     GFM     |       |        |          |
+| SpectralGPT |       |        |          |
+|     DOFA    |       |        |          |
+|    CROMA    |       |        |          |
+|   Prithvi   |       |        |          |
+|  RemoteCLIP |       |        |          |
 
-All of these parameters can also be set in the run config file.
+And the following **datasets**:
 
-To use more gpus or nodes, set `--nnodes` and `--nproc_per_node` correspondingly, see:
-https://pytorch.org/docs/stable/elastic/run.html
-
-To use mixed precision training, specify either `--fp16` for float16 and or `--bf16` for bfloat16
-
-For fine-tuning instead of linear probing, specify `--finetune`.
+|                     | Paper | Download | Domain | Task | Sensors | Location |
+|:-------------------:|:-----:|:--------:|:------:|:----:|---------|----------|
+|    HLS Burn Scars   |       |          |        |      |         |          |
+|        MADOS        |       |          |        |      |         |          |
+|        PASTIS       |       |          |        |      |         |          |
+|     Sen1Floods11    |       |          |        |      |         |          |
+|        xView2       |       |          |        |      |         |          |
+| Five Billion Pixels |       |          |        |      |         |          |
+|   DynamicEarthNet   |       |          |        |      |         |          |
+|   CropTypeMapping   |       |          |        |      |         |          |
+|      SpaceNet7      |       |          |        |      |         |          |
+|    AI4SmallFarms    |       |          |        |      |         |          |
+|     BioMassters     |       |          |        |      |         |          |
+  
+The repository supports the following **tasks**:
+ - unitemporal semantic segmentation
+ - multi-temporal semantic segmentation
+ - unitemporal regression
+ - multi-temporal regression
+ - change detection
 
 ## 🛠️ Setup
 Clone the repository:
@@ -98,7 +103,7 @@ torchrun --nnodes=1 --nproc_per_node=1 run.py  \
 --num_workers 4 --eval_interval 1 --use_wandb
 ```
 
-**Multi Temporal Change Detection** 
+**Change Detection** 
 ```
 torchrun ...
 ```
@@ -113,20 +118,30 @@ torchrun ...
 ```
 torchrun ...
 ```
+
+To use more gpus or nodes, set `--nnodes` and `--nproc_per_node` correspondingly, see:
+https://pytorch.org/docs/stable/elastic/run.html
+
+To use mixed precision training, specify either `--fp16` for float16 and or `--bf16` for bfloat16
+
 ## 🏃 Evaluation 
 Indicate the `eval_dir` where the checkpoints and configurations are stored.
 ```
 torchrun --nnodes=1 --nproc_per_node=1 run.py --batch_size 1 --eval_dir work-dir/the-folder-where-your-exp-is-saved
 ```
 
-
 ## ✏️ Contributing
 We appreciate all contributions to improve xxx. Please refer to [Contributing Guidelines](.github/CONTRIBUTING.md)
 
+## ⚠️ Warnings
+
+Some features are under construction:
+ - the automatic download is working for all the datasets and models' weights but, respectively, **Five Billion Pixels** and **GFM**.
 
 
+## 🧮 Some first results
 
-## Some numbers
+A pre-print is coming soon... Stay tuned to read it
 
 | Encoder | Dataset      | Epochs | mIoU   |
 |---------|--------------|--------|--------|
@@ -134,4 +149,10 @@ We appreciate all contributions to improve xxx. Please refer to [Contributing Gu
 | Prithvi | HLSBurnScars | 80     | 86.208 |
 | Prithvi | Sen1Floods11 | 80     | 87.217 |
 
+Please note: 
+
 ## 💡 Acknowledgements
+
+##  ©️ License
+
+## 📝 Citing
