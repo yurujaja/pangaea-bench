@@ -25,6 +25,7 @@ class Trainer():
         self.optimizer = optimizer
         self.lr_scheduler = lr_scheduler
         self.evaluator = evaluator
+        self.ignore_index = args["dataset"]["ignore_index"]
         self.logger = logging.getLogger()
         self.training_stats = {name: RunningAverageMeter(length=self.batch_per_epoch) for name in ['loss', 'data_time', 'batch_time', 'eval_time']}
         self.training_metrics = {}
@@ -234,7 +235,7 @@ class SegTrainer(Trainer):
         else:
             pred = torch.argmax(logits, dim=1, keepdim=True)
         target = target.unsqueeze(1)
-        ignore_mask = target == -1
+        ignore_mask = target == self.ignore_index
         target[ignore_mask] = 0
         ignore_mask = ignore_mask.expand(-1, num_classes if num_classes > 1 else 2, -1, -1)
 
