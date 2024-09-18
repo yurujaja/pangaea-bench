@@ -240,7 +240,6 @@ def main():
     )
     collate_fn = get_collate_fn(cfg)
     # training
-    collate_fn = get_collate_fn(cfg)
     if not cfg.eval_dir:
 
 
