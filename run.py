@@ -170,8 +170,8 @@ def main():
         wandb.init(
             project="geofm-bench",
             name=exp_name,
-            config=OmegaConf.to_container(cfg, resolve=True),
-            # resume='allow',
+            config=None if cfg.eval_dir else OmegaConf.to_container(cfg, resolve=True),
+            resume='allow',
         )
 
     # get datasets
