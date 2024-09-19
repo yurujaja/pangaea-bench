@@ -149,6 +149,16 @@ def main():
         exp_dir.mkdir(parents=True, exist_ok=True)
         logger_path = exp_dir / "train.log"
 
+        if cfg.use_wandb and cfg.rank == 0:
+            import wandb
+            # initialize new wandb run
+            wandb.init(
+                project="geofm-bench",
+                name=exp_name,
+                config=OmegaConf.to_container(cfg, resolve=True),
+            )
+            cfg['wandb_run_id'] = wandb.run.id
+
         config_log_dir = exp_dir / "configs"
         config_log_dir.mkdir(exist_ok=True)
         OmegaConf.save(cfg, config_log_dir / "config.yaml")
@@ -157,22 +167,21 @@ def main():
         exp_name = exp_dir.name
         logger_path = exp_dir / "test.log"
 
+        if cfg.use_wandb and cfg.rank == 0:
+            import wandb
+            # resume wandb run
+            wandb.init(
+                project="geofm-bench",
+                name=exp_name,
+                id=cfg.get('wandb_run_id'),
+                resume='allow',
+            )
+
     logger = init_logger(logger_path, rank=cfg.rank)
     logger.info("============ Initialized logger ============")
     logger.info(pprint.pformat(OmegaConf.to_container(cfg), compact=True).strip("{}"))
     logger.info("The experiment is stored in %s\n" % exp_dir)
     logger.info(f"Device used: {device}")
-
-    # init wandb
-    if cfg.use_wandb and cfg.rank == 0:
-        import wandb
-
-        wandb.init(
-            project="geofm-bench",
-            name=exp_name,
-            config=None if cfg.eval_dir else OmegaConf.to_container(cfg, resolve=True),
-            resume='allow',
-        )
 
     # get datasets
     dataset = DATASET_REGISTRY.get(cfg.dataset.dataset_name)
