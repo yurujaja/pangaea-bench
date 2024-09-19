@@ -12,15 +12,16 @@ For the moment, we support the following **models**:
 
 |             | Paper | GitHub | Keywords |
 |:-----------:|:-----:|:------:|:--------:|
-|  [SSL4EOS12](https://arxiv.org/abs/2211.07044)  | SSL4EO-S12: A Large-Scale Multi-Modal, Multi-Temporal <br> Dataset for Self-Supervised Learning in Earth Observation      | [link](https://github.com/zhu-xlab/SSL4EO-S12) |          |
-|  Scale-MAE  |       |        |          |
-|  SatlasNet  |       |        |          |
-|     GFM     |       |        |          |
-| SpectralGPT |       |        |          |
-|     DOFA    |       |        |          |
-|    CROMA    |       |        |          |
-|   Prithvi   |       |        |          |
-|  RemoteCLIP |       |        |          |
+|  [SSL4EOS12](https://arxiv.org/abs/2211.07044)  | SSL4EO-S12: A Large-Scale Multi-Modal, Multi-Temporal <br> Dataset for Self-Supervised Learning in Earth Observation      | [link](https://github.com/zhu-xlab/SSL4EO-S12) | DINO, MAE, DATA2VEC, MOCO|
+|  [Scale-MAE](https://arxiv.org/pdf/2212.14532)  | Scale-MAE: Scalable Masked Autoencoders for Self-Supervised Learning on Climate Datasets      | [link](https://github.com/bair-climate-initiative/scale-mae) | Masked Autoencoders, Multiscale|
+|  [SatlasNet](https://arxiv.org/pdf/2211.15660)  | SatlasNet: A Spatio-Temporal Atlas for Global Mapping from Satellite Images | [link](https://github.com/allenai/satlas/tree/main) | Supervised, Multi-temporal |
+|  [GFM](https://arxiv.org/pdf/2404.01260)        | GFM: Generalized Foundation Models for Climate Science | [link](https://github.com/mmendiet/GFM) | |
+|  [SpectralGPT](https://arxiv.org/abs/2311.07113) | SpectralGPT: Generative Pretrained Transformer for Hyperspectral Image Analysis      | [link](https://github.com/danfenghong/IEEE_TPAMI_SpectralGPT) | MAE, Multi-spectral |
+|  [DOFA](https://arxiv.org/pdf/2403.15356)       | DOFA: Dynamic Object Feature Aggregation for Self-Supervised Learning in Satellite Data      | [link](https://github.com/zhu-xlab/DOFA) | MAE, Dynamic bands |
+|  [CROMA](https://arxiv.org/pdf/2311.00566)      | CROMA: Cross-Modal Alignment for Satellite Image Analysis      | [link](https://github.com/antofuller/CROMA) | Contrastive Learning, MAE |
+|  [Prithvi](https://arxiv.org/pdf/2310.18660)    | Prithvi: Foundation Models for Earth Observation Data      | [link](https://github.com/NASA-IMPACT/hls-foundation-os) | MAE, Multi-temporal |
+|  [RemoteCLIP](https://arxiv.org/pdf/2306.11029) | RemoteCLIP: A Contrastive Language-Image Pretraining Model for Remote Sensing      | [link](https://github.com/ChenDelong1999/RemoteCLIP) | Contrastive Learning |
+
 
 And the following **datasets**:
 
