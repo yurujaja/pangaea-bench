@@ -171,7 +171,7 @@ def main():
             project="geofm-bench",
             name=exp_name,
             config=OmegaConf.to_container(cfg, resolve=True),
-            resume='allow',
+            # resume='allow',
         )
 
     # get datasets
