@@ -92,21 +92,21 @@ class Trainer():
             with torch.cuda.amp.autocast(enabled=self.enable_mixed_precision, dtype=self.precision):
                 logits = self.model(image, output_shape=target.shape[-2:])
                 loss = self.compute_loss(logits, target)
-                self.compute_logging_metrics(logits.detach().clone(), target.detach().clone())
 
             self.optimizer.zero_grad()
 
-            self.scaler.scale(loss).backward()
-            self.scaler.step(self.optimizer)
-            self.scaler.update()
+            if not torch.isnan(loss):
+                self.scaler.scale(loss).backward()
+                self.scaler.step(self.optimizer)
+                self.scaler.update()
+                self.training_stats['loss'].update(loss.item())
+                with torch.no_grad():
+                    self.compute_logging_metrics(logits, target)
+                if (batch_idx + 1) % self.args.log_interval == 0:
+                    self.log(batch_idx + 1, epoch)
+            else:
+                self.logger.warning("Skip batch {} because of nan loss".format(batch_idx + 1))
             self.lr_scheduler.step()
-
-            self.training_stats['loss'].update(loss.item())
-            if (batch_idx + 1) % self.args.log_interval == 0:
-                self.log(batch_idx + 1, epoch)
-            self.training_stats['batch_time'].update(time.time() - end_time)
-            #print(self.training_stats['batch_time'].val, self.training_stats['batch_time'].avg)
-            end_time = time.time()
 
             if self.use_wandb and self.rank == 0:
                 self.wandb.log(
@@ -121,6 +121,9 @@ class Trainer():
                     },
                     step=epoch * len(self.train_loader) + batch_idx,
                 )
+
+            self.training_stats['batch_time'].update(time.time() - end_time)
+            end_time = time.time()
 
     def get_checkpoint(self, epoch):
         checkpoint = {
@@ -277,35 +280,8 @@ class RegTrainer(Trainer):
 
     @torch.no_grad()
     def compute_logging_metrics(self, logits, target):
-        # logits = F.interpolate(logits, size=target.shape[1:], mode='bilinear')
-        # print(logits.shape)
-        # print(target.shape)
-
         mse = F.mse_loss(logits.squeeze(dim=1), target)
-
-        # pred = torch.argmax(logits, dim=1, keepdim=True)
-        # target = target.unsqueeze(1)
-        # ignore_mask = target == -1
-        # target[ignore_mask] = 0
-        # ignore_mask = ignore_mask.expand(-1, logits.shape[1], -1, -1)
-
-        # binary_pred = torch.zeros(logits.shape, dtype=bool, device=self.device)
-        # binary_target = torch.zeros(logits.shape, dtype=bool, device=self.device)
-        # binary_pred.scatter_(dim=1, index=pred, src=torch.ones_like(binary_pred))
-        # binary_target.scatter_(dim=1, index=target, src=torch.ones_like(binary_target))
-        # binary_pred[ignore_mask] = 0
-        # binary_target[ignore_mask] = 0
-
-        # intersection = torch.logical_and(binary_pred, binary_target)
-        # union = torch.logical_or(binary_pred, binary_target)
-
-        # acc = intersection.sum() / binary_target.sum() * 100
-        # macc = torch.nanmean(intersection.sum(dim=(0, 2, 3)) / binary_target.sum(dim=(0, 2, 3))) * 100
-        # miou = torch.nanmean(intersection.sum(dim=(0, 2, 3)) / union.sum(dim=(0, 2, 3))) * 100
-
         self.training_metrics['MSE'].update(mse.item())
-        # self.training_metrics['mAcc'].update(macc.item())
-        # self.training_metrics['mIoU'].update(miou.item())
 
 
 

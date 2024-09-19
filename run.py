@@ -241,8 +241,6 @@ def main():
     collate_fn = get_collate_fn(cfg)
     # training
     if not cfg.eval_dir:
-
-
         if 0 < cfg.limited_label < 1:
             indices = random.sample(range(len(train_dataset)), int(len(train_dataset)*cfg.limited_label))
             train_dataset = Subset(train_dataset, indices)
@@ -350,30 +348,30 @@ def main():
         trainer.train()
 
     # Evaluation
+    test_loader = DataLoader(
+        test_dataset,
+        sampler=DistributedSampler(test_dataset),
+        batch_size=cfg.batch_size,
+        num_workers=cfg.num_workers,
+        pin_memory=True,
+        persistent_workers=False,
+        drop_last=False,
+        collate_fn=collate_fn,
+    )
+
+    logger.info("Built {} dataset for evaluation.".format(dataset_name))
+
+    if task_name == "regression":
+        # TODO: This doesn't work atm
+        test_evaluator = RegEvaluator(cfg, test_loader, exp_dir, device)
     else:
-        test_loader = DataLoader(
-            test_dataset,
-            sampler=DistributedSampler(test_dataset),
-            batch_size=cfg.batch_size,
-            num_workers=cfg.num_workers,
-            pin_memory=True,
-            persistent_workers=False,
-            drop_last=False,
-            collate_fn=collate_fn,
-        )
+        test_evaluator = SegEvaluator(cfg, test_loader, exp_dir, device)
 
-        logger.info("Built {} dataset for evaluation.".format(dataset_name))
+    model_ckpt_path = os.path.join(
+        exp_dir, next(f for f in os.listdir(exp_dir) if f.endswith("_best.pth"))
+    )
+    test_evaluator.evaluate(model, "best model", model_ckpt_path)
 
-        if task_name == "regression":
-            # TODO: This doesn't work atm
-            test_evaluator = RegEvaluator(cfg, test_loader, exp_dir, device)
-        else:
-            test_evaluator = SegEvaluator(cfg, test_loader, exp_dir, device)
-
-        model_ckpt_path = os.path.join(
-            exp_dir, next(f for f in os.listdir(exp_dir) if f.endswith("_best.pth"))
-        )
-        test_evaluator.evaluate(model, "best model", model_ckpt_path)
 
     if cfg.use_wandb and cfg.rank == 0:
         wandb.finish()

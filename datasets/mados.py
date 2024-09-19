@@ -23,7 +23,6 @@ import torchvision.transforms as T
 
 from .utils import DownloadProgressBar
 from utils.registry import DATASET_REGISTRY
-import matplotlib.pyplot as plt
 
 
 ###############################################################
