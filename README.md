@@ -12,7 +12,7 @@ For the moment, we support the following **models**:
 
 |             | Paper | GitHub | Keywords |
 |:-----------:|:-----:|:------:|:--------:|
-|  SSL4EOS12  |       |        |          |
+|  [SSL4EOS12](https://arxiv.org/abs/2211.07044)  | SSL4EO-S12: A Large-Scale Multi-Modal, Multi-Temporal <br> Dataset for Self-Supervised Learning in Earth Observation      | [link](https://github.com/zhu-xlab/SSL4EO-S12) |          |
 |  Scale-MAE  |       |        |          |
 |  SatlasNet  |       |        |          |
 |     GFM     |       |        |          |
