@@ -172,9 +172,7 @@ def main():
             name=exp_name,
             config=OmegaConf.to_container(cfg, resolve=True),
             resume='allow',
-            id=cfg.get('wandb_run_id'),
         )
-        cfg['wandb_run_id'] = wandb.run.id
 
     # get datasets
     dataset = DATASET_REGISTRY.get(cfg.dataset.dataset_name)
