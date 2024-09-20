@@ -1,0 +1,8 @@
+train:
+  - _target_: geofm_bench.engine.data_preprocessor.SegPreprocessor
+  - _target_: geofm_bench.engine.data_preprocessor.NormalizeMeanStd
+  - _target_: geofm_bench.engine.data_preprocessor.ResizeToEncoder
+test:
+  - _target_: geofm_bench.engine.data_preprocessor.SegPreprocessor
+  - _target_: geofm_bench.engine.data_preprocessor.NormalizeMeanStd
+  - _target_: geofm_bench.engine.data_preprocessor.ResizeToEncoder
