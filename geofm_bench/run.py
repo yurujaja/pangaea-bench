@@ -187,13 +187,12 @@ def main(cfg: DictConfig) -> None:
             collate_fn=collate_fn,
         )
 
-        # TODO: add val_evaluator
+        # TODO: add val_evaluator in configs
         trainer: Trainer = instantiate(
             cfg.trainer,
             model=model,
             train_loader=train_loader,
             val_loader=val_loader,
-            val_evaluator=val_evaluator,
             exp_dir=exp_dir,
             device=device,
         )

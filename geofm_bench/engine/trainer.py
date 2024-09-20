@@ -6,7 +6,6 @@ import time
 
 import torch
 import torch.nn as nn
-from torch.cuda.amp import GradScaler
 from torch.nn import functional as F
 from torch.optim.lr_scheduler import LRScheduler
 from torch.optim.optimizer import Optimizer
@@ -19,7 +18,6 @@ class Trainer:
         self,
         model: nn.Module,
         train_loader: DataLoader,
-        val_loader: DataLoader,
         criterion: nn.Module,
         optimizer: Optimizer,
         lr_scheduler: LRScheduler,
@@ -33,8 +31,6 @@ class Trainer:
         eval_interval: int,
         log_interval: int,
     ):
-        # torch.set_num_threads(1)
-
         self.rank = int(os.environ["RANK"])
         self.criterion = criterion
         self.model = model
@@ -43,7 +39,15 @@ class Trainer:
         self.optimizer = optimizer
         self.lr_scheduler = lr_scheduler
         self.evaluator = evaluator
+        self.n_epochs = n_epochs
         self.logger = logging.getLogger()
+        self.exp_dir = exp_dir
+        self.device = device
+        self.use_wandb = use_wandb
+        self.ckpt_interval = ckpt_interval
+        self.eval_interval = eval_interval
+        self.log_interval = log_interval
+
         self.training_stats = {
             name: RunningAverageMeter(length=self.batch_per_epoch)
             for name in ["loss", "data_time", "batch_time", "eval_time"]
@@ -52,17 +56,13 @@ class Trainer:
         self.best_ckpt = None
         self.best_metric_key = None
         self.best_metric_comp = operator.gt
-        self.exp_dir = exp_dir
-        self.device = device
 
         self.enable_mixed_precision = precision != "fp32"
         self.precision = torch.float16 if (precision == "fp16") else torch.bfloat16
-        self.scaler = GradScaler(enabled=self.enable_mixed_precision)
+        self.scaler = torch.GradScaler("cuda", enabled=self.enable_mixed_precision)
 
         self.start_epoch = 0
-        self.epochs = args.epochs
 
-        self.use_wandb = args.use_wandb
         if self.use_wandb:
             import wandb
 
@@ -70,9 +70,9 @@ class Trainer:
 
     def train(self):
         # end_time = time.time()
-        for epoch in range(self.start_epoch, self.epochs):
+        for epoch in range(self.start_epoch, self.n_epochs):
             # train the network for one epoch
-            if epoch % self.args.eval_interval == 0:
+            if epoch % self.eval_interval == 0:
                 metrics, used_time = self.evaluator(self.model, f"epoch {epoch}")
                 self.training_stats["eval_time"].update(used_time)
                 self.set_best_checkpoint(metrics, epoch)
@@ -82,15 +82,15 @@ class Trainer:
             self.t = time.time()
             self.train_loader.sampler.set_epoch(epoch)
             self.train_one_epoch(epoch)
-            if epoch % self.args.ckpt_interval == 0 and epoch != self.start_epoch:
+            if epoch % self.ckpt_interval == 0 and epoch != self.start_epoch:
                 self.save_model(epoch)
 
         metrics, used_time = self.evaluator(self.model, "final model")
         self.training_stats["eval_time"].update(used_time)
-        self.set_best_checkpoint(metrics, self.epochs)
+        self.set_best_checkpoint(metrics, self.n_epochs)
 
         # save last model
-        self.save_model(self.epochs, is_final=True)
+        self.save_model(self.n_epochs, is_final=True)
 
         # save best model
         if self.best_ckpt:
@@ -108,8 +108,8 @@ class Trainer:
             target = target.to(self.device)
             self.training_stats["data_time"].update(time.time() - end_time)
 
-            with torch.cuda.amp.autocast(
-                enabled=self.enable_mixed_precision, dtype=self.precision
+            with torch.autocast(
+                "cuda", enabled=self.enable_mixed_precision, dtype=self.precision
             ):
                 logits = self.model(image, output_shape=target.shape[-2:])
                 loss = self.compute_loss(logits, target)
@@ -125,7 +125,7 @@ class Trainer:
             self.lr_scheduler.step()
 
             self.training_stats["loss"].update(loss.item())
-            if (batch_idx + 1) % self.args.log_interval == 0:
+            if (batch_idx + 1) % self.log_interval == 0:
                 self.log(batch_idx + 1, epoch)
             self.training_stats["batch_time"].update(time.time() - end_time)
             # print(self.training_stats['batch_time'].val, self.training_stats['batch_time'].avg)
@@ -152,7 +152,6 @@ class Trainer:
             "lr_scheduler": self.lr_scheduler.state_dict(),
             "scaler": self.scaler.state_dict(),
             "epoch": epoch,
-            "args": self.args,
         }
         return checkpoint
 
@@ -180,11 +179,11 @@ class Trainer:
             self.start_epoch = 0
 
         self.logger.info(
-            f"Loaded model from {self.args.resume_path}. Resume training from epoch {self.start_epoch}"
+            f"Loaded model from {resume_path}. Resume training from epoch {self.start_epoch}"
         )
 
-    def compute_loss(self, logits, target):
-        pass
+    def compute_loss(self, logits: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        raise NotImplementedError
 
     def set_best_checkpoint(self, eval_metrics, epoch):
         if self.best_metric_comp(eval_metrics[self.best_metric_key], self.best_metric):
@@ -193,17 +192,17 @@ class Trainer:
 
     @torch.no_grad()
     def compute_logging_metrics(self, logits, target):
-        pass
+        raise NotImplementedError
 
     def log(self, batch_idx, epoch):
         # TO DO: upload to wandb
         left_batch_this_epoch = self.batch_per_epoch - batch_idx
         left_batch_all = (
-            self.batch_per_epoch * (self.epochs - epoch - 1) + left_batch_this_epoch
+            self.batch_per_epoch * (self.n_epochs - epoch - 1) + left_batch_this_epoch
         )
         left_eval_times = (
-            self.epochs + 0.5
-        ) // self.args.eval_interval - self.training_stats["eval_time"].count
+            self.n_epochs + 0.5
+        ) // self.eval_interval - self.training_stats["eval_time"].count
         left_time_this_epoch = sec_to_hm(
             left_batch_this_epoch * self.training_stats["batch_time"].avg
         )
