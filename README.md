@@ -158,11 +158,12 @@ Some features are under construction:
 
 A pre-print is coming soon... Stay tuned!
 
-| Encoder | Dataset      | Epochs | mIoU   |
-|---------|--------------|--------|--------|
-| Prithvi | MADOS        | 80     | 53.455 |
-| Prithvi | HLSBurnScars | 80     | 86.208 |
-| Prithvi | Sen1Floods11 | 80     | 87.217 |
+| Encoder | Dataset       | Epochs | mIoU   |
+|---------|---------------|--------|--------|
+| Prithvi | MADOS         | 80     | 53.455 |
+| Prithvi | HLSBurnScars  | 80     | 86.208 |
+| Prithvi | Sen1Floods11  | 80     | 87.217 |
+| Prithvi | AI4SmallFarms | 80     | 33.796 |
 
 Please note: #add different conditions 
 
