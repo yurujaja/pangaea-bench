@@ -12,12 +12,6 @@ ckpt_interval: 10
 eval_interval: 10
 log_interval: 5
 
-# DISTRIBUTED:
-rank: 0
-local_rank: 0
-world_size: 1
-local_world_size: 1
-
 
 # EXPERIMENT
 finetuning: false
@@ -31,20 +25,8 @@ n_epochs: 80
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-#
-# defaults:
-#   - dataset: ???
-#   - encoder: ???
-#   - segmentor: ???
-#   - _self_ 
+defaults:
+  - dataset: ???
+  - foundation_model: ???
+  - adaptor: ???
+  - _self_ 
