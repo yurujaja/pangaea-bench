@@ -1,8 +1,6 @@
 train: true
 work_dir: ""
-use_wandb: false
 seed: 234
-
 
 # 
 # TRAINING
@@ -18,8 +16,10 @@ n_epochs: 80
 
 
 defaults:
+  - trainer: ???
   - dataset: ???
   - foundation_model: ???
   - adaptor: ???
   - augmentation: ???
+  - criterion: ???
   - _self_ 
