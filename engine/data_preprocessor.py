@@ -400,8 +400,8 @@ class NormalizeMinMax(BaseAugment):
         self.normalizers = {}
         self.data_min_tensors = {}
         self.data_max_tensors = {}
-        self.min = local_cfg.min
-        self.max = local_cfg.max
+#         self.min = local_cfg.min
+#         self.max = local_cfg.max
         for modality in self.encoder_cfg.input_bands:
             self.data_min_tensors[modality] = torch.tensor(
                 self.data_min[modality]
@@ -414,11 +414,12 @@ class NormalizeMinMax(BaseAugment):
         data = self.dataset[index]
         for modality in self.encoder_cfg.input_bands:
             if modality not in self.ignore_modalities:
-                data["image"][modality] = (
-                    (data["image"][modality] - self.data_min_tensors[modality])
-                    * (self.max - self.min)
-                    - self.min
-                ) / self.data_max_tensors[modality]
+                data["image"][modality] = (data["image"][modality] - self.data_min_tensors[modality])/ (self.data_max_tensors[modality]- self.data_min_tensors[modality])
+#                 data["image"][modality] = (
+#                     (data["image"][modality] - self.data_min_tensors[modality])
+#                     * (self.max - self.min)
+#                     - self.min
+#                 ) / self.data_max_tensors[modality]
         return data
 
 
