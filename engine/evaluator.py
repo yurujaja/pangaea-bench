@@ -187,24 +187,24 @@ class RegEvaluator(Evaluator):
         super().__init__(args, val_loader, exp_dir, device)
 
     @torch.no_grad()
-    def evaluate(self, model, model_name="model"):
-        # TODO: Rework this to allow evaluation only runs
-        # Move common parts to parent class, and get loss function from the registry.
+    def evaluate(self, model, model_name='model'):
         t = time.time()
 
         model.eval()
 
-        tag = f"Evaluating {model_name} on {self.split} set"
+        tag = f'Evaluating {model_name} on {self.split} set'
+        # confusion_matrix = torch.zeros((self.num_classes, self.num_classes), device=self.device)
 
         for batch_idx, data in enumerate(tqdm(self.val_loader, desc=tag)):
-            image, target = data["image"], data["target"]
+            image, target = data['image'], data['target']
             image = {k: v.to(self.device) for k, v in image.items()}
             target = target.to(self.device)
 
             logits = model(image, output_shape=target.shape[-2:]).squeeze(dim=1)
             mse = F.mse_loss(logits, target)
 
-        metrics = {"MSE": mse.item(), "RMSE": torch.sqrt(mse).item()}
+        # torch.distributed.all_reduce(confusion_matrix, op=torch.distributed.ReduceOp.SUM)
+        metrics = {"MSE" : mse.item(), "RMSE" : torch.sqrt(mse).item()}
         self.log_metrics(metrics)
 
         used_time = time.time() - t
@@ -212,18 +212,14 @@ class RegEvaluator(Evaluator):
         return metrics, used_time
 
     @torch.no_grad()
-    def __call__(self, model, model_name="model"):
+    def __call__(self, model, model_name='model'):
         return self.evaluate(model, model_name)
 
     def log_metrics(self, metrics):
         header = "------- MSE and RMSE --------\n"
-        mse = (
-            "-------------------\n"
-            + "MSE \t{:>7}".format("%.3f" % metrics["MSE"])
-            + "\n"
-        )
-        rmse = "-------------------\n" + "RMSE \t{:>7}".format("%.3f" % metrics["RMSE"])
-        self.logger.info(header + mse + rmse)
+        mse = "-------------------\n" + 'MSE \t{:>7}'.format('%.3f' % metrics['MSE'])+'\n'
+        rmse = "-------------------\n" + 'RMSE \t{:>7}'.format('%.3f' % metrics['RMSE'])
+        self.logger.info(header+mse+rmse)
 
         if self.args.use_wandb and self.args.rank == 0:
             self.wandb.log({"val_MSE": metrics["MSE"], "val_RMSE": metrics["RMSE"]})
