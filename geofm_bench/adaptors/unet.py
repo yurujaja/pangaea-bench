@@ -1,32 +1,31 @@
 # -*- coding: utf-8 -*-
 
-import torch.nn.functional as F
-import torch
-import torch.nn as nn
-
 from collections import OrderedDict
 from typing import Sequence
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 from utils.registry import SEGMENTOR_REGISTRY
 
 
 @SEGMENTOR_REGISTRY.register()
 class UNet(nn.Module):
-    """
-    """
+    """ """
 
     def __init__(self, args, cfg, encoder):
         super().__init__()
 
         # self.frozen_backbone = frozen_backbone
 
-        self.model_name = 'UNet'
+        self.model_name = "UNet"
         self.encoder = encoder
         self.finetune = args.finetune
         assert self.finetune  # the UNet encoder should always be trained
 
         self.align_corners = False
 
-        self.num_classes = 1 if cfg['binary'] else cfg['num_classes']
+        self.num_classes = 1 if cfg["binary"] else cfg["num_classes"]
         self.topology = encoder.topology
 
         self.decoder = Decoder(self.topology)
@@ -42,48 +41,47 @@ class UNet(nn.Module):
 
 
 class SiamUNet(nn.Module):
-    """
-    """
+    """ """
 
     def __init__(self, args, cfg, encoder, strategy):
         super().__init__()
 
         # self.frozen_backbone = frozen_backbone
-        self.model_name = 'UNetCD'
+        self.model_name = "UNetCD"
         self.encoder = encoder
         self.finetune = args.finetune
         assert self.finetune  # the UNet encoder should always be trained
 
         self.align_corners = False
 
-        self.num_classes = 1 if cfg['binary'] else cfg['num_classes']
+        self.num_classes = 1 if cfg["binary"] else cfg["num_classes"]
         self.strategy = strategy
-        if self.strategy == 'diff':
+        if self.strategy == "diff":
             self.topology = encoder.topology
-        elif self.strategy == 'concat':
+        elif self.strategy == "concat":
             self.topology = [2 * features for features in encoder.topology]
         else:
             raise NotImplementedError
-        
+
         self.decoder = Decoder(self.topology)
         self.conv_seg = OutConv(self.topology[0], self.num_classes)
 
     def forward(self, img, output_shape=None):
         """Forward function."""
-        
-        img1 = {k: v[:,:,0,:,:] for k, v in img.items()}
-        img2 = {k: v[:,:,1,:,:] for k, v in img.items()}
+
+        img1 = {k: v[:, :, 0, :, :] for k, v in img.items()}
+        img2 = {k: v[:, :, 1, :, :] for k, v in img.items()}
 
         feat1 = self.encoder(img1)
-        feat2= self.encoder(img2)
- 
-        if self.strategy == 'diff':
+        feat2 = self.encoder(img2)
+
+        if self.strategy == "diff":
             feat = [f2 - f1 for f1, f2 in zip(feat1, feat2)]
-        elif self.strategy == 'concat':
+        elif self.strategy == "concat":
             feat = [torch.concat((f1, f2), dim=1) for f1, f2 in zip(feat1, feat2)]
         else:
             raise NotImplementedError
-        
+
         feat = self.decoder(feat)
         output = self.conv_seg(feat)
         return output
@@ -93,14 +91,14 @@ class SiamUNet(nn.Module):
 class SiamDiffUNet(SiamUNet):
     # Siamese UNet for change detection with feature differencing strategy
     def __init__(self, args, cfg, encoder):
-        super().__init__(args, cfg, encoder, 'diff')
+        super().__init__(args, cfg, encoder, "diff")
 
 
 @SEGMENTOR_REGISTRY.register()
 class SiamConcUNet(SiamUNet):
     # Siamese UNet for change detection with feature concatenation strategy
     def __init__(self, args, cfg, encoder):
-        super().__init__(args, cfg, encoder, 'concat')
+        super().__init__(args, cfg, encoder, "concat")
 
 
 class Decoder(nn.Module):
@@ -116,7 +114,9 @@ class Decoder(nn.Module):
 
         for idx in range(n_layers):
             is_not_last_layer = idx != n_layers - 1
-            out_dim = topology[idx + 1] if is_not_last_layer else topology[idx]  # last layer
+            out_dim = (
+                topology[idx + 1] if is_not_last_layer else topology[idx]
+            )  # last layer
             up_topo.append(out_dim)
 
         # Upward layers
@@ -127,12 +127,11 @@ class Decoder(nn.Module):
             in_dim = up_topo[x1_idx] * 2
             out_dim = up_topo[x2_idx]
             layer = Up(in_dim, out_dim, DoubleConv)
-            up_dict[f'up{idx + 1}'] = layer
+            up_dict[f"up{idx + 1}"] = layer
 
         self.up_seq = nn.ModuleDict(up_dict)
 
     def forward(self, features: list) -> torch.Tensor:
-
         x1 = features.pop(0)
         for idx, layer in enumerate(self.up_seq.values()):
             x2 = features[idx]
@@ -142,7 +141,7 @@ class Decoder(nn.Module):
 
 
 class DoubleConv(nn.Module):
-    '''(conv => BN => ReLU) * 2'''
+    """(conv => BN => ReLU) * 2"""
 
     def __init__(self, in_ch, out_ch):
         super(DoubleConv, self).__init__()
@@ -152,7 +151,7 @@ class DoubleConv(nn.Module):
             nn.ReLU(inplace=True),
             nn.Conv2d(out_ch, out_ch, 3, padding=1),
             nn.BatchNorm2d(out_ch),
-            nn.ReLU(inplace=True)
+            nn.ReLU(inplace=True),
         )
 
     def forward(self, x):
@@ -193,3 +192,4 @@ class OutConv(nn.Module):
     def forward(self, x):
         x = self.conv(x)
         return x
+
