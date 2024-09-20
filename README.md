@@ -31,7 +31,7 @@ And the following **datasets**:
 |        MADOS        |          |        |      |         | Global   |
 |        PASTIS       |          |        |      |         | France   |
 |     Sen1Floods11    |          |        |      |         | Nigeria, Tanzania, Mozambique, Zambia, Iran, Australia |
-|        xView2       |          |        |      |         | Global   |
+|        [xView2](https://openaccess.thecvf.com/content_CVPRW_2019/html/cv4gc/Gupta_Creating_xBD_A_Dataset_for_Assessing_Building_Damage_from_Satellite_CVPRW_2019_paper.html)       | [link](https://xview2.org/dataset) | HADR | Semantic Segmentation | Maxar | Global   |
 | Five Billion Pixels |          |        |      |         | China    |
 |   DynamicEarthNet   |          |        |      |         | Global   |
 |   [CropTypeMapping](https://openaccess.thecvf.com/content_CVPRW_2019/papers/cv4gc/Rustowicz_Semantic_Segmentation_of_Crop_Type_in_Africa_A_Novel_Dataset_CVPRW_2019_paper.pdf) |   [link](https://sustainlab-group.github.io/sustainbench/docs/datasets/sdg2/crop_type_mapping_ghana-ss.html#download) | Agriculture |Semantic Segmentation |S1,S2,Planet|South Sudan|
@@ -120,7 +120,13 @@ torchrun --nnodes=1 --nproc_per_node=1 run.py  \
 
 #### Change Detection
 ```
-torchrun ...
+torchrun --nnodes=1 --nproc_per_node=1 run.py  \
+--config configs/run/default.yaml  \
+--encoder_config configs/foundation_models/prithvi.yaml  \
+--dataset_config configs/datasets/xview2.yaml   \
+--segmentor_config configs/segmentors/siamdiffupernet.yaml \
+--augmentation_config configs/augmentations/segmentation_oversampling.yaml  \
+--num_workers 4 --eval_interval 1 --use_wandb
 ```
 #### Single Temporal Regression
 ```
