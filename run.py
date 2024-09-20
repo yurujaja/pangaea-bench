@@ -149,6 +149,16 @@ def main():
         exp_dir.mkdir(parents=True, exist_ok=True)
         logger_path = exp_dir / "train.log"
 
+        if cfg.use_wandb and cfg.rank == 0:
+            import wandb
+            # initialize new wandb run
+            wandb.init(
+                project="geofm-bench",
+                name=exp_name,
+                config=OmegaConf.to_container(cfg, resolve=True),
+            )
+            cfg['wandb_run_id'] = wandb.run.id
+
         config_log_dir = exp_dir / "configs"
         config_log_dir.mkdir(exist_ok=True)
         OmegaConf.save(cfg, config_log_dir / "config.yaml")
@@ -157,24 +167,21 @@ def main():
         exp_name = exp_dir.name
         logger_path = exp_dir / "test.log"
 
+        if cfg.use_wandb and cfg.rank == 0:
+            import wandb
+            # resume wandb run
+            wandb.init(
+                project="geofm-bench",
+                name=exp_name,
+                id=cfg.get('wandb_run_id'),
+                resume='allow',
+            )
+
     logger = init_logger(logger_path, rank=cfg.rank)
     logger.info("============ Initialized logger ============")
     logger.info(pprint.pformat(OmegaConf.to_container(cfg), compact=True).strip("{}"))
     logger.info("The experiment is stored in %s\n" % exp_dir)
     logger.info(f"Device used: {device}")
-
-    # init wandb
-    if cfg.use_wandb and cfg.rank == 0:
-        import wandb
-
-        wandb.init(
-            project="geofm-bench",
-            name=exp_name,
-            config=OmegaConf.to_container(cfg, resolve=True),
-            resume='allow',
-            id=cfg.get('wandb_run_id'),
-        )
-        cfg['wandb_run_id'] = wandb.run.id
 
     # get datasets
     dataset = DATASET_REGISTRY.get(cfg.dataset.dataset_name)
@@ -241,8 +248,6 @@ def main():
     collate_fn = get_collate_fn(cfg)
     # training
     if not cfg.eval_dir:
-
-
         if 0 < cfg.limited_label < 1:
             indices = random.sample(range(len(train_dataset)), int(len(train_dataset)*cfg.limited_label))
             train_dataset = Subset(train_dataset, indices)
@@ -350,30 +355,30 @@ def main():
         trainer.train()
 
     # Evaluation
+    test_loader = DataLoader(
+        test_dataset,
+        sampler=DistributedSampler(test_dataset),
+        batch_size=cfg.batch_size,
+        num_workers=cfg.num_workers,
+        pin_memory=True,
+        persistent_workers=False,
+        drop_last=False,
+        collate_fn=collate_fn,
+    )
+
+    logger.info("Built {} dataset for evaluation.".format(dataset_name))
+
+    if task_name == "regression":
+        # TODO: This doesn't work atm
+        test_evaluator = RegEvaluator(cfg, test_loader, exp_dir, device)
     else:
-        test_loader = DataLoader(
-            test_dataset,
-            sampler=DistributedSampler(test_dataset),
-            batch_size=cfg.batch_size,
-            num_workers=cfg.num_workers,
-            pin_memory=True,
-            persistent_workers=False,
-            drop_last=False,
-            collate_fn=collate_fn,
-        )
+        test_evaluator = SegEvaluator(cfg, test_loader, exp_dir, device)
 
-        logger.info("Built {} dataset for evaluation.".format(dataset_name))
+    model_ckpt_path = os.path.join(
+        exp_dir, next(f for f in os.listdir(exp_dir) if f.endswith("_best.pth"))
+    )
+    test_evaluator.evaluate(model, "best model", model_ckpt_path)
 
-        if task_name == "regression":
-            # TODO: This doesn't work atm
-            test_evaluator = RegEvaluator(cfg, test_loader, exp_dir, device)
-        else:
-            test_evaluator = SegEvaluator(cfg, test_loader, exp_dir, device)
-
-        model_ckpt_path = os.path.join(
-            exp_dir, next(f for f in os.listdir(exp_dir) if f.endswith("_best.pth"))
-        )
-        test_evaluator.evaluate(model, "best model", model_ckpt_path)
 
     if cfg.use_wandb and cfg.rank == 0:
         wandb.finish()

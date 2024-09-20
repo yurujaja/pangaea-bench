@@ -1,10 +1,9 @@
 dataset_name: FiveBillionPixels
-root_path: ./data/FiveBillionPixels/cropped
+root_path: /geomatics/gpuserver-1/vmarsocci/FiveBillionPixels/dom_adapt
 download_url: False 
 auto_download: False
-use_cmyk: False
 
-img_size: 520
+img_size: 1000
 multi_temporal: False
 multi_modal: False
 
@@ -38,50 +37,50 @@ classes:
 - railway station
 - airport
 distribution:
-  - 0.
-  - 0.0368
-  - 0.0253
-  - 0.3567
-  - 0.0752
-  - 0.0095
-  - 0.0694
-  - 0.0096
-  - 0.0004
-  - 0.0055
-  - 0.0025
-  - 0.0568
-  - 0.0548
-  - 0.1396
-  - 0.0102
-  - 0.0129
-  - 0.0004
-  - 0.0456
-  - 0.0447
-  - 0.0003
-  - 0.0002
-  - 0.0383
-  - 0.0025
-  - 0.0007
-  - 0.0011
+  - 0.88889
+  - 0.11111
+  - 0.88889
+  - 0.11111
+  - 0.88889
+  - 0.11111
+  - 0.88889
+  - 0.11111
+  - 0.88889
+  - 0.11111
+  - 0.88889
+  - 0.11111
+  - 0.88889
+  - 0.11111
+  - 0.88889
+  - 0.11111
+  - 0.11111
+  - 0.88889
+  - 0.11111
+  - 0.88889
+  - 0.11111
+  - 0.88889
+  - 0.11111
+  - 0.88889
+  - 0.11111
 
 bands:
   optical:
-    - B8
     - B4
     - B3
     - B2
+    - B8
 data_mean:
   optical:
-    - 92.6
     - 124.3
     - 94.2
     - 98.
+    - 92.6
 data_std:
   optical:
-    - 44.5
     - 51.
     - 50.
     - 47.1
+    - 44.5
 data_min:
   optical: [0.0000, 0.0000, 0.0000, 0.0000]
 data_max:

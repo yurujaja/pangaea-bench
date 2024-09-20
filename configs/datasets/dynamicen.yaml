@@ -4,7 +4,7 @@ download_url: None
 auto_download: False
 
 img_size: 1024
-multi_temporal: False
+multi_temporal: 6
 multi_modal: False
 
 # classes

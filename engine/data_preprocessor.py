@@ -1,17 +1,15 @@
 import random
-
 import math
 
 import torch
 import torch.nn.functional as F
 import torchvision.transforms as T
+import torchvision.transforms.functional as TF
 from typing import Callable
 
 import numpy as np
 import logging
-
 import omegaconf
-
 
 from utils.registry import AUGMENTER_REGISTRY
 
@@ -493,18 +491,14 @@ class Resize(BaseAugment):
         data = self.dataset[index]
         for k, v in data["image"].items():
             if k not in self.ignore_modalities and k in self.encoder_cfg.input_bands:
-                data["image"][k] = T.Resize(self.size)(v)
+                data["image"][k] = T.resize(v, self.size, interpolation=T.InterpolationMode.BILINEAR, antialias=True)
 
         if data["target"].ndim == 2:
             data["target"] = data["target"].unsqueeze(0)
-            data["target"] = T.Resize(
-                self.size, interpolation=T.InterpolationMode.NEAREST
-            )(data["target"])
+            data["target"] = T.resize(data["target"], self.size, interpolation=T.InterpolationMode.NEAREST)
             data["target"] = data["target"].squeeze(0)
         else:
-            data["target"] = T.Resize(
-                self.size, interpolation=T.InterpolationMode.NEAREST
-            )(data["target"])
+            data["target"] = T.resize(data["target"], self.size, interpolation=T.InterpolationMode.NEAREST)
 
         return data
 

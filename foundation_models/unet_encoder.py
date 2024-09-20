@@ -21,7 +21,7 @@ class UNet_Encoder(Base_Encoder):
         self.encoder = Encoder(self.topology)
 
     def forward(self, image):
-        x = image['optical'].squeeze()
+        x = image['optical']
         feat = self.in_conv(x)
         output = self.encoder(feat)
         return output
