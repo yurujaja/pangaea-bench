@@ -12,8 +12,8 @@ import torchvision.transforms as T
 
 def get_collate_fn(modalities: list[str]) -> Callable:
     def collate_fn(
-        batch: dict[dict[str, torch.Tensor]],
-    ) -> dict[dict[str, torch.Tensor]]:
+        batch: dict[str, dict[str, torch.Tensor] | torch.Tensor],
+    ) -> dict[str, dict[str, torch.Tensor] | torch.Tensor]:
         """Collate function for torch DataLoader
         args:
             batch: list of dictionaries with keys 'image' and 'target'.
