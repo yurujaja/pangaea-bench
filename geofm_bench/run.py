@@ -1,51 +1,61 @@
+import os as os
+import time
+
 import hydra
-from omegaconf import DictConfig
+import torch
+from hydra.conf import HydraConf
+from hydra.core.hydra_config import HydraConfig
+from omegaconf import DictConfig, OmegaConf
 
 from geofm_bench.utils.utils import fix_seed
+
+
+def get_exp_name(hydra_config: HydraConf) -> str:
+    choices = OmegaConf.to_container(hydra_config.runtime.choices)
+    timestamp = time.strftime("%Y%m%d_%H%M%S", time.localtime())
+    fm = choices["foundation_model"]
+    adaptor = choices["adaptor"]
+    ds = choices["dataset"]
+    return f"{timestamp}-{fm}-{adaptor}-{ds}"
 
 
 @hydra.main(version_base=None, config_path="../configs", config_name="train")
 def main(cfg: DictConfig) -> None:
     print(cfg)
+    exp_name = get_exp_name(HydraConfig.get())
+    print(exp_name)
 
     # fix all random seeds
     fix_seed(cfg.seed)
 
     # distributed training variables
-    cfg.rank = int(os.environ["RANK"])
-    cfg.local_rank = int(os.environ["LOCAL_RANK"])
-    cfg.world_size = int(os.environ["WORLD_SIZE"])
-    cfg.local_world_size = int(os.environ["LOCAL_WORLD_SIZE"])
-    device = torch.device("cuda", cfg.local_rank)
+    rank = int(os.environ["RANK"])
+    local_rank = int(os.environ["LOCAL_RANK"])
+    world_size = int(os.environ["WORLD_SIZE"])
+    local_world_size = int(os.environ["LOCAL_WORLD_SIZE"])
+    device = torch.device("cuda", local_rank)
+
+    torch.cuda.set_device(device)
+    torch.distributed.init_process_group(backend="nccl")
+    #
+    # if not cfg.eval_dir:
+    #     exp_name = (
+    #         f"{timestamp}-{encoder_name}-{segmentor_name}-{dataset_name}-{task_name}"
+    #     )
+    #     exp_dir = pathlib.Path(cfg.work_dir) / exp_name
+    #     exp_dir.mkdir(parents=True, exist_ok=True)
+    #     logger_path = exp_dir / "train.log"
+    #
+    #     config_log_dir = exp_dir / "configs"
+    #     config_log_dir.mkdir(exist_ok=True)
+    #     OmegaConf.save(cfg, config_log_dir / "config.yaml")
+    # else:
+    #     exp_dir = pathlib.Path(cfg.eval_dir)
+    #     exp_name = exp_dir.name
+    #     logger_path = exp_dir / "test.log"
+    #
 
 
-#     torch.cuda.set_device(device)
-#     torch.distributed.init_process_group(backend="nccl")
-#
-#     encoder_name = cfg.encoder.encoder_name
-#     dataset_name = cfg.dataset.dataset_name
-#     task_name = cfg.segmentor.task_name
-#     segmentor_name = cfg.segmentor.segmentor_name
-#
-#     # setup a work directory and logger
-#     timestamp = time.strftime("%Y%m%d_%H%M%S", time.localtime())
-#
-#     if not cfg.eval_dir:
-#         exp_name = (
-#             f"{timestamp}-{encoder_name}-{segmentor_name}-{dataset_name}-{task_name}"
-#         )
-#         exp_dir = pathlib.Path(cfg.work_dir) / exp_name
-#         exp_dir.mkdir(parents=True, exist_ok=True)
-#         logger_path = exp_dir / "train.log"
-#
-#         config_log_dir = exp_dir / "configs"
-#         config_log_dir.mkdir(exist_ok=True)
-#         OmegaConf.save(cfg, config_log_dir / "config.yaml")
-#     else:
-#         exp_dir = pathlib.Path(cfg.eval_dir)
-#         exp_name = exp_dir.name
-#         logger_path = exp_dir / "test.log"
-#
 #     logger = init_logger(logger_path, rank=cfg.rank)
 #     logger.info("============ Initialized logger ============")
 #     logger.info(pprint.pformat(OmegaConf.to_container(cfg), compact=True).strip("{}"))
