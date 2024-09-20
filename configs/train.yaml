@@ -16,13 +16,9 @@ log_interval: 5
 
 # EXPERIMENT
 finetuning: false
-ckpt_path: null
+ckpt_dir: null
 limited_label: 1
 n_epochs: 80
-
-
-
-
 
 
 
