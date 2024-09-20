@@ -1,4 +1,6 @@
 import os as os
+import pathlib
+import pprint
 import time
 
 import hydra
@@ -7,6 +9,7 @@ from hydra.conf import HydraConf
 from hydra.core.hydra_config import HydraConfig
 from omegaconf import DictConfig, OmegaConf
 
+from geofm_bench.utils.logger import init_logger
 from geofm_bench.utils.utils import fix_seed
 
 
@@ -37,45 +40,43 @@ def main(cfg: DictConfig) -> None:
 
     torch.cuda.set_device(device)
     torch.distributed.init_process_group(backend="nccl")
-    #
-    # if not cfg.eval_dir:
-    #     exp_name = (
-    #         f"{timestamp}-{encoder_name}-{segmentor_name}-{dataset_name}-{task_name}"
-    #     )
-    #     exp_dir = pathlib.Path(cfg.work_dir) / exp_name
-    #     exp_dir.mkdir(parents=True, exist_ok=True)
-    #     logger_path = exp_dir / "train.log"
-    #
-    #     config_log_dir = exp_dir / "configs"
-    #     config_log_dir.mkdir(exist_ok=True)
-    #     OmegaConf.save(cfg, config_log_dir / "config.yaml")
-    # else:
-    #     exp_dir = pathlib.Path(cfg.eval_dir)
-    #     exp_name = exp_dir.name
-    #     logger_path = exp_dir / "test.log"
-    #
+
+    if cfg.train:
+        exp_dir = pathlib.Path(cfg.work_dir) / exp_name
+        exp_dir.mkdir(parents=True, exist_ok=True)
+        logger_path = exp_dir / "train.log"
+        config_log_dir = exp_dir / "configs"
+        config_log_dir.mkdir(exist_ok=True)
+        OmegaConf.save(cfg, config_log_dir / "config.yaml")
+    else:
+        exp_dir = pathlib.Path(cfg.ckpt_dir)
+        exp_name = exp_dir.name
+        logger_path = exp_dir / "test.log"
+
+    logger = init_logger(logger_path, rank=rank)
+    logger.info("============ Initialized logger ============")
+    logger.info(pprint.pformat(OmegaConf.to_container(cfg), compact=True).strip("{}"))
+    logger.info("The experiment is stored in %s\n" % exp_dir)
+    logger.info(f"Device used: {device}")
+
+    # init wandb
+    if cfg.use_wandb and rank == 0:
+        import wandb
+
+        wandb_cfg = OmegaConf.to_container(cfg, resolve=True)
+        wandb.init(
+            project="geofm-bench",
+            name=exp_name,
+            config=wandb_cfg,
+            resume="allow",
+            id=cfg.get("wandb_run_id"),
+        )
+        # TODO: add wandb_run_id to the saved config
+        # cfg["wandb_run_id"] = wandb.run.id
+
+    # get datasets
 
 
-#     logger = init_logger(logger_path, rank=cfg.rank)
-#     logger.info("============ Initialized logger ============")
-#     logger.info(pprint.pformat(OmegaConf.to_container(cfg), compact=True).strip("{}"))
-#     logger.info("The experiment is stored in %s\n" % exp_dir)
-#     logger.info(f"Device used: {device}")
-#
-#     # init wandb
-#     if cfg.use_wandb and cfg.rank == 0:
-#         import wandb
-#
-#         wandb.init(
-#             project="geofm-bench",
-#             name=exp_name,
-#             config=OmegaConf.to_container(cfg, resolve=True),
-#             resume="allow",
-#             id=cfg.get("wandb_run_id"),
-#         )
-#         cfg["wandb_run_id"] = wandb.run.id
-#
-#     # get datasets
 #     dataset = DATASET_REGISTRY.get(cfg.dataset.dataset_name)
 #     dataset.download(cfg.dataset, silent=False)
 #     train_dataset, val_dataset, test_dataset = dataset.get_splits(cfg.dataset)
