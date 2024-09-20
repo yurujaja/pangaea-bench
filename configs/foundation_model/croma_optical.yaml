@@ -1,0 +1,34 @@
+_target_: geofm_bench.foundation_models.croma_encoder.CROMA_OPTICAL_Encoder
+foundation_model_name: CROMA_OPTICAL_large
+encoder_weights: ./pretrained_models/CROMA_large.pt
+download_url: https://huggingface.co/antofuller/CROMA/resolve/main/CROMA_large.pt
+temporal_input: False
+
+
+num_layers: 24
+embed_dim: 1024
+input_size: 120  # the paper uses 120
+
+size: 'large'
+image_resolution: 120
+
+input_bands:
+  optical:
+    - B1
+    - B2
+    - B3
+    - B4
+    - B5
+    - B6
+    - B7
+    - B8
+    - B8A
+    - B9
+    - B11
+    - B12
+
+output_layers:
+  - 3
+  - 5
+  - 7
+  - 11
