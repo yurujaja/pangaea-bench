@@ -1,6 +1,7 @@
 import os as os
 import pathlib
 import pprint
+import random
 import time
 
 import hydra
@@ -9,11 +10,12 @@ from hydra.conf import HydraConf
 from hydra.core.hydra_config import HydraConfig
 from hydra.utils import instantiate
 from omegaconf import DictConfig, OmegaConf
-from torch.utils.data import Dataset
+from torch.utils.data import DataLoader, Dataset, Subset
+from torch.utils.data.distributed import DistributedSampler
 
 from geofm_bench.engine.data_preprocessor import get_collate_fn
 from geofm_bench.utils.logger import init_logger
-from geofm_bench.utils.utils import fix_seed
+from geofm_bench.utils.utils import fix_seed, get_generator, seed_worker
 
 
 def get_exp_name(hydra_config: HydraConf) -> str:
@@ -143,47 +145,51 @@ def main(cfg: DictConfig) -> None:
     modalities = list(foundation_model.input_bands.keys())
     collate_fn = get_collate_fn(modalities)
 
+    # training
+    if cfg.train:
+        if 0 < cfg.limited_label < 1:
+            n_train_samples = len(train_dataset)
+            indices = random.sample(
+                range(n_train_samples), int(n_train_samples * cfg.limited_label)
+            )
+            train_dataset = Subset(train_dataset, indices)
+            logger.info(
+                f"Created a subset of the train dataset, with {cfg.limited_label * 100}% of the labels available"
+            )
+        else:
+            logger.info("The entire train dataset will be used.")
 
-#     # training
-#     if not cfg.eval_dir:
-#         if 0 < cfg.limited_label < 1:
-#             indices = random.sample(
-#                 range(len(train_dataset)), int(len(train_dataset) * cfg.limited_label)
-#             )
-#             train_dataset = Subset(train_dataset, indices)
-#             perc = cfg.limited_label * 100
-#             logger.info(
-#                 f"Created a subset of the train dataset, with {perc}% of the labels available"
-#             )
-#         else:
-#             logger.info("The entire train dataset will be used.")
-#
-#         # get train val data loaders
-#         train_loader = DataLoader(
-#             train_dataset,
-#             sampler=DistributedSampler(train_dataset),
-#             batch_size=cfg.batch_size,  # cfg.dataset["batch"],
-#             num_workers=cfg.num_workers,
-#             pin_memory=True,
-#             # persistent_workers=True causes memory leak
-#             persistent_workers=False,
-#             worker_init_fn=seed_worker,
-#             generator=get_generator(cfg.seed),
-#             drop_last=True,
-#             collate_fn=collate_fn,
-#         )
-#         val_loader = DataLoader(
-#             val_dataset,
-#             sampler=DistributedSampler(val_dataset),
-#             batch_size=cfg.batch_size,
-#             num_workers=cfg.num_workers,
-#             pin_memory=True,
-#             persistent_workers=False,
-#             worker_init_fn=seed_worker,
-#             # generator=g,
-#             drop_last=False,
-#             collate_fn=collate_fn,
-#         )
+        # get train val data loaders
+        train_loader = DataLoader(
+            train_dataset,
+            sampler=DistributedSampler(train_dataset),
+            batch_size=cfg.batch_size,  # cfg.dataset["batch"],
+            num_workers=cfg.num_workers,
+            pin_memory=True,
+            # persistent_workers=True causes memory leak
+            persistent_workers=False,
+            worker_init_fn=seed_worker,
+            generator=get_generator(cfg.seed),
+            drop_last=True,
+            collate_fn=collate_fn,
+        )
+        val_loader = DataLoader(
+            val_dataset,
+            sampler=DistributedSampler(val_dataset),
+            batch_size=cfg.batch_size,
+            num_workers=cfg.num_workers,
+            pin_memory=True,
+            persistent_workers=False,
+            worker_init_fn=seed_worker,
+            # generator=g,
+            drop_last=False,
+            collate_fn=collate_fn,
+        )
+
+        print(train_loader)
+        print(val_loader)
+
+
 #
 #         logger.info(
 #             "Built {} dataset for training and evaluation.".format(dataset_name)
