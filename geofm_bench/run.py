@@ -186,47 +186,7 @@ def main(cfg: DictConfig) -> None:
             collate_fn=collate_fn,
         )
 
-        print(train_loader)
-        print(val_loader)
 
-
-#
-#         logger.info(
-#             "Built {} dataset for training and evaluation.".format(dataset_name)
-#         )
-#
-#         # flops calculator TODO: make it not hard coded
-#         # TODO: Make this not drop the first training sample
-#         if cfg.cal_flops:
-#             train_features = next(iter(train_loader))
-#             input_res = tuple(train_features["image"]["optical"].size())
-#             macs, params = ptflops.get_model_complexity_info(
-#                 model=model,
-#                 input_res=input_res,
-#                 input_constructor=prepare_input,
-#                 as_strings=True,
-#                 backend="pytorch",
-#                 verbose=True,
-#             )
-#             logger.info(f"Model MACs: {macs}")
-#             logger.info(f"Model Params: {params}")
-#
-#         # build loss
-#         criterion = LOSS_REGISTRY.get(cfg.segmentor.loss.loss_name)(cfg.segmentor.loss)
-#         logger.info("Built {} loss.".format(str(type(criterion))))
-#
-#         # build optimizer
-#         optimizer = OPTIMIZER_REGISTRY.get(cfg.segmentor.optimizer.optimizer_name)(
-#             model, cfg.segmentor.optimizer
-#         )
-#         logger.info("Built {} optimizer.".format(str(type(optimizer))))
-#
-#         # build scheduler
-#         total_iters = cfg.epochs * len(train_loader)
-#         scheduler = SCHEDULER_REGISTRY.get(cfg.segmentor.scheduler.scheduler_name)(
-#             optimizer, total_iters, cfg.segmentor.scheduler
-#         )
-#         logger.info("Built {} scheduler.".format(str(type(scheduler))))
 #
 #         # training: put all components into engines
 #         if task_name == "regression":

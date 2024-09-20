@@ -1,31 +1,17 @@
 train: true
 work_dir: ""
 use_wandb: false
-
-# TRAINING
 seed: 234
+
+
+# 
+# TRAINING
 num_workers: 1
 batch_size: 8
 precision: fp32
 ckpt_interval: 10
 eval_interval: 10
 log_interval: 5
-
-
-# TODO: Update for training
-loss: 
-  loss_name: CrossEntropy # WeightedCrossEntropy
-  ignore_index: -1
-
-optimizer:
-  optimizer_name: AdamW
-  lr: 0.0001
-  weight_decay: 0.05
-
-scheduler:
-  scheduler_name: MultiStepLR
-  lr_milestones: [0.6, 0.9]
-
 
 
 # EXPERIMENT
