@@ -249,25 +249,36 @@ class Trainer:
 class SegTrainer(Trainer):
     def __init__(
         self,
-        args,
-        model,
-        train_loader,
-        criterion,
-        optimizer,
-        evaluator,
-        exp_dir,
-        device,
+        model: nn.Module,
+        train_loader: DataLoader,
+        criterion: nn.Module,
+        optimizer: Optimizer,
+        lr_scheduler: LRScheduler,
+        evaluator: torch.nn.Module,
+        n_epochs: int,
+        exp_dir: pathlib.Path | str,
+        device: torch.device,
+        precision: str,
+        use_wandb: bool,
+        ckpt_interval: int,
+        eval_interval: int,
+        log_interval: int,
     ):
         super().__init__(
-            args,
-            model,
-            train_loader,
-            criterion,
-            optimizer,
-            scheduler,
-            evaluator,
-            exp_dir,
-            device,
+            model=model,
+            train_loader=train_loader,
+            criterion=criterion,
+            optimizer=optimizer,
+            lr_scheduler=lr_scheduler,
+            evaluator=evaluator,
+            n_epochs=n_epochs,
+            exp_dir=exp_dir,
+            device=device,
+            precision=precision,
+            use_wandb=use_wandb,
+            ckpt_interval=ckpt_interval,
+            eval_interval=eval_interval,
+            log_interval=log_interval,
         )
 
         self.training_metrics = {
@@ -277,13 +288,13 @@ class SegTrainer(Trainer):
         self.best_metric_key = "mIoU"
         self.best_metric_comp = operator.gt
 
-    def compute_loss(self, logits, target):
-        loss = self.criterion(logits, target)
-
-        return loss
+    def compute_loss(self, logits: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        return self.criterion(logits, target)
 
     @torch.no_grad()
-    def compute_logging_metrics(self, logits, target):
+    def compute_logging_metrics(
+        self, logits: torch.Tensor, target: torch.Tensor
+    ) -> None:
         # logits = F.interpolate(logits, size=target.shape[1:], mode='bilinear')
         num_classes = logits.shape[1]
         if num_classes == 1:
@@ -330,26 +341,36 @@ class SegTrainer(Trainer):
 class RegTrainer(Trainer):
     def __init__(
         self,
-        args,
-        model,
-        train_loader,
-        criterion,
-        optimizer,
-        scheduler,
-        evaluator,
-        exp_dir,
-        device,
+        model: nn.Module,
+        train_loader: DataLoader,
+        criterion: nn.Module,
+        optimizer: Optimizer,
+        lr_scheduler: LRScheduler,
+        evaluator: torch.nn.Module,
+        n_epochs: int,
+        exp_dir: pathlib.Path | str,
+        device: torch.device,
+        precision: str,
+        use_wandb: bool,
+        ckpt_interval: int,
+        eval_interval: int,
+        log_interval: int,
     ):
         super().__init__(
-            args,
-            model,
-            train_loader,
-            criterion,
-            optimizer,
-            scheduler,
-            evaluator,
-            exp_dir,
-            device,
+            model=model,
+            train_loader=train_loader,
+            criterion=criterion,
+            optimizer=optimizer,
+            lr_scheduler=lr_scheduler,
+            evaluator=evaluator,
+            n_epochs=n_epochs,
+            exp_dir=exp_dir,
+            device=device,
+            precision=precision,
+            use_wandb=use_wandb,
+            ckpt_interval=ckpt_interval,
+            eval_interval=eval_interval,
+            log_interval=log_interval,
         )
 
         self.training_metrics = {
@@ -359,13 +380,11 @@ class RegTrainer(Trainer):
         self.best_metric_key = "MSE"
         self.best_metric_comp = operator.lt
 
-    def compute_loss(self, logits, target):
-        loss = self.criterion(logits.squeeze(dim=1), target)
-
-        return loss
+    def compute_loss(self, logits: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        return self.criterion(logits.squeeze(dim=1), target)
 
     @torch.no_grad()
-    def compute_logging_metrics(self, logits, target):
+    def compute_logging_metrics(self, logits: torch.Tensor, target: torch.Tensor):
         # logits = F.interpolate(logits, size=target.shape[1:], mode='bilinear')
         # print(logits.shape)
         # print(target.shape)
