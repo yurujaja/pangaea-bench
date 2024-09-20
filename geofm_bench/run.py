@@ -62,7 +62,7 @@ def main(cfg: DictConfig) -> None:
     logger.info(f"Device used: {device}")
 
     # init wandb
-    if cfg.use_wandb and rank == 0:
+    if cfg.trainer.use_wandb and rank == 0:
         import wandb
 
         wandb_cfg = OmegaConf.to_container(cfg, resolve=True)
@@ -143,6 +143,11 @@ def main(cfg: DictConfig) -> None:
         )
     )
 
+    ##########################
+    criterion = instantiate(cfg.criterion)
+
+    ##################################
+
     modalities = list(foundation_model.input_bands.keys())
     collate_fn = get_collate_fn(modalities)
 
@@ -197,6 +202,7 @@ def main(cfg: DictConfig) -> None:
             exp_dir=exp_dir,
             device=device,
         )
+        print(trainer)
 
 
 #
