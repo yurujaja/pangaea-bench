@@ -10,9 +10,7 @@ import torch.nn.functional as F
 import torchvision.transforms as T
 
 
-def get_collate_fn(cfg: omegaconf.DictConfig) -> Callable:
-    modalities = cfg.encoder.input_bands.keys()
-
+def get_collate_fn(modalities: list[str]) -> Callable:
     def collate_fn(
         batch: dict[dict[str, torch.Tensor]],
     ) -> dict[dict[str, torch.Tensor]]:

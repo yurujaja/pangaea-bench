@@ -11,6 +11,7 @@ from hydra.utils import instantiate
 from omegaconf import DictConfig, OmegaConf
 from torch.utils.data import Dataset
 
+from geofm_bench.engine.data_preprocessor import get_collate_fn
 from geofm_bench.utils.logger import init_logger
 from geofm_bench.utils.utils import fix_seed
 
@@ -129,21 +130,20 @@ def main(cfg: DictConfig) -> None:
         cfg.adaptor,
         encoder=foundation_model,
     )
-    print(adaptor)
+    adaptor.to(device)
+    adaptor = torch.nn.parallel.DistributedDataParallel(
+        adaptor, device_ids=[local_rank], output_device=local_rank
+    )
+    logger.info(
+        "Built {} for with {} encoder.".format(
+            adaptor.module.model_name, foundation_model.model_name
+        )
+    )
+
+    modalities = list(foundation_model.input_bands.keys())
+    collate_fn = get_collate_fn(modalities)
 
 
-#     model = SEGMENTOR_REGISTRY.get(cfg.segmentor.segmentor_name)(
-#         cfg, cfg.segmentor, encoder
-#     ).to(device)
-#     model = torch.nn.parallel.DistributedDataParallel(
-#         model, device_ids=[cfg.local_rank], output_device=cfg.local_rank
-#     )
-#     logger.info(
-#         "Built {} for with {} encoder.".format(
-#             model.module.model_name, encoder.model_name
-#         )
-#     )
-#     collate_fn = get_collate_fn(cfg)
 #     # training
 #     if not cfg.eval_dir:
 #         if 0 < cfg.limited_label < 1:
