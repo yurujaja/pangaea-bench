@@ -74,32 +74,29 @@ def main(cfg: DictConfig) -> None:
         # cfg["wandb_run_id"] = wandb.run.id
 
     # get datasets
-    dataset = instantiate(cfg.dataset, split="train")
-    print(dataset)
+    train_dataset = instantiate(cfg.dataset, split="train")
+    val_dataset = instantiate(cfg.dataset, split="val")
+    test_dataset = instantiate(cfg.dataset, split="test")
+
+    # Apply data processing to the datasets
+    for step in cfg.augmentation.train:
+        train_dataset = AUGMENTER_REGISTRY.get(step)(
+            train_dataset, cfg, cfg.augmentation.train[step]
+        )
+
+    for step in cfg.augmentation.test:
+        val_dataset = AUGMENTER_REGISTRY.get(step)(
+            val_dataset, cfg, cfg.augmentation.test[step]
+        )
+        test_dataset = AUGMENTER_REGISTRY.get(step)(
+            test_dataset, cfg, cfg.augmentation.test[step]
+        )
+
+    logger.info("Created processing pipelines:")
+    logger.info(f"   Training: {pprint.pformat([s for s in cfg.augmentation.train])}")
+    logger.info(f"   Evaluation: {pprint.pformat([s for s in cfg.augmentation.test])}")
 
 
-#     dataset = DATASET_REGISTRY.get(cfg.dataset.dataset_name)
-#     dataset.download(cfg.dataset, silent=False)
-#     train_dataset, val_dataset, test_dataset = dataset.get_splits(cfg.dataset)
-#
-#     # Apply data processing to the datasets
-#     for step in cfg.augmentation.train:
-#         train_dataset = AUGMENTER_REGISTRY.get(step)(
-#             train_dataset, cfg, cfg.augmentation.train[step]
-#         )
-#
-#     for step in cfg.augmentation.test:
-#         val_dataset = AUGMENTER_REGISTRY.get(step)(
-#             val_dataset, cfg, cfg.augmentation.test[step]
-#         )
-#         test_dataset = AUGMENTER_REGISTRY.get(step)(
-#             test_dataset, cfg, cfg.augmentation.test[step]
-#         )
-#
-#     logger.info("Created processing pipelines:")
-#     logger.info(f"   Training: {pprint.pformat([s for s in cfg.augmentation.train])}")
-#     logger.info(f"   Evaluation: {pprint.pformat([s for s in cfg.augmentation.test])}")
-#
 #     logger.info("Built {} dataset.".format(dataset_name))
 #
 #     # prepare the foundation model

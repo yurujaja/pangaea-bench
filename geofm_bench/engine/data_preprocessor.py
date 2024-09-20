@@ -9,8 +9,6 @@ import torch
 import torch.nn.functional as F
 import torchvision.transforms as T
 
-from utils.registry import AUGMENTER_REGISTRY
-
 
 def get_collate_fn(cfg: omegaconf.DictConfig) -> Callable:
     modalities = cfg.encoder.input_bands.keys()
@@ -87,7 +85,6 @@ class RichDataset(torch.utils.data.Dataset):
         return len(self.dataset)
 
 
-@AUGMENTER_REGISTRY.register()
 class SegPreprocessor(RichDataset):
     def __init__(self, dataset, cfg, local_cfg):
         super().__init__(dataset, cfg)
@@ -127,7 +124,6 @@ class SegPreprocessor(RichDataset):
         return data
 
 
-@AUGMENTER_REGISTRY.register()
 class RegPreprocessor(SegPreprocessor):
     def __init__(self, dataset, cfg, local_cfg):
         super().__init__(dataset, cfg, local_cfg)
@@ -236,7 +232,6 @@ class BaseAugment(RichDataset):
         self.ignore_modalities = getattr(local_cfg, "ignore_modalities", [])
 
 
-@AUGMENTER_REGISTRY.register()
 class Tile(BaseAugment):
     def __init__(self, dataset, cfg, local_cfg):
         super().__init__(dataset, cfg, local_cfg)
@@ -346,7 +341,6 @@ class Tile(BaseAugment):
         return (super().__len__()) * (self.tiles_per_dim * self.tiles_per_dim)
 
 
-@AUGMENTER_REGISTRY.register()
 class RandomFlip(BaseAugment):
     def __init__(self, dataset, cfg, local_cfg):
         super().__init__(dataset, cfg, local_cfg)
@@ -357,18 +351,23 @@ class RandomFlip(BaseAugment):
         data = self.dataset[index]
         if random.random() < self.ud_probability:
             for k, v in data["image"].items():
-                if k not in self.ignore_modalities and k in self.encoder_cfg.input_bands:
+                if (
+                    k not in self.ignore_modalities
+                    and k in self.encoder_cfg.input_bands
+                ):
                     data["image"][k] = torch.fliplr(v)
             data["target"] = torch.fliplr(data["target"])
         if random.random() < self.lr_probability:
             for k, v in data["image"].items():
-                if k not in self.ignore_modalities and k in self.encoder_cfg.input_bands:
+                if (
+                    k not in self.ignore_modalities
+                    and k in self.encoder_cfg.input_bands
+                ):
                     data["image"][k] = torch.flipud(v)
             data["target"] = torch.flipud(data["target"])
         return data
 
 
-@AUGMENTER_REGISTRY.register()
 class GammaAugment(BaseAugment):
     def __init__(self, dataset, cfg, local_cfg):
         super().__init__(dataset, cfg, local_cfg)
@@ -384,7 +383,6 @@ class GammaAugment(BaseAugment):
         return data
 
 
-@AUGMENTER_REGISTRY.register()
 class NormalizeMeanStd(BaseAugment):
     def __init__(self, dataset, cfg, local_cfg):
         super().__init__(dataset, cfg, local_cfg)
@@ -409,7 +407,6 @@ class NormalizeMeanStd(BaseAugment):
         return data
 
 
-@AUGMENTER_REGISTRY.register()
 class NormalizeMinMax(BaseAugment):
     def __init__(self, dataset, cfg, local_cfg):
         super().__init__(dataset, cfg, local_cfg)
@@ -438,7 +435,6 @@ class NormalizeMinMax(BaseAugment):
         return data
 
 
-@AUGMENTER_REGISTRY.register()
 class ColorAugmentation(BaseAugment):
     def __init__(self, dataset, cfg, local_cfg):
         super().__init__(dataset, cfg, local_cfg)
@@ -483,7 +479,7 @@ class ColorAugmentation(BaseAugment):
                     if k not in self.ignore_modalities:
                         data["image"][k] = self.adjust_brightness(
                             data["image"][k], brightness, self.clip
-                    )
+                        )
 
         for k, v in data["image"].items():
             if k not in self.ignore_modalities and k in self.encoder_cfg.input_bands:
@@ -497,7 +493,6 @@ class ColorAugmentation(BaseAugment):
         return data
 
 
-@AUGMENTER_REGISTRY.register()
 class Resize(BaseAugment):
     def __init__(self, dataset, cfg, local_cfg):
         super().__init__(dataset, cfg, local_cfg)
@@ -523,7 +518,6 @@ class Resize(BaseAugment):
         return data
 
 
-@AUGMENTER_REGISTRY.register()
 class ResizeToEncoder(Resize):
     def __init__(self, dataset, cfg, local_cfg):
         if not local_cfg:
@@ -532,7 +526,6 @@ class ResizeToEncoder(Resize):
         super().__init__(dataset, cfg, local_cfg)
 
 
-@AUGMENTER_REGISTRY.register()
 class RandomCrop(BaseAugment):
     def __init__(self, dataset, cfg, local_cfg):
         super().__init__(dataset, cfg, local_cfg)
@@ -557,7 +550,6 @@ class RandomCrop(BaseAugment):
         return data
 
 
-@AUGMENTER_REGISTRY.register()
 class RandomCropToEncoder(RandomCrop):
     def __init__(self, dataset, cfg, local_cfg):
         if not local_cfg:
@@ -566,8 +558,6 @@ class RandomCropToEncoder(RandomCrop):
         super().__init__(dataset, cfg, local_cfg)
 
 
-
-@AUGMENTER_REGISTRY.register()
 class ImportanceRandomCrop(BaseAugment):
     def __init__(self, dataset, cfg, local_cfg):
         super().__init__(dataset, cfg, local_cfg)
@@ -582,7 +572,7 @@ class ImportanceRandomCrop(BaseAugment):
         data = self.dataset[index]
 
         # dataset needs to provide a weighting layer
-        assert 'weight' in data.keys()
+        assert "weight" in data.keys()
 
         # candidates for random crop
         crop_candidates, crop_weights = [], []
@@ -595,9 +585,9 @@ class ImportanceRandomCrop(BaseAugment):
             )
             crop_candidates.append((i, j, h, w))
 
-            crop_weight = T.functional.crop(data['weight'], i, j, h, w)
+            crop_weight = T.functional.crop(data["weight"], i, j, h, w)
             crop_weights.append(torch.sum(crop_weight).item())
-        
+
         crop_weights = np.array(crop_weights) / sum(crop_weights)
         crop_idx = np.random.choice(self.n_crops, p=crop_weights)
         i, j, h, w = crop_candidates[crop_idx]
@@ -610,7 +600,6 @@ class ImportanceRandomCrop(BaseAugment):
         return data
 
 
-@AUGMENTER_REGISTRY.register()
 class ImportanceRandomCropToEncoder(ImportanceRandomCrop):
     def __init__(self, dataset, cfg, local_cfg):
         if not local_cfg:
