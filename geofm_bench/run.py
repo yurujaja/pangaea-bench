@@ -108,7 +108,7 @@ def main(cfg: DictConfig) -> None:
     print(foundation_model)
 
     missing, incompatible_shape = foundation_model.load_encoder_weights()
-    print(missing, incompatible_shape)
+    # TODO: refactor this part in load_encoder_weights(logger)
     # logger.info("Loaded encoder weight from {}.".format(cfg.encoder.encoder_weights))
     # if missing:
     #     logger.warning(
@@ -124,7 +124,12 @@ def main(cfg: DictConfig) -> None:
     #         )
     #     )
     #
-    # prepare the segmentor
+    # prepare the adaptor (segmentation/regression)
+    adaptor: torch.nn.Module = instantiate(
+        cfg.adaptor,
+        encoder=foundation_model,
+    )
+    print(adaptor)
 
 
 #     model = SEGMENTOR_REGISTRY.get(cfg.segmentor.segmentor_name)(
