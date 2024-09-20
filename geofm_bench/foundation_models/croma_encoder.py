@@ -9,13 +9,27 @@ from torch import einsum, nn
 
 
 class CROMA_OPTICAL_Encoder(nn.Module):
-    def __init__(self, cfg, size="base", image_resolution=120):
+    def __init__(
+        self,
+        foundation_model_name: str,
+        encoder_weights: str,
+        temporal_input: bool,
+        input_size: int,
+        input_bands: dict[str, list[str]],
+        embed_dim: int,
+        output_layers: int,
+        num_layers: int,
+        download_url: str,
+        size="base",
+        image_resolution=120,
+    ):
         super().__init__()
 
-        self.input_bands = cfg["input_bands"]
-        self.output_layers = cfg["output_layers"]
-        self.model_name = "CROMA_OPTICAL"
+        self.input_bands = input_bands
+        self.output_layers = output_layers
+        self.model_name = foundation_model_name
         self.img_size = image_resolution
+        self.encoder_weights = encoder_weights
 
         if size == "base":
             self.encoder_dim = 768
@@ -60,8 +74,10 @@ class CROMA_OPTICAL_Encoder(nn.Module):
 
         return output
 
-    def load_encoder_weights(self, pretrained_path):
-        pretrained_model = torch.load(pretrained_path, map_location="cpu")["s2_encoder"]
+    def load_encoder_weights(self):
+        pretrained_model = torch.load(self.encoder_weights, map_location="cpu")[
+            "s2_encoder"
+        ]
         k = pretrained_model.keys()
         pretrained_encoder = {}
         incompatible_shape = {}
