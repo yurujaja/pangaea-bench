@@ -491,7 +491,7 @@ class Resize(BaseAugment):
         data = self.dataset[index]
         for k, v in data["image"].items():
             if k not in self.ignore_modalities and k in self.encoder_cfg.input_bands:
-                data["image"][k] = T.resize(data["target"], self.size, interpolation=T.InterpolationMode.BILINEAR, antialias=True)
+                data["image"][k] = T.resize(v, self.size, interpolation=T.InterpolationMode.BILINEAR, antialias=True)
 
         if data["target"].ndim == 2:
             data["target"] = data["target"].unsqueeze(0)
