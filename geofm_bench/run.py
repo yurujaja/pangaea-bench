@@ -188,11 +188,12 @@ def main(cfg: DictConfig) -> None:
         )
 
         # TODO: add val_evaluator in configs
+        val_evaluator = None
         trainer: Trainer = instantiate(
             cfg.trainer,
             model=model,
             train_loader=train_loader,
-            val_loader=val_loader,
+            evaluator=val_loader,
             exp_dir=exp_dir,
             device=device,
         )

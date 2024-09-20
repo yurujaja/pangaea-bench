@@ -1,0 +1,2 @@
+_target_: geofm_bench.utils.losses.DICELoss 
+ignore_index: ${dataset.ignore_index}
