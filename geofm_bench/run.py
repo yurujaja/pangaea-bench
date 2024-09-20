@@ -7,6 +7,7 @@ import hydra
 import torch
 from hydra.conf import HydraConf
 from hydra.core.hydra_config import HydraConfig
+from hydra.utils import instantiate
 from omegaconf import DictConfig, OmegaConf
 
 from geofm_bench.utils.logger import init_logger
@@ -24,9 +25,7 @@ def get_exp_name(hydra_config: HydraConf) -> str:
 
 @hydra.main(version_base=None, config_path="../configs", config_name="train")
 def main(cfg: DictConfig) -> None:
-    print(cfg)
     exp_name = get_exp_name(HydraConfig.get())
-    print(exp_name)
 
     # fix all random seeds
     fix_seed(cfg.seed)
@@ -75,6 +74,8 @@ def main(cfg: DictConfig) -> None:
         # cfg["wandb_run_id"] = wandb.run.id
 
     # get datasets
+    dataset = instantiate(cfg.dataset, split="train")
+    print(dataset)
 
 
 #     dataset = DATASET_REGISTRY.get(cfg.dataset.dataset_name)
