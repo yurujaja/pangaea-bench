@@ -13,15 +13,12 @@ import pandas as pd
 import rasterio
 import torch
 from einops import rearrange
-from omegaconf import OmegaConf
 from torch.utils.data import Dataset
-
-from utils.registry import DATASET_REGISTRY
 
 
 def prepare_dates(date_dict, reference_date):
     """Date formating."""
-    if type(date_dict) == str:
+    if type(date_dict) is str:
         date_dict = json.loads(date_dict)
     d = pd.DataFrame().from_dict(date_dict, orient="index")
     d = d[0].apply(
@@ -66,13 +63,26 @@ def split_image(image_tensor, nb_split, id):
         ].float()
 
 
-@DATASET_REGISTRY.register()
 class Pastis(Dataset):
     def __init__(
         self,
-        cfg: OmegaConf,
         split: str,
-        is_train: bool = True,
+        dataset_name: str,
+        multi_modal: bool,
+        multi_temporal: int,
+        root_path: str,
+        classes: list,
+        num_classes: int,
+        ignore_index: int,
+        img_size: int,
+        bands: dict[str, list[str]],
+        distribution: list[int],
+        data_mean: dict[str, list[str]],
+        data_std: dict[str, list[str]],
+        data_min: dict[str, list[str]],
+        data_max: dict[str, list[str]],
+        download_url: str,
+        auto_download: bool,
     ):
         """
         Initializes the dataset.
@@ -93,15 +103,22 @@ class Pastis(Dataset):
         elif split == "test":
             folds = [5]
 
+        self.dataset_name = dataset_name
         self.split = split
-        self.path = cfg["root_path"]
-        self.data_mean = cfg["data_mean"]
-        self.data_std = cfg["data_std"]
-        self.data_min = cfg["data_min"]
-        self.data_max = cfg["data_max"]
-        self.classes = cfg["classes"]
-        self.class_num = len(self.classes)
-        self.grid_size = cfg["multi_temporal"]
+        self.path = root_path
+        self.data_mean = data_mean
+        self.data_std = data_std
+        self.data_min = data_min
+        self.data_max = data_max
+        self.classes = classes
+        self.img_size = img_size
+        self.distribution = distribution
+
+        self.num_classes = num_classes
+        self.ignore_index = ignore_index
+        self.grid_size = multi_temporal
+        self.download_url = download_url
+        self.auto_download = auto_download
         self.modalities = ["s2", "aerial", "s1-asc"]
         self.nb_split = 1
 
@@ -326,13 +343,6 @@ class Pastis(Dataset):
 
     def __len__(self) -> int:
         return len(self.meta_patch) * self.nb_split * self.nb_split
-
-    @staticmethod
-    def get_splits(dataset_config):
-        dataset_train = Pastis(cfg=dataset_config, split="train", is_train=True)
-        dataset_val = Pastis(cfg=dataset_config, split="val", is_train=False)
-        dataset_test = Pastis(cfg=dataset_config, split="test", is_train=False)
-        return dataset_train, dataset_val, dataset_test
 
     @staticmethod
     def download(dataset_config: dict, silent=False):
