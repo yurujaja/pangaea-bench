@@ -149,17 +149,17 @@ class SegEvaluator(Evaluator):
         if self.args.use_wandb and self.args.rank == 0:
            self.wandb.log(
                 {
-                    "val_mIoU": metrics["mIoU"],
-                    "val_mF1": metrics["mF1"],
-                    "val_mAcc": metrics["mAcc"],
-                    **{f"val_IoU_{c}": v for c, v in zip(self.classes, metrics["IoU"])},
-                    **{f"val_F1_{c}": v for c, v in zip(self.classes, metrics["F1"])},
+                    f"{self.split}_mIoU": metrics["mIoU"],
+                    f"{self.split}_mF1": metrics["mF1"],
+                    f"{self.split}_mAcc": metrics["mAcc"],
+                    **{f"{self.split}_IoU_{c}": v for c, v in zip(self.classes, metrics["IoU"])},
+                    **{f"{self.split}_F1_{c}": v for c, v in zip(self.classes, metrics["F1"])},
                     **{
-                        f"val_Precision_{c}": v
+                        f"{self.split}_Precision_{c}": v
                         for c, v in zip(self.classes, metrics["Precision"])
                     },
                     **{
-                        f"val_Recall_{c}": v
+                        f"{self.split}_Recall_{c}": v
                         for c, v in zip(self.classes, metrics["Recall"])
                     },
                 }
@@ -221,4 +221,4 @@ class RegEvaluator(Evaluator):
         self.logger.info(header+mse+rmse)
 
         if self.args.use_wandb and self.args.rank == 0:
-            self.wandb.log({"val_MSE": metrics["MSE"], "val_RMSE": metrics["RMSE"]})
+            self.wandb.log({f"{self.split}_MSE": metrics["MSE"], f"{self.split}_RMSE": metrics["RMSE"]})
