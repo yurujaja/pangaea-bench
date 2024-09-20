@@ -1,4 +1,4 @@
-train: true
+train: false
 work_dir: ""
 use_wandb: false
 
