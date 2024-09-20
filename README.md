@@ -130,12 +130,24 @@ torchrun --nnodes=1 --nproc_per_node=1 run.py  \
 ```
 #### Single Temporal Regression
 ```
-torchrun ...
+torchrun --nnodes=1 --nproc_per_node=1 run.py  \
+--config configs/run/default.yaml  \
+--encoder_config configs/foundation_models/prithvi.yaml  \
+--dataset_config configs/datasets/biomassters.yaml   \
+--segmentor_config configs/segmentors/reg_upernet.yaml \
+--augmentation_config configs/augmentations/regression_default.yaml  \
+--num_workers 4 --eval_interval 1 --use_wandb
 ```
 
 #### Multi-Temporal Regression
 ```
-torchrun ...
+torchrun --nnodes=1 --nproc_per_node=1 run.py  \
+--config configs/run/default.yaml  \
+--encoder_config configs/foundation_models/prithvi.yaml  \
+--dataset_config configs/datasets/biomassters.yaml   \
+--segmentor_config configs/segmentors/reg_upernet_mt.yaml \
+--augmentation_config configs/augmentations/regression_default.yaml  \
+--num_workers 4 --eval_interval 1 --use_wandb
 ```
 
 ### 💻 Fully Supervised Training
