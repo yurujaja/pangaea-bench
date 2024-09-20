@@ -2,8 +2,6 @@ train: true
 work_dir: ""
 use_wandb: false
 
-
-
 # TRAINING
 seed: 234
 num_workers: 1
@@ -21,9 +19,9 @@ limited_label: 1
 n_epochs: 80
 
 
-
 defaults:
   - dataset: ???
   - foundation_model: ???
   - adaptor: ???
+  - augmentation: ???
   - _self_ 
