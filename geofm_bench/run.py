@@ -107,24 +107,23 @@ def main(cfg: DictConfig) -> None:
     foundation_model: torch.nn.Module = instantiate(cfg.foundation_model)
     print(foundation_model)
 
-    missing, incompatible_shape = foundation_model.load_encoder_weights(
-        cfg.encoder.encoder_weights
-    )
-    logger.info("Loaded encoder weight from {}.".format(cfg.encoder.encoder_weights))
-    if missing:
-        logger.warning(
-            "Missing parameters:\n"
-            + "\n".join("%s: %s" % (k, v) for k, v in sorted(missing.items()))
-        )
-    if incompatible_shape:
-        logger.warning(
-            "Incompatible parameters:\n"
-            + "\n".join(
-                "%s: expected %s but found %s" % (k, v[0], v[1])
-                for k, v in sorted(incompatible_shape.items())
-            )
-        )
-
+    missing, incompatible_shape = foundation_model.load_encoder_weights()
+    print(missing, incompatible_shape)
+    # logger.info("Loaded encoder weight from {}.".format(cfg.encoder.encoder_weights))
+    # if missing:
+    #     logger.warning(
+    #         "Missing parameters:\n"
+    #         + "\n".join("%s: %s" % (k, v) for k, v in sorted(missing.items()))
+    #     )
+    # if incompatible_shape:
+    #     logger.warning(
+    #         "Incompatible parameters:\n"
+    #         + "\n".join(
+    #             "%s: expected %s but found %s" % (k, v[0], v[1])
+    #             for k, v in sorted(incompatible_shape.items())
+    #         )
+    #     )
+    #
     # prepare the segmentor
 
 
