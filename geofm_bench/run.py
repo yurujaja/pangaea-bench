@@ -14,6 +14,7 @@ from torch.utils.data import DataLoader, Dataset, Subset
 from torch.utils.data.distributed import DistributedSampler
 
 from geofm_bench.engine.data_preprocessor import get_collate_fn
+from geofm_bench.engine.trainer import Trainer
 from geofm_bench.utils.logger import init_logger
 from geofm_bench.utils.utils import fix_seed, get_generator, seed_worker
 
@@ -128,17 +129,17 @@ def main(cfg: DictConfig) -> None:
     #     )
     #
     # prepare the adaptor (segmentation/regression)
-    adaptor: torch.nn.Module = instantiate(
+    model: torch.nn.Module = instantiate(
         cfg.adaptor,
         encoder=foundation_model,
     )
-    adaptor.to(device)
-    adaptor = torch.nn.parallel.DistributedDataParallel(
-        adaptor, device_ids=[local_rank], output_device=local_rank
+    model.to(device)
+    model = torch.nn.parallel.DistributedDataParallel(
+        model, device_ids=[local_rank], output_device=local_rank
     )
     logger.info(
         "Built {} for with {} encoder.".format(
-            adaptor.module.model_name, foundation_model.model_name
+            model.module.model_name, foundation_model.model_name
         )
     )
 
@@ -184,6 +185,16 @@ def main(cfg: DictConfig) -> None:
             # generator=g,
             drop_last=False,
             collate_fn=collate_fn,
+        )
+
+        trainer: Trainer = instantiate(
+            cfg.trainer,
+            model=model,
+            train_loader=train_loader,
+            val_loader=val_loader,
+            val_evaluator=val_evaluator,
+            exp_dir=exp_dir,
+            device=device,
         )
 
 

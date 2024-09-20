@@ -1,23 +1,33 @@
+import logging
+import operator
 import os
 import time
-import operator
 
 import torch
-from torch.nn import functional as F
 from torch.cuda.amp import GradScaler
-
+from torch.nn import functional as F
 from utils.logger import RunningAverageMeter, sec_to_hm
 
-import logging
 
-class Trainer():
-    def __init__(self, args, model, train_loader, criterion, optimizer, lr_scheduler, evaluator, exp_dir, device):
-        #torch.set_num_threads(1)
+class Trainer:
+    def __init__(
+        self,
+        args,
+        model,
+        train_loader,
+        criterion,
+        optimizer,
+        lr_scheduler,
+        evaluator,
+        exp_dir,
+        device,
+    ):
+        # torch.set_num_threads(1)
 
         self.args = args
         self.rank = int(os.environ["RANK"])
-        #self.train_cfg = train_cfg
-        #self.dataset_cfg = dataset_cfg
+        # self.train_cfg = train_cfg
+        # self.dataset_cfg = dataset_cfg
         self.criterion = criterion
         self.model = model
         self.train_loader = train_loader
@@ -27,7 +37,10 @@ class Trainer():
         self.evaluator = evaluator
         self.ignore_index = args["dataset"]["ignore_index"]
         self.logger = logging.getLogger()
-        self.training_stats = {name: RunningAverageMeter(length=self.batch_per_epoch) for name in ['loss', 'data_time', 'batch_time', 'eval_time']}
+        self.training_stats = {
+            name: RunningAverageMeter(length=self.batch_per_epoch)
+            for name in ["loss", "data_time", "batch_time", "eval_time"]
+        }
         self.training_metrics = {}
         self.best_ckpt = None
         self.best_metric_key = None
@@ -35,9 +48,13 @@ class Trainer():
         self.exp_dir = exp_dir
         self.device = device
 
-        self.enable_mixed_precision = args.fp16 or args.bf16#train_cfg["mixed_precision"]
+        self.enable_mixed_precision = (
+            args.fp16 or args.bf16
+        )  # train_cfg["mixed_precision"]
         if args.fp16 and args.bf16:
-            self.logger.warning("Detecting both fp16 and bf16 are enabled, use fp16 by default")
+            self.logger.warning(
+                "Detecting both fp16 and bf16 are enabled, use fp16 by default"
+            )
         self.precision = torch.float16 if args.fp16 else torch.bfloat16
         self.scaler = GradScaler(enabled=self.enable_mixed_precision)
 
@@ -47,16 +64,16 @@ class Trainer():
         self.use_wandb = args.use_wandb
         if self.use_wandb:
             import wandb
+
             self.wandb = wandb
 
-
     def train(self):
-        #end_time = time.time()
+        # end_time = time.time()
         for epoch in range(self.start_epoch, self.epochs):
-            # train the network for one epoch     
+            # train the network for one epoch
             if epoch % self.args.eval_interval == 0:
-                metrics, used_time = self.evaluator(self.model, f'epoch {epoch}')
-                self.training_stats['eval_time'].update(used_time)
+                metrics, used_time = self.evaluator(self.model, f"epoch {epoch}")
+                self.training_stats["eval_time"].update(used_time)
                 self.set_best_checkpoint(metrics, epoch)
 
             self.logger.info("============ Starting epoch %i ... ============" % epoch)
@@ -67,8 +84,8 @@ class Trainer():
             if epoch % self.args.ckpt_interval == 0 and epoch != self.start_epoch:
                 self.save_model(epoch)
 
-        metrics, used_time = self.evaluator(self.model, 'final model')
-        self.training_stats['eval_time'].update(used_time)
+        metrics, used_time = self.evaluator(self.model, "final model")
+        self.training_stats["eval_time"].update(used_time)
         self.set_best_checkpoint(metrics, self.epochs)
 
         # save last model
@@ -76,23 +93,28 @@ class Trainer():
 
         # save best model
         if self.best_ckpt:
-            self.save_model(self.best_ckpt["epoch"], is_best=True, checkpoint=self.best_ckpt)
-
+            self.save_model(
+                self.best_ckpt["epoch"], is_best=True, checkpoint=self.best_ckpt
+            )
 
     def train_one_epoch(self, epoch):
         self.model.train()
 
         end_time = time.time()
         for batch_idx, data in enumerate(self.train_loader):
-            image, target = data['image'], data['target']
+            image, target = data["image"], data["target"]
             image = {k: v.to(self.device) for k, v in image.items()}
             target = target.to(self.device)
-            self.training_stats['data_time'].update(time.time() - end_time)
+            self.training_stats["data_time"].update(time.time() - end_time)
 
-            with torch.cuda.amp.autocast(enabled=self.enable_mixed_precision, dtype=self.precision):
+            with torch.cuda.amp.autocast(
+                enabled=self.enable_mixed_precision, dtype=self.precision
+            ):
                 logits = self.model(image, output_shape=target.shape[-2:])
                 loss = self.compute_loss(logits, target)
-                self.compute_logging_metrics(logits.detach().clone(), target.detach().clone())
+                self.compute_logging_metrics(
+                    logits.detach().clone(), target.detach().clone()
+                )
 
             self.optimizer.zero_grad()
 
@@ -101,11 +123,11 @@ class Trainer():
             self.scaler.update()
             self.lr_scheduler.step()
 
-            self.training_stats['loss'].update(loss.item())
+            self.training_stats["loss"].update(loss.item())
             if (batch_idx + 1) % self.args.log_interval == 0:
                 self.log(batch_idx + 1, epoch)
-            self.training_stats['batch_time'].update(time.time() - end_time)
-            #print(self.training_stats['batch_time'].val, self.training_stats['batch_time'].avg)
+            self.training_stats["batch_time"].update(time.time() - end_time)
+            # print(self.training_stats['batch_time'].val, self.training_stats['batch_time'].avg)
             end_time = time.time()
 
             if self.use_wandb and self.rank == 0:
@@ -132,22 +154,21 @@ class Trainer():
             "args": self.args,
         }
         return checkpoint
-    
 
     def save_model(self, epoch, is_final=False, is_best=False, checkpoint=None):
         if self.rank != 0:
             return
         checkpoint = self.get_checkpoint(epoch) if checkpoint is None else checkpoint
-        suffix = '_best' if is_best else '_final' if is_final else ''
+        suffix = "_best" if is_best else "_final" if is_final else ""
         checkpoint_path = os.path.join(self.exp_dir, f"checkpoint_{epoch}{suffix}.pth")
         torch.save(checkpoint, checkpoint_path)
-        self.logger.info(f"Epoch {epoch} | Training checkpoint saved at {checkpoint_path}")
+        self.logger.info(
+            f"Epoch {epoch} | Training checkpoint saved at {checkpoint_path}"
+        )
 
-    
-    
     def load_model(self, resume_path):
         model_dict = torch.load(resume_path, map_location=self.device)
-        if 'model' in model_dict:
+        if "model" in model_dict:
             self.model.module.load_state_dict(model_dict["model"])
             self.optimizer.load_state_dict(model_dict["optimizer"])
             self.lr_scheduler.load_state_dict(model_dict["lr_scheduler"])
@@ -157,7 +178,9 @@ class Trainer():
             self.model.module.load_state_dict(model_dict)
             self.start_epoch = 0
 
-        self.logger.info(f"Loaded model from {self.args.resume_path}. Resume training from epoch {self.start_epoch}")
+        self.logger.info(
+            f"Loaded model from {self.args.resume_path}. Resume training from epoch {self.start_epoch}"
+        )
 
     def compute_loss(self, logits, target):
         pass
@@ -172,35 +195,46 @@ class Trainer():
         pass
 
     def log(self, batch_idx, epoch):
-        #TO DO: upload to wandb
+        # TO DO: upload to wandb
         left_batch_this_epoch = self.batch_per_epoch - batch_idx
-        left_batch_all = self.batch_per_epoch * (self.epochs - epoch - 1) + left_batch_this_epoch
-        left_eval_times = (self.epochs + 0.5) // self.args.eval_interval - self.training_stats['eval_time'].count
-        left_time_this_epoch = sec_to_hm(left_batch_this_epoch * self.training_stats['batch_time'].avg)
-        left_time_all = sec_to_hm(left_batch_all * self.training_stats['batch_time'].avg
-                                  + left_eval_times * self.training_stats['eval_time'].avg)
+        left_batch_all = (
+            self.batch_per_epoch * (self.epochs - epoch - 1) + left_batch_this_epoch
+        )
+        left_eval_times = (
+            self.epochs + 0.5
+        ) // self.args.eval_interval - self.training_stats["eval_time"].count
+        left_time_this_epoch = sec_to_hm(
+            left_batch_this_epoch * self.training_stats["batch_time"].avg
+        )
+        left_time_all = sec_to_hm(
+            left_batch_all * self.training_stats["batch_time"].avg
+            + left_eval_times * self.training_stats["eval_time"].avg
+        )
 
         basic_info = (
             "Epoch [{epoch}-{batch_idx}/{len_loader}]\t"
             "ETA [{left_time_all}|{left_time_this_epoch}]\t"
             "Time [{batch_time.avg:.3f}|{data_time.avg:.3f}]\t"
             "Loss {loss.val:.4f} ({loss.avg:.4f})\t"
-            "lr {lr:.3e}"
-            .format(
+            "lr {lr:.3e}".format(
                 epoch=epoch,
                 len_loader=len(self.train_loader),
                 batch_idx=batch_idx,
                 left_time_this_epoch=left_time_this_epoch,
                 left_time_all=left_time_all,
-                batch_time=self.training_stats['batch_time'],
-                data_time=self.training_stats['data_time'],
-                loss=self.training_stats['loss'],
-                lr=self.optimizer.param_groups[0]['lr']
-            ))
+                batch_time=self.training_stats["batch_time"],
+                data_time=self.training_stats["data_time"],
+                loss=self.training_stats["loss"],
+                lr=self.optimizer.param_groups[0]["lr"],
+            )
+        )
 
-        metrics_info = ['{} {:>7} ({:>7})'.format(k, '%.3f' % v.val, '%.3f' % v.avg) for k, v in self.training_metrics.items()]
-        metrics_info = '\n Training metrics: '+'\t'.join(metrics_info)
-        #extra_metrics_info = self.extra_info_template.format(**self.extra_info)
+        metrics_info = [
+            "{} {:>7} ({:>7})".format(k, "%.3f" % v.val, "%.3f" % v.avg)
+            for k, v in self.training_metrics.items()
+        ]
+        metrics_info = "\n Training metrics: " + "\t".join(metrics_info)
+        # extra_metrics_info = self.extra_info_template.format(**self.extra_info)
         log_info = basic_info + metrics_info
 
         self.logger.info(log_info)
@@ -213,12 +247,35 @@ class Trainer():
 
 
 class SegTrainer(Trainer):
-    def __init__(self, args, model, train_loader, criterion, optimizer, scheduler, evaluator, exp_dir, device):
-        super().__init__(args, model, train_loader, criterion, optimizer, scheduler, evaluator, exp_dir, device)
+    def __init__(
+        self,
+        args,
+        model,
+        train_loader,
+        criterion,
+        optimizer,
+        scheduler,
+        evaluator,
+        exp_dir,
+        device,
+    ):
+        super().__init__(
+            args,
+            model,
+            train_loader,
+            criterion,
+            optimizer,
+            scheduler,
+            evaluator,
+            exp_dir,
+            device,
+        )
 
-        self.training_metrics = {name: RunningAverageMeter(length=100) for name in ['Acc', 'mAcc', 'mIoU']}
-        self.best_metric = float('-inf')
-        self.best_metric_key = 'mIoU'
+        self.training_metrics = {
+            name: RunningAverageMeter(length=100) for name in ["Acc", "mAcc", "mIoU"]
+        }
+        self.best_metric = float("-inf")
+        self.best_metric_key = "mIoU"
         self.best_metric_comp = operator.gt
 
     def compute_loss(self, logits, target):
@@ -237,7 +294,9 @@ class SegTrainer(Trainer):
         target = target.unsqueeze(1)
         ignore_mask = target == self.ignore_index
         target[ignore_mask] = 0
-        ignore_mask = ignore_mask.expand(-1, num_classes if num_classes > 1 else 2, -1, -1)
+        ignore_mask = ignore_mask.expand(
+            -1, num_classes if num_classes > 1 else 2, -1, -1
+        )
 
         dims = list(logits.shape)
         if num_classes == 1:
@@ -253,21 +312,52 @@ class SegTrainer(Trainer):
         union = torch.logical_or(binary_pred, binary_target)
 
         acc = intersection.sum() / binary_target.sum() * 100
-        macc = torch.nanmean(intersection.sum(dim=(0, 2, 3)) / binary_target.sum(dim=(0, 2, 3))) * 100
-        miou = torch.nanmean(intersection.sum(dim=(0, 2, 3)) / union.sum(dim=(0, 2, 3))) * 100
+        macc = (
+            torch.nanmean(
+                intersection.sum(dim=(0, 2, 3)) / binary_target.sum(dim=(0, 2, 3))
+            )
+            * 100
+        )
+        miou = (
+            torch.nanmean(intersection.sum(dim=(0, 2, 3)) / union.sum(dim=(0, 2, 3)))
+            * 100
+        )
 
-        self.training_metrics['Acc'].update(acc.item())
-        self.training_metrics['mAcc'].update(macc.item())
-        self.training_metrics['mIoU'].update(miou.item())
+        self.training_metrics["Acc"].update(acc.item())
+        self.training_metrics["mAcc"].update(macc.item())
+        self.training_metrics["mIoU"].update(miou.item())
 
 
 class RegTrainer(Trainer):
-    def __init__(self, args, model, train_loader, criterion, optimizer, scheduler, evaluator, exp_dir, device):
-        super().__init__(args, model, train_loader, criterion, optimizer, scheduler, evaluator, exp_dir, device)
+    def __init__(
+        self,
+        args,
+        model,
+        train_loader,
+        criterion,
+        optimizer,
+        scheduler,
+        evaluator,
+        exp_dir,
+        device,
+    ):
+        super().__init__(
+            args,
+            model,
+            train_loader,
+            criterion,
+            optimizer,
+            scheduler,
+            evaluator,
+            exp_dir,
+            device,
+        )
 
-        self.training_metrics = {name: RunningAverageMeter(length=100) for name in ['MSE']}
-        self.best_metric = float('inf')
-        self.best_metric_key = 'MSE'
+        self.training_metrics = {
+            name: RunningAverageMeter(length=100) for name in ["MSE"]
+        }
+        self.best_metric = float("inf")
+        self.best_metric_key = "MSE"
         self.best_metric_comp = operator.lt
 
     def compute_loss(self, logits, target):
@@ -303,9 +393,6 @@ class RegTrainer(Trainer):
         # macc = torch.nanmean(intersection.sum(dim=(0, 2, 3)) / binary_target.sum(dim=(0, 2, 3))) * 100
         # miou = torch.nanmean(intersection.sum(dim=(0, 2, 3)) / union.sum(dim=(0, 2, 3))) * 100
 
-        self.training_metrics['MSE'].update(mse.item())
+        self.training_metrics["MSE"].update(mse.item())
         # self.training_metrics['mAcc'].update(macc.item())
         # self.training_metrics['mIoU'].update(miou.item())
-
-
-
