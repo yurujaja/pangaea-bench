@@ -29,7 +29,7 @@ scheduler:
 
 
 # EXPERIMENT
-finetuning: false
+finetune: false
 ckpt_dir: null
 limited_label: 1
 n_epochs: 80

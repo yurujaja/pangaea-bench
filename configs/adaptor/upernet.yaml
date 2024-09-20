@@ -1,11 +1,11 @@
 _target_: geofm_bench.adaptors.upernet.UPerNet
-binary: False
 # time_frames: 2
 #task_model_args:
   #num_frames: 1
   #mt_strategy: "ltae" #activated only when if num_frames > 1
   #num_classes - task parameter passed from the dataset config
   #wave_list - task parameter passed from the dataset config
-
 channels: 512
-
+encoder: null
+num_classes: ${dataset.num_classes}
+finetune: ${finetune}
