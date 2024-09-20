@@ -30,6 +30,7 @@ class CROMA_OPTICAL_Encoder(nn.Module):
         self.model_name = foundation_model_name
         self.img_size = image_resolution
         self.encoder_weights = encoder_weights
+        self.embed_dim = embed_dim
 
         if size == "base":
             self.encoder_dim = 768

@@ -18,11 +18,10 @@ class UPerNet(nn.Module):
 
     def __init__(
         self,
-        binary: bool,
-        in_channels: int,
+        num_classes: int,
         channels: int,
-        cfg,
-        encoder,
+        encoder: nn.Module,
+        finetune: bool,
         pool_scales=(1, 2, 3, 6),
         feature_multiplier: int = 1,
     ):
@@ -32,7 +31,7 @@ class UPerNet(nn.Module):
 
         self.model_name = "UPerNet"
         self.encoder = encoder
-        self.finetune = args.finetune
+        self.finetune = finetune
         self.feature_multiplier = feature_multiplier
 
         if not self.finetune:
@@ -44,14 +43,14 @@ class UPerNet(nn.Module):
         #         param.requires_grad = False
 
         self.neck = Feature2Pyramid(
-            embed_dim=cfg["in_channels"] * feature_multiplier, rescales=[4, 2, 1, 0.5]
+            embed_dim=encoder.embed_dim * feature_multiplier, rescales=[4, 2, 1, 0.5]
         )
 
         self.align_corners = False
 
-        self.in_channels = [cfg["in_channels"] * feature_multiplier for _ in range(4)]
-        self.channels = cfg["channels"]
-        self.num_classes = 1 if cfg["binary"] else cfg["num_classes"]
+        self.in_channels = [encoder.embed_dim * feature_multiplier for _ in range(4)]
+        self.channels = channels
+        self.num_classes = num_classes
 
         # PSP Module
         self.psp_modules = PPM(
