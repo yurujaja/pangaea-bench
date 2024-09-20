@@ -1,0 +1,6 @@
+n_epochs: 80
+precision: fp32
+ckpt_interval: 10
+eval_interval: 10
+log_interval: 5
+

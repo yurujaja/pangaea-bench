@@ -8,10 +8,6 @@ seed: 234
 # TRAINING
 num_workers: 1
 batch_size: 8
-precision: fp32
-ckpt_interval: 10
-eval_interval: 10
-log_interval: 5
 
 
 # EXPERIMENT

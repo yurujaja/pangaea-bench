@@ -1,33 +1,41 @@
 import logging
 import operator
 import os
+import pathlib
 import time
 
 import torch
+import torch.nn as nn
 from torch.cuda.amp import GradScaler
 from torch.nn import functional as F
+from torch.optim.lr_scheduler import LRScheduler
+from torch.optim.optimizer import Optimizer
+from torch.utils.data import DataLoader
 from utils.logger import RunningAverageMeter, sec_to_hm
 
 
 class Trainer:
     def __init__(
         self,
-        args,
-        model,
-        train_loader,
-        criterion,
-        optimizer,
-        lr_scheduler,
-        evaluator,
-        exp_dir,
-        device,
+        model: nn.Module,
+        train_loader: DataLoader,
+        val_loader: DataLoader,
+        criterion: nn.Module,
+        optimizer: Optimizer,
+        lr_scheduler: LRScheduler,
+        evaluator: torch.nn.Module,
+        n_epochs: int,
+        exp_dir: pathlib.Path | str,
+        device: torch.device,
+        precision: str,
+        use_wandb: bool,
+        ckpt_interval: int,
+        eval_interval: int,
+        log_interval: int,
     ):
         # torch.set_num_threads(1)
 
-        self.args = args
         self.rank = int(os.environ["RANK"])
-        # self.train_cfg = train_cfg
-        # self.dataset_cfg = dataset_cfg
         self.criterion = criterion
         self.model = model
         self.train_loader = train_loader
@@ -35,7 +43,6 @@ class Trainer:
         self.optimizer = optimizer
         self.lr_scheduler = lr_scheduler
         self.evaluator = evaluator
-        self.ignore_index = args["dataset"]["ignore_index"]
         self.logger = logging.getLogger()
         self.training_stats = {
             name: RunningAverageMeter(length=self.batch_per_epoch)
@@ -48,14 +55,8 @@ class Trainer:
         self.exp_dir = exp_dir
         self.device = device
 
-        self.enable_mixed_precision = (
-            args.fp16 or args.bf16
-        )  # train_cfg["mixed_precision"]
-        if args.fp16 and args.bf16:
-            self.logger.warning(
-                "Detecting both fp16 and bf16 are enabled, use fp16 by default"
-            )
-        self.precision = torch.float16 if args.fp16 else torch.bfloat16
+        self.enable_mixed_precision = precision != "fp32"
+        self.precision = torch.float16 if (precision == "fp16") else torch.bfloat16
         self.scaler = GradScaler(enabled=self.enable_mixed_precision)
 
         self.start_epoch = 0
@@ -254,7 +255,6 @@ class SegTrainer(Trainer):
         train_loader,
         criterion,
         optimizer,
-        scheduler,
         evaluator,
         exp_dir,
         device,
@@ -292,7 +292,7 @@ class SegTrainer(Trainer):
         else:
             pred = torch.argmax(logits, dim=1, keepdim=True)
         target = target.unsqueeze(1)
-        ignore_mask = target == self.ignore_index
+        ignore_mask = target == self.train_loader.dataset.ignore_index
         target[ignore_mask] = 0
         ignore_mask = ignore_mask.expand(
             -1, num_classes if num_classes > 1 else 2, -1, -1
