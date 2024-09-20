@@ -1,5 +1,6 @@
 segmentor_name: RegMTUPerNet
 task_name: regression
+binary: False
 multi_temporal_strategy: linear
 time_frames: 12
 #task_model_args:
