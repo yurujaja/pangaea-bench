@@ -9,6 +9,7 @@ from hydra.conf import HydraConf
 from hydra.core.hydra_config import HydraConfig
 from hydra.utils import instantiate
 from omegaconf import DictConfig, OmegaConf
+from torch.utils.data import Dataset
 
 from geofm_bench.utils.logger import init_logger
 from geofm_bench.utils.utils import fix_seed
@@ -26,10 +27,8 @@ def get_exp_name(hydra_config: HydraConf) -> str:
 @hydra.main(version_base=None, config_path="../configs", config_name="train")
 def main(cfg: DictConfig) -> None:
     exp_name = get_exp_name(HydraConfig.get())
-
     # fix all random seeds
     fix_seed(cfg.seed)
-
     # distributed training variables
     rank = int(os.environ["RANK"])
     local_rank = int(os.environ["LOCAL_RANK"])
@@ -74,56 +73,61 @@ def main(cfg: DictConfig) -> None:
         # cfg["wandb_run_id"] = wandb.run.id
 
     # get datasets
-    train_dataset = instantiate(cfg.dataset, split="train")
-    val_dataset = instantiate(cfg.dataset, split="val")
-    test_dataset = instantiate(cfg.dataset, split="test")
+    train_dataset: Dataset = instantiate(cfg.dataset, split="train")
+    val_dataset: Dataset = instantiate(cfg.dataset, split="val")
+    test_dataset: Dataset = instantiate(cfg.dataset, split="test")
+    logger.info("Built {} dataset.".format(cfg.dataset.dataset_name))
 
     # Apply data processing to the datasets
-    for step in cfg.augmentation.train:
-        train_dataset = AUGMENTER_REGISTRY.get(step)(
-            train_dataset, cfg, cfg.augmentation.train[step]
+    # for augmentation in cfg.augmentation.train:
+    #     # TODO: add data augmentation cleaner so it can be implemented
+    #     augmentation: RichDataset = instantiate(augmentation, cfg)
+    #     print(augmentation)
+    #     train_dataset = AUGMENTER_REGISTRY.get(step)(
+    #         train_dataset, cfg, cfg.augmentation.train[step]
+    #     )
+    #
+    # for step in cfg.augmentation.test:
+    #     val_dataset = AUGMENTER_REGISTRY.get(step)(
+    #         val_dataset, cfg, cfg.augmentation.test[step]
+    #     )
+    #     test_dataset = AUGMENTER_REGISTRY.get(step)(
+    #         test_dataset, cfg, cfg.augmentation.test[step]
+    #     )
+    #
+    # logger.info("Created processing pipelines:")
+    # logger.info(f"   Training: {pprint.pformat([s for s in cfg.augmentation.train])}")
+    # logger.info(f"   Evaluation: {pprint.pformat([s for s in cfg.augmentation.test])}")
+    # #
+
+    # prepare the foundation model
+    # TODO: change download model signature with args
+    # download_model(cfg.encoder)
+
+    foundation_model: torch.nn.Module = instantiate(cfg.foundation_model)
+    print(foundation_model)
+
+    missing, incompatible_shape = foundation_model.load_encoder_weights(
+        cfg.encoder.encoder_weights
+    )
+    logger.info("Loaded encoder weight from {}.".format(cfg.encoder.encoder_weights))
+    if missing:
+        logger.warning(
+            "Missing parameters:\n"
+            + "\n".join("%s: %s" % (k, v) for k, v in sorted(missing.items()))
+        )
+    if incompatible_shape:
+        logger.warning(
+            "Incompatible parameters:\n"
+            + "\n".join(
+                "%s: expected %s but found %s" % (k, v[0], v[1])
+                for k, v in sorted(incompatible_shape.items())
+            )
         )
 
-    for step in cfg.augmentation.test:
-        val_dataset = AUGMENTER_REGISTRY.get(step)(
-            val_dataset, cfg, cfg.augmentation.test[step]
-        )
-        test_dataset = AUGMENTER_REGISTRY.get(step)(
-            test_dataset, cfg, cfg.augmentation.test[step]
-        )
-
-    logger.info("Created processing pipelines:")
-    logger.info(f"   Training: {pprint.pformat([s for s in cfg.augmentation.train])}")
-    logger.info(f"   Evaluation: {pprint.pformat([s for s in cfg.augmentation.test])}")
+    # prepare the segmentor
 
 
-#     logger.info("Built {} dataset.".format(dataset_name))
-#
-#     # prepare the foundation model
-#     download_model(cfg.encoder)
-#     encoder = ENCODER_REGISTRY.get(cfg.encoder.encoder_name)(
-#         cfg.encoder, **cfg.encoder.encoder_model_args
-#     )
-#
-#     missing, incompatible_shape = encoder.load_encoder_weights(
-#         cfg.encoder.encoder_weights
-#     )
-#     logger.info("Loaded encoder weight from {}.".format(cfg.encoder.encoder_weights))
-#     if missing:
-#         logger.warning(
-#             "Missing parameters:\n"
-#             + "\n".join("%s: %s" % (k, v) for k, v in sorted(missing.items()))
-#         )
-#     if incompatible_shape:
-#         logger.warning(
-#             "Incompatible parameters:\n"
-#             + "\n".join(
-#                 "%s: expected %s but found %s" % (k, v[0], v[1])
-#                 for k, v in sorted(incompatible_shape.items())
-#             )
-#         )
-#
-#     # prepare the segmentor
 #     model = SEGMENTOR_REGISTRY.get(cfg.segmentor.segmentor_name)(
 #         cfg, cfg.segmentor, encoder
 #     ).to(device)
