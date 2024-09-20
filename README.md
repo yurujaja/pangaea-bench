@@ -25,19 +25,19 @@ For the moment, we support the following **models**:
 
 And the following **datasets**:
 
-|                     | Paper | Download | Domain | Task | Sensors | Location |
-|:-------------------:|:-----:|:--------:|:------:|:----:|---------|----------|
-|    HLS Burn Scars   |       |          |        |      |         |          |
-|        MADOS        |       |          |        |      |         |          |
-|        PASTIS       |       |          |        |      |         |          |
-|     Sen1Floods11    |       |          |        |      |         |          |
-|        xView2       |       |          |        |      |         |          |
-| Five Billion Pixels |       |          |        |      |         |          |
-|   DynamicEarthNet   |       |          |        |      |         |          |
-|   CropTypeMapping   |       |          |        |      |         |          |
-|      SpaceNet7      |       |          |        |      |         |          |
-|    AI4SmallFarms    |       |          |        |      |         |          |
-|     BioMassters     |       |          |        |      |         |          |
+|                     | Download | Domain | Task | Sensors | Location |
+|:-------------------:|:--------:|:------:|:----:|---------|----------|
+|    HLS Burn Scars   |       |        |      |         |          |
+|        MADOS        |                |        |      |         |          |
+|        PASTIS       |           |        |      |         |          |
+|     Sen1Floods11    |          |        |      |         |          |
+|        xView2       |           |        |      |         |          |
+| Five Billion Pixels |            |        |      |         |          |
+|   DynamicEarthNet   |            |        |      |         |          |
+|   [CropTypeMapping](https://openaccess.thecvf.com/content_CVPRW_2019/papers/cv4gc/Rustowicz_Semantic_Segmentation_of_Crop_Type_in_Africa_A_Novel_Dataset_CVPRW_2019_paper.pdf) |   [link](https://sustainlab-group.github.io/sustainbench/docs/datasets/sdg2/crop_type_mapping_ghana-ss.html#download) | Agriculture |Semantic Segmentation |S1,S2,Planet|South Sudan|
+|      SpaceNet7        |          |        |      |         |          |
+|    AI4SmallFarms        |          |        |      |         |          |
+|     BioMassters    |          |        |      |         |          |
   
 The repository supports the following **tasks** using GFMs:
  - [single temporal semantic segmentation](#single-temporal-semantic-segmentation)
