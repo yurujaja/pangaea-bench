@@ -108,11 +108,7 @@ class Prithvi_Encoder(nn.Module):
         for i, blk in enumerate(self.blocks):
             x = blk(x)
             if i in self.output_layers:
-                #out = self.norm(x) if i == 11 else x
-                # print(x.shape)
                 out = x[:, 1:, :].permute(0, 2, 1).view(x.shape[0], -1, self.num_frames, self.img_size // self.patch_size, self.img_size // self.patch_size).squeeze(2).contiguous()
-                # out = x[:, 1:, :].permute(0, 2, 1).reshape(x.shape[0], -1, self.img_size // self.patch_size, self.img_size // self.patch_size).contiguous()
-
                 output.append(out)
 
         return output

@@ -231,7 +231,7 @@ class MTUPerNet(UPerNet):
                 if self.multi_temporal_strategy == "ltae":
                     feats[i] = self.tmap(feats[i])
                 elif self.multi_temporal_strategy == "linear":
-                    feats[i] = self.tmap(feats[i].permute(0,1,3,4,2)).squeeze(-1)
+                    feats[i] = self.tmap(feats[i].permute(0, 1, 3, 4, 2)).squeeze(-1)
         
         feat = self.neck(feats)
         feat = self._forward_feature(feat)

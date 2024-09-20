@@ -36,7 +36,7 @@ class DynamicEarthNet(Dataset):
         self.split = split
         self.is_train = is_train
 
-        self.mode = 'single'
+        self.mode = 'weekly'
 
         self.files = []
 
