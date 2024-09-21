@@ -1,29 +1,25 @@
 train: false
 work_dir: ""
+seed: 234
 use_wandb: false
 
-
-
 # TRAINING
-seed: 234
 num_workers: 1
 batch_size: 8
-precision: fp32
-ckpt_interval: 10
-eval_interval: 10
-log_interval: 5
+
 
 
 # EXPERIMENT
-finetuning: false
-ckpt_dir: ???
+finetune: false
+ckpt_dir: "20240921_024230-croma_optical-upernet-pastis"
 limited_label: 1
 n_epochs: 80
 
 
-
 defaults:
+  - task: ???
   - dataset: ???
   - foundation_model: ???
   - adaptor: ???
+  - augmentation: ???
   - _self_ 

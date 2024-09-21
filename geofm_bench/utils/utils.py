@@ -1,6 +1,10 @@
-import torch
-import numpy as np
+import os as os
 import random
+from pathlib import Path
+
+import numpy as np
+import torch
+
 
 def seed_worker(worker_id):
     worker_seed = torch.initial_seed() % 2**32
@@ -13,6 +17,7 @@ def get_generator(seed):
     g.manual_seed(seed)
     return g
 
+
 def fix_seed(seed):
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
@@ -21,6 +26,7 @@ def fix_seed(seed):
     random.seed(seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
+
 
 # to make flops calculator work
 def prepare_input(input_res):
@@ -32,4 +38,10 @@ def prepare_input(input_res):
     x2 = torch.FloatTensor(*tuple(input_res))
     image["optical"] = x1
     image["sar"] = x2
-    return dict(img = image)
+    return dict(img=image)
+
+
+def get_best_model_ckpt_path(exp_dir: str | Path) -> str:
+    return os.path.join(
+        exp_dir, next(f for f in os.listdir(exp_dir) if f.endswith("_best.pth"))
+    )

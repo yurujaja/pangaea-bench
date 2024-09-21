@@ -33,6 +33,11 @@ class Evaluator:
 
             self.wandb = wandb
 
+    def evaluate(
+        model: torch.nn.Module, model_ckpt_path: str | Path | None = None
+    ) -> None:
+        raise NotImplementedError
+
     def __call__(self, model):
         pass
 
@@ -177,6 +182,7 @@ class SegEvaluator(Evaluator):
         self.logger.info(recall_str)
         self.logger.info(macc_str)
 
+        # TODO: REMOVE THIS
         if self.args.use_wandb and self.args.rank == 0:
             self.wandb.log(
                 {

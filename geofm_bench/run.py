@@ -17,7 +17,12 @@ from geofm_bench.engine.data_preprocessor import get_collate_fn
 from geofm_bench.engine.evaluator import Evaluator
 from geofm_bench.engine.trainer import Trainer
 from geofm_bench.utils.logger import init_logger
-from geofm_bench.utils.utils import fix_seed, get_generator, seed_worker
+from geofm_bench.utils.utils import (
+    fix_seed,
+    get_best_model_ckpt_path,
+    get_generator,
+    seed_worker,
+)
 
 
 def get_exp_name(hydra_config: HydraConf) -> str:
@@ -217,36 +222,26 @@ def main(cfg: DictConfig) -> None:
         trainer.train()
 
     # Evaluation
+    else:
+        test_loader = DataLoader(
+            test_dataset,
+            sampler=DistributedSampler(test_dataset),
+            batch_size=cfg.batch_size,
+            num_workers=cfg.num_workers,
+            pin_memory=True,
+            persistent_workers=False,
+            drop_last=False,
+            collate_fn=collate_fn,
+        )
+        test_evaluator: Evaluator = instantiate(
+            cfg.task.evaluator, val_loader=test_loader, exp_dir=exp_dir, device=device
+        )
+        best_model_ckpt_path = get_best_model_ckpt_path(exp_dir)
+        test_evaluator.evaluate(model, "best model", best_model_ckpt_path)
+
+    if cfg.use_wandb and cfg.rank == 0:
+        wandb.finish()
 
 
-#     else:
-#         test_loader = DataLoader(
-#             test_dataset,
-#             sampler=DistributedSampler(test_dataset),
-#             batch_size=cfg.batch_size,
-#             num_workers=cfg.num_workers,
-#             pin_memory=True,
-#             persistent_workers=False,
-#             drop_last=False,
-#             collate_fn=collate_fn,
-#         )
-#
-#         logger.info("Built {} dataset for evaluation.".format(dataset_name))
-#
-#         if task_name == "regression":
-#             # TODO: This doesn't work atm
-#             test_evaluator = RegEvaluator(cfg, test_loader, exp_dir, device)
-#         else:
-#             test_evaluator = SegEvaluator(cfg, test_loader, exp_dir, device)
-#
-#         model_ckpt_path = os.path.join(
-#             exp_dir, next(f for f in os.listdir(exp_dir) if f.endswith("_best.pth"))
-#         )
-#         test_evaluator.evaluate(model, "best model", model_ckpt_path)
-#
-#     if cfg.use_wandb and cfg.rank == 0:
-#         wandb.finish()
-#
-#
 if __name__ == "__main__":
     main()
