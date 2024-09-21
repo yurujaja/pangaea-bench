@@ -14,6 +14,7 @@ from torch.utils.data import DataLoader, Dataset, Subset
 from torch.utils.data.distributed import DistributedSampler
 
 from geofm_bench.engine.data_preprocessor import get_collate_fn
+from geofm_bench.engine.evaluator import Evaluator
 from geofm_bench.engine.trainer import Trainer
 from geofm_bench.utils.logger import init_logger
 from geofm_bench.utils.utils import fix_seed, get_generator, seed_worker
@@ -195,11 +196,9 @@ def main(cfg: DictConfig) -> None:
         )
 
         # TODO: add val_evaluator in configs
-        print(cfg.task)
-        print(cfg.task.trainer)
-        print(cfg.task.evaluator)
-
-        val_evaluator = None
+        val_evaluator: Evaluator = instantiate(
+            cfg.task.evaluator, val_loader=val_loader, exp_dir=exp_dir, device=device
+        )
         trainer: Trainer = instantiate(
             cfg.task.trainer,
             model=model,
@@ -207,42 +206,12 @@ def main(cfg: DictConfig) -> None:
             lr_scheduler=lr_scheduler,
             optimizer=optimizer,
             criterion=criterion,
-            evaluator=val_loader,
+            evaluator=val_evaluator,
             exp_dir=exp_dir,
             device=device,
         )
-        print(trainer)
 
 
-#
-#         # training: put all components into engines
-#         if task_name == "regression":
-#             val_evaluator = RegEvaluator(cfg, val_loader, exp_dir, device)
-#             trainer = RegTrainer(
-#                 cfg,
-#                 model,
-#                 train_loader,
-#                 criterion,
-#                 optimizer,
-#                 scheduler,
-#                 val_evaluator,
-#                 exp_dir,
-#                 device,
-#             )
-#         else:
-#             val_evaluator = SegEvaluator(cfg, val_loader, exp_dir, device)
-#             trainer = SegTrainer(
-#                 cfg,
-#                 model,
-#                 train_loader,
-#                 criterion,
-#                 optimizer,
-#                 scheduler,
-#                 val_evaluator,
-#                 exp_dir,
-#                 device,
-#             )
-#
 #         # resume training if model_checkpoint is provided
 #         if cfg.resume_from is not None:
 #             trainer.load_model(cfg.resume_from)
