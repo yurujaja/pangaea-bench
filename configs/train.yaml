@@ -22,4 +22,6 @@ defaults:
   - adaptor: ???
   - augmentation: ???
   - criterion: ???
+  - lr_scheduler: multi_step_lr
+  - optimizer: adamw
   - _self_ 

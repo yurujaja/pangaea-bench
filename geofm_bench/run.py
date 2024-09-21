@@ -143,11 +143,6 @@ def main(cfg: DictConfig) -> None:
         )
     )
 
-    ##########################
-    criterion = instantiate(cfg.criterion)
-
-    ##################################
-
     modalities = list(foundation_model.input_bands.keys())
     collate_fn = get_collate_fn(modalities)
 
@@ -192,12 +187,28 @@ def main(cfg: DictConfig) -> None:
             collate_fn=collate_fn,
         )
 
+        ##########################
+        criterion = instantiate(cfg.criterion)
+        optimizer = instantiate(cfg.optimizer, params=model.parameters())
+        total_iters = len(train_loader) * cfg.trainer.n_epochs
+        lr_scheduler = instantiate(
+            cfg.lr_scheduler, optimizer=optimizer, total_iters=total_iters
+        )
+
+        print("Criterion ", criterion)
+        print("Optimizer ", optimizer)
+        print("LRScheduler ", lr_scheduler)
+        ##################################
+
         # TODO: add val_evaluator in configs
         val_evaluator = None
         trainer: Trainer = instantiate(
             cfg.trainer,
             model=model,
             train_loader=train_loader,
+            lr_scheduler=lr_scheduler,
+            optimizer=optimizer,
+            criterion=criterion,
             evaluator=val_loader,
             exp_dir=exp_dir,
             device=device,

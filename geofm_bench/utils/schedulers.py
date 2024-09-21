@@ -1,9 +1,12 @@
 import torch
-from utils.registry import SCHEDULER_REGISTRY
+from torch.optim.lr_scheduler import LRScheduler
+from torch.optim.optimizer import Optimizer
 
-@SCHEDULER_REGISTRY.register()
-def MultiStepLR(optimizer, total_iters, cfg):
+
+def MultiStepLR(
+    optimizer: Optimizer, total_iters: int, lr_milestones: list[float]
+) -> LRScheduler:
     return torch.optim.lr_scheduler.MultiStepLR(
-        optimizer, 
-        [total_iters * r for r in cfg["lr_milestones"]], 
-        gamma=0.1)
+        optimizer, [int(total_iters * r) for r in lr_milestones], gamma=0.1
+    )
+
