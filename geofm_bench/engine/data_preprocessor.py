@@ -73,10 +73,11 @@ class RegPreprocessor(SegPreprocessor):
 
 
 class BandAdaptor:
-    def __init__(self, cfg, modality):
-        self.dataset_bands = cfg.dataset.bands[modality]
-        self.input_bands = getattr(cfg.encoder.input_bands, modality, [])
-        self.encoder_name = cfg.encoder.encoder_name
+    def __init__(
+        self, dataset: Dataset, foundation_model: Module, modality: str
+    ) -> None:
+        self.dataset_bands = dataset.bands[modality]
+        self.input_bands = getattr(foundation_model.input_bands, modality, [])
 
         self.used_bands_mask = torch.tensor(
             [b in self.input_bands for b in self.dataset_bands], dtype=torch.bool
@@ -93,9 +94,7 @@ class BandAdaptor:
         )
 
         self.need_padded = self.avail_bands_mask.sum() < len(self.input_bands)
-
         self.logger = logging.getLogger()
-
         self.logger.info(f"Adaptor for modality: {modality}")
         self.logger.info(
             "Available bands in dataset: {}".format(
@@ -119,7 +118,18 @@ class BandAdaptor:
                 )
             )
 
-    def preprocess_band_statistics(self, data_mean, data_std, data_min, data_max):
+    def preprocess_band_statistics(
+        self,
+        data_mean: list[float],
+        data_std: list[float],
+        data_min: list[float],
+        data_max: list[float],
+    ) -> tuple[
+        list[float],
+        list[float],
+        list[float],
+        list[float],
+    ]:
         data_mean = [
             data_mean[i] if i != -1 else 0.0 for i in self.avail_bands_indices.tolist()
         ]
@@ -134,12 +144,12 @@ class BandAdaptor:
         ]
         return data_mean, data_std, data_min, data_max
 
-    def preprocess_single_timeframe(self, image):
+    def preprocess_single_timeframe(self, image: torch.Tensor) -> torch.Tensor:
         padded_image = torch.cat([torch.zeros_like(image[0:1]), image], dim=0)
         image = padded_image[self.avail_bands_indices + 1]
         return image
 
-    def __call__(self, image):
+    def __call__(self, image: torch.Tensor) -> torch.Tensor:
         if len(image.shape) == 3:
             # Add a time dimension so preprocessing can work on consistent images
             image = image.unsqueeze(1)
