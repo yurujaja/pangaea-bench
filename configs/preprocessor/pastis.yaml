@@ -1,8 +1,0 @@
-train:
-  - ${augmentation.segpreprocessor}
-  - ${augmentation.normalize_mean_std}
-  - ${augmentation.resize_to_encoder}
-test:
-  - ${augmentation.segpreprocessor}
-  - ${augmentation.normalize_mean_std}
-  - ${augmentation.resize_to_encoder}

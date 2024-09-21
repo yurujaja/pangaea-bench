@@ -21,7 +21,7 @@ defaults:
   - dataset: ???
   - foundation_model: ???
   - adaptor: ???
-  - augmentation: ???
+  - preprocessing/pastis
   - criterion: ???
   - lr_scheduler: multi_step_lr
   - optimizer: adamw
