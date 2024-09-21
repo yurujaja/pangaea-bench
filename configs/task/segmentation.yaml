@@ -16,7 +16,14 @@ trainer:
   ckpt_interval: 10
   eval_interval: 10
   log_interval: 5
-  use_wandb: false
+  use_wandb: ${use_wandb}
 
 evaluator:
-  null
+  _target_: geofm_bench.engine.evaluator.SegEvaluator
+  # params overwritten in run
+  val_loader: null
+  exp_dir: null
+  device: null
+  use_wandb: ${use_wandb}
+
+

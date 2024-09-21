@@ -210,15 +210,15 @@ def main(cfg: DictConfig) -> None:
             exp_dir=exp_dir,
             device=device,
         )
+        # resume training if model_checkpoint is provided
+        if cfg.ckpt_dir is not None:
+            trainer.load_model(cfg.resume_from)
+
+        trainer.train()
+
+    # Evaluation
 
 
-#         # resume training if model_checkpoint is provided
-#         if cfg.resume_from is not None:
-#             trainer.load_model(cfg.resume_from)
-#
-#         trainer.train()
-#
-#     # Evaluation
 #     else:
 #         test_loader = DataLoader(
 #             test_dataset,
