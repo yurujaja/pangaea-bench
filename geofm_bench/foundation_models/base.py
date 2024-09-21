@@ -1,12 +1,24 @@
+from pathlib import Path
+
 import torch
 import torch.nn as nn
 
-class Base_Encoder(nn.Module):
-    def __init__(self):
+
+class FoundationModel(nn.Module):
+    def __init__(self) -> None:
         super().__init__()
 
+    @property
+    def input_bands(self) -> dict[str, list[str]]:
+        raise NotImplementedError
 
-    def load_encoder_weights(self, pretrained_path):
+    @property
+    def input_size(self) -> int:
+        raise NotImplementedError
+
+    def load_encoder_weights(
+        self, pretrained_path: str | Path
+    ) -> tuple[dict[str, torch.Size], dict[str, tuple[torch.Size, torch.Size]]]:
         pretrained_model = torch.load(pretrained_path, map_location="cpu")
         k = pretrained_model.keys()
         pretrained_encoder = {}
@@ -20,14 +32,12 @@ class Base_Encoder(nn.Module):
             else:
                 pretrained_encoder[name] = pretrained_model[name]
 
-        msg = self.load_state_dict(pretrained_encoder, strict=False)
-
         return missing, incompatible_shape
 
-
-    def freeze(self):
-       for param in self.parameters():
-           param.requires_grad = False
+    def freeze(self) -> None:
+        for param in self.parameters():
+            param.requires_grad = False
 
     def forward(self):
         pass
+
