@@ -42,8 +42,6 @@ def main(cfg: DictConfig) -> None:
     # distributed training variables
     rank = int(os.environ["RANK"])
     local_rank = int(os.environ["LOCAL_RANK"])
-    world_size = int(os.environ["WORLD_SIZE"])
-    local_world_size = int(os.environ["LOCAL_WORLD_SIZE"])
     device = torch.device("cuda", local_rank)
 
     torch.cuda.set_device(device)
@@ -237,7 +235,7 @@ def main(cfg: DictConfig) -> None:
             cfg.task.evaluator, val_loader=test_loader, exp_dir=exp_dir, device=device
         )
         best_model_ckpt_path = get_best_model_ckpt_path(exp_dir)
-        test_evaluator.evaluate(model, "best model", best_model_ckpt_path)
+        test_evaluator.evaluate(model, best_model_ckpt_path)
 
     if cfg.use_wandb and cfg.rank == 0:
         wandb.finish()

@@ -34,7 +34,7 @@ class Evaluator:
             self.wandb = wandb
 
     def evaluate(
-        model: torch.nn.Module, model_ckpt_path: str | Path | None = None
+        self, model: torch.nn.Module, model_ckpt_path: str | Path | None = None
     ) -> None:
         raise NotImplementedError
 
