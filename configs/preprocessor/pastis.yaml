@@ -1,8 +1,8 @@
 train:
   - ${augmentation.segpreprocessor}
-  - _target_: geofm_bench.engine.data_preprocessor.NormalizeMeanStd
-  - _target_: geofm_bench.engine.data_preprocessor.ResizeToEncoder
+  - ${augmentation.normalize_mean_std}
+  - ${augmentation.resize_to_encoder}
 test:
-  - _target_: geofm_bench.engine.data_preprocessor.SegPreprocessor
-  - _target_: geofm_bench.engine.data_preprocessor.NormalizeMeanStd
-  - _target_: geofm_bench.engine.data_preprocessor.ResizeToEncoder
+  - ${augmentation.segpreprocessor}
+  - ${augmentation.normalize_mean_std}
+  - ${augmentation.resize_to_encoder}
