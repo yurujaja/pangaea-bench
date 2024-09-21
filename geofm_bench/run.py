@@ -13,9 +13,9 @@ from omegaconf import DictConfig, OmegaConf
 from torch.utils.data import DataLoader, Dataset, Subset
 from torch.utils.data.distributed import DistributedSampler
 
-from geofm_bench.engine.data_preprocessor import get_collate_fn
 from geofm_bench.engine.evaluator import Evaluator
 from geofm_bench.engine.trainer import Trainer
+from geofm_bench.utils.collate_fn import get_collate_fn
 from geofm_bench.utils.logger import init_logger
 from geofm_bench.utils.utils import (
     fix_seed,
@@ -86,6 +86,29 @@ def main(cfg: DictConfig) -> None:
     test_dataset: Dataset = instantiate(cfg.dataset, split="test")
     logger.info("Built {} dataset.".format(cfg.dataset.dataset_name))
 
+    # prepare the foundation model
+    # TODO: change download model signature with args
+    # download_model(cfg.foundation_model)
+    foundation_model: torch.nn.Module = instantiate(cfg.foundation_model)
+    print(foundation_model)
+    missing, incompatible_shape = foundation_model.load_encoder_weights()
+    # TODO: refactor this part in load_encoder_weights(logger)
+    # logger.info("Loaded encoder weight from {}.".format(cfg.encoder.encoder_weights))
+    # if missing:
+    #     logger.warning(
+    #         "Missing parameters:\n"
+    #         + "\n".join("%s: %s" % (k, v) for k, v in sorted(missing.items()))
+    #     )
+    # if incompatible_shape:
+    #     logger.warning(
+    #         "Incompatible parameters:\n"
+    #         + "\n".join(
+    #             "%s: expected %s but found %s" % (k, v[0], v[1])
+    #             for k, v in sorted(incompatible_shape.items())
+    #         )
+    #     )
+    #
+
     # Apply data processing to the datasets
     # for augmentation in cfg.augmentation.train:
     #     # TODO: add data augmentation cleaner so it can be implemented
@@ -108,30 +131,6 @@ def main(cfg: DictConfig) -> None:
     # logger.info(f"   Evaluation: {pprint.pformat([s for s in cfg.augmentation.test])}")
     # #
 
-    # prepare the foundation model
-    # TODO: change download model signature with args
-    # download_model(cfg.encoder)
-
-    foundation_model: torch.nn.Module = instantiate(cfg.foundation_model)
-    print(foundation_model)
-
-    missing, incompatible_shape = foundation_model.load_encoder_weights()
-    # TODO: refactor this part in load_encoder_weights(logger)
-    # logger.info("Loaded encoder weight from {}.".format(cfg.encoder.encoder_weights))
-    # if missing:
-    #     logger.warning(
-    #         "Missing parameters:\n"
-    #         + "\n".join("%s: %s" % (k, v) for k, v in sorted(missing.items()))
-    #     )
-    # if incompatible_shape:
-    #     logger.warning(
-    #         "Incompatible parameters:\n"
-    #         + "\n".join(
-    #             "%s: expected %s but found %s" % (k, v[0], v[1])
-    #             for k, v in sorted(incompatible_shape.items())
-    #         )
-    #     )
-    #
     # prepare the adaptor (segmentation/regression)
     model: torch.nn.Module = instantiate(
         cfg.adaptor,

@@ -1,80 +1,19 @@
 import logging
 import math
 import random
-from typing import Callable
 
 import numpy as np
 import omegaconf
 import torch
-import torch.nn.functional as F
 import torchvision.transforms as T
+from torch.nn import Module
+from torch.utils.data import Dataset
 
 
-def get_collate_fn(modalities: list[str]) -> Callable:
-    def collate_fn(
-        batch: dict[str, dict[str, torch.Tensor] | torch.Tensor],
-    ) -> dict[str, dict[str, torch.Tensor] | torch.Tensor]:
-        """Collate function for torch DataLoader
-        args:
-            batch: list of dictionaries with keys 'image' and 'target'.
-            'image' is a dictionary with keys corresponding to modalities and values being torch.Tensor
-            of shape (C, H, W) for single images, (C, T, H, W) where T is the temporal dimension for
-            time series data. 'target' is a torch.Tensor
-        returns:
-            dictionary with keys 'image' and 'target'
-        """
-        # compute the maximum temporal dimension
-        T_max = 0
-        for modality in modalities:
-            for x in batch:
-                # check if the image is a time series, i.e. has 4 dimensions
-                if len(x["image"][modality].shape) == 4:
-                    T_max = max(T_max, x["image"][modality].shape[1])
-        # pad all images to the same temporal dimension
-        for modality in modalities:
-            for i, x in enumerate(batch):
-                # check if the image is a time series, if yes then pad it
-                # else do nothing
-                if len(x["image"][modality].shape) == 4:
-                    T = x["image"][modality].shape[1]
-                    if T < T_max:
-                        padding = (0, 0, 0, 0, 0, T_max - T)
-                        batch[i]["image"][modality] = F.pad(
-                            x["image"][modality], padding, "constant", 0
-                        )
-
-        # stack all images and targets
-        return {
-            "image": {
-                modality: torch.stack([x["image"][modality] for x in batch])
-                for modality in modalities
-            },
-            "target": torch.stack([x["target"] for x in batch]),
-        }
-
-    return collate_fn
-
-
-class RichDataset(torch.utils.data.Dataset):
-    """Torch dataset wrapper with extra information"""
-
-    def __init__(self, dataset, cfg):
+class RichDataset(Dataset):
+    def __init__(self, dataset: Dataset, foundation_model: Module):
         self.dataset = dataset
-        # TODO: find out why these are here when every dataset gets the cfg as an input anyways.
-        # Either use unly these, or only the input arguments.
-        self.root_cfg = cfg
-        self.dataset_cfg = cfg.dataset
-        self.encoder_cfg = cfg.encoder
-        self.root_path = cfg.dataset.root_path
-        self.classes = cfg.dataset.classes
-        self.class_num = len(self.classes)
-        self.split = dataset.split
-
-        # TODO: Make these optional.
-        self.data_mean = getattr(dataset, "data_mean", cfg.dataset.data_mean).copy()
-        self.data_std = getattr(dataset, "data_std", cfg.dataset.data_std).copy()
-        self.data_min = getattr(dataset, "data_min", cfg.dataset.data_min).copy()
-        self.data_max = getattr(dataset, "data_max", cfg.dataset.data_max).copy()
+        self.foundation_model = foundation_model
 
     def __getitem__(self, index):
         return self.dataset[index]
@@ -84,38 +23,36 @@ class RichDataset(torch.utils.data.Dataset):
 
 
 class SegPreprocessor(RichDataset):
-    def __init__(self, dataset, cfg, local_cfg):
-        super().__init__(dataset, cfg)
+    def __init__(self, dataset: Dataset, foundation_model: Module) -> None:
+        super().__init__(dataset, foundation_model)
 
         self.preprocessor = {}
         self.preprocessor["optical"] = (
-            BandAdaptor(cfg, "optical")
-            if "optical" in cfg.dataset.bands.keys()
-            else None
+            BandAdaptor(cfg, "optical") if "optical" in dataset.bands.keys() else None
         )
         self.preprocessor["sar"] = (
-            BandAdaptor(cfg, "sar") if "sar" in cfg.dataset.bands.keys() else None
+            BandAdaptor(cfg, "sar") if "sar" in dataset.bands.keys() else None
         )
         # TO DO: other modalities
 
-        for modality in self.encoder_cfg.input_bands:
+        for modality in self.foundation_model.input_bands:
             new_stats = self.preprocessor[modality].preprocess_band_statistics(
-                self.data_mean[modality],
-                self.data_std[modality],
-                self.data_min[modality],
-                self.data_max[modality],
+                self.dataset.data_mean[modality],
+                self.dataset.data_std[modality],
+                self.dataset.data_min[modality],
+                self.dataset.data_max[modality],
             )
 
-            self.data_mean[modality] = new_stats[0]
-            self.data_std[modality] = new_stats[1]
-            self.data_min[modality] = new_stats[2]
-            self.data_max[modality] = new_stats[3]
+            self.dataset.data_mean[modality] = new_stats[0]
+            self.dataset.data_std[modality] = new_stats[1]
+            self.dataset.data_min[modality] = new_stats[2]
+            self.dataset.data_max[modality] = new_stats[3]
 
     def __getitem__(self, index):
         data = self.dataset[index]
 
         for k, v in data["image"].items():
-            if k in self.encoder_cfg.input_bands:
+            if k in self.foundation_model.input_bands:
                 data["image"][k] = self.preprocessor[k](v)
 
         data["target"] = data["target"].long()
@@ -123,16 +60,14 @@ class SegPreprocessor(RichDataset):
 
 
 class RegPreprocessor(SegPreprocessor):
-    def __init__(self, dataset, cfg, local_cfg):
-        super().__init__(dataset, cfg, local_cfg)
+    def __init__(self, dataset: Dataset, foundation_model: Module) -> None:
+        super().__init__(dataset, foundation_model)
 
     def __getitem__(self, index):
         data = self.dataset[index]
-
         for k, v in data["image"].items():
-            if k in self.encoder_cfg.input_bands:
+            if k in self.foundation_model.input_bands:
                 data["image"][k] = self.preprocessor[k](v)
-
         data["target"] = data["target"].float()
         return data
 
