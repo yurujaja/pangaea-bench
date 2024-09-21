@@ -28,10 +28,18 @@ class SegPreprocessor(RichDataset):
 
         self.preprocessor = {}
         self.preprocessor["optical"] = (
-            BandAdaptor(cfg, "optical") if "optical" in dataset.bands.keys() else None
+            BandAdaptor(
+                dataset=dataset, foundation_model=foundation_model, modality="optical"
+            )
+            if "optical" in dataset.bands.keys()
+            else None
         )
         self.preprocessor["sar"] = (
-            BandAdaptor(cfg, "sar") if "sar" in dataset.bands.keys() else None
+            BandAdaptor(
+                dataset=dataset, foundation_model=foundation_model, modality=modality
+            )
+            if "sar" in dataset.bands.keys()
+            else None
         )
         # TO DO: other modalities
 
