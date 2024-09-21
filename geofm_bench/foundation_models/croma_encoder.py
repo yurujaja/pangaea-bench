@@ -26,6 +26,7 @@ class CROMA_OPTICAL_Encoder(nn.Module):
         super().__init__()
 
         self.input_bands = input_bands
+        self.input_size = input_size
         self.output_layers = output_layers
         self.model_name = foundation_model_name
         self.img_size = image_resolution
@@ -551,4 +552,3 @@ class ViT(nn.Module):
         )
 
         return output
-

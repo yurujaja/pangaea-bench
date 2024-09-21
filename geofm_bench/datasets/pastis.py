@@ -104,6 +104,7 @@ class Pastis(Dataset):
             folds = [5]
 
         self.dataset_name = dataset_name
+        self.bands = bands
         self.split = split
         self.path = root_path
         self.data_mean = data_mean

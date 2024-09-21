@@ -15,6 +15,15 @@ class RichDataset(Dataset):
         # TODO: remove foundation_model for input_bands, input_size
         self.foundation_model = foundation_model
 
+        # WARNING: Patch to overcome recursive wrapping issues
+        self.data_mean = dataset.data_mean
+        self.data_std = dataset.data_std
+        self.data_min = dataset.data_min
+        self.data_max = dataset.data_max
+        self.classes = dataset.classes
+        self.split = dataset.split
+        self.ignore_index = dataset.ignore_index
+
     def __getitem__(self, index):
         return self.dataset[index]
 
@@ -36,7 +45,7 @@ class SegPreprocessor(RichDataset):
         )
         self.preprocessor["sar"] = (
             BandAdaptor(
-                dataset=dataset, foundation_model=foundation_model, modality=modality
+                dataset=dataset, foundation_model=foundation_model, modality="sar"
             )
             if "sar" in dataset.bands.keys()
             else None

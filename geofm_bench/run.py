@@ -109,28 +109,6 @@ def main(cfg: DictConfig) -> None:
     #     )
     #
 
-    # Apply data processing to the datasets
-    # for augmentation in cfg.augmentation.train:
-    #     # TODO: add data augmentation cleaner so it can be implemented
-    #     augmentation: RichDataset = instantiate(augmentation, cfg)
-    #     print(augmentation)
-    #     train_dataset = AUGMENTER_REGISTRY.get(step)(
-    #         train_dataset, cfg, cfg.augmentation.train[step]
-    #     )
-    #
-    # for step in cfg.augmentation.test:
-    #     val_dataset = AUGMENTER_REGISTRY.get(step)(
-    #         val_dataset, cfg, cfg.augmentation.test[step]
-    #     )
-    #     test_dataset = AUGMENTER_REGISTRY.get(step)(
-    #         test_dataset, cfg, cfg.augmentation.test[step]
-    #     )
-    #
-    # logger.info("Created processing pipelines:")
-    # logger.info(f"   Training: {pprint.pformat([s for s in cfg.augmentation.train])}")
-    # logger.info(f"   Evaluation: {pprint.pformat([s for s in cfg.augmentation.test])}")
-    # #
-
     # prepare the adaptor (segmentation/regression)
     model: torch.nn.Module = instantiate(
         cfg.adaptor,
@@ -151,6 +129,14 @@ def main(cfg: DictConfig) -> None:
 
     # training
     if cfg.train:
+        for preprocess in cfg.preprocessing.train:
+            train_dataset: Dataset = instantiate(
+                preprocess, dataset=train_dataset, foundation_model=foundation_model
+            )
+        for preprocess in cfg.preprocessing.test:
+            val_dataset: Dataset = instantiate(
+                preprocess, dataset=val_dataset, foundation_model=foundation_model
+            )
         if 0 < cfg.limited_label < 1:
             n_train_samples = len(train_dataset)
             indices = random.sample(
@@ -220,6 +206,11 @@ def main(cfg: DictConfig) -> None:
 
     # Evaluation
     else:
+        for preprocess in cfg.preprocessing.test:
+            test_dataset: Dataset = instantiate(
+                test_dataset, dataset=test_dataset, foundation_model=foundation_model
+            )
+
         test_loader = DataLoader(
             test_dataset,
             sampler=DistributedSampler(test_dataset),
