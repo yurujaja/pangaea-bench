@@ -172,7 +172,6 @@ class BaseAugment(RichDataset):
 
     def __init__(self, dataset: Dataset, foundation_model: Module) -> None:
         super().__init__(dataset, foundation_model)
-        self.ignore_modalities = getattr(local_cfg, "ignore_modalities", [])
 
 
 class Tile(BaseAugment):
@@ -248,7 +247,7 @@ class Tile(BaseAugment):
         tiled_data = {"image": {}, "target": None}
         tiled_data["image"] = {}
         for k, v in data["image"].items():
-            if k not in self.ignore_modalities and k in self.encoder_cfg.input_bands:
+            if k in self.foundation_model.input_bands:
                 tiled_data["image"][k] = v[
                     ..., h : h + self.output_size, w : w + self.output_size
                 ].clone()
@@ -264,18 +263,16 @@ class Tile(BaseAugment):
 
         # Ignore overlapping borders
         if h_index != 0:
-            tiled_data["target"][..., 0:h_label_offset, :] = (
-                self.dataset_cfg.ignore_index
-            )
+            tiled_data["target"][..., 0:h_label_offset, :] = self.dataset.ignore_index
         if w_index != 0:
-            tiled_data["target"][..., 0:w_label_offset] = self.dataset_cfg.ignore_index
+            tiled_data["target"][..., 0:w_label_offset] = self.dataset.ignore_index
         if h_index != self.tiles_per_dim - 1:
             tiled_data["target"][..., self.output_size - h_label_offset :, :] = (
-                self.dataset_cfg.ignore_index
+                self.dataset.ignore_index
             )
         if w_index != self.tiles_per_dim - 1:
             tiled_data["target"][..., self.output_size - w_label_offset :] = (
-                self.dataset_cfg.ignore_index
+                self.dataset.ignore_index
             )
 
         return tiled_data
@@ -294,18 +291,12 @@ class RandomFlip(BaseAugment):
         data = self.dataset[index]
         if random.random() < self.ud_probability:
             for k, v in data["image"].items():
-                if (
-                    k not in self.ignore_modalities
-                    and k in self.encoder_cfg.input_bands
-                ):
+                if k in self.encoder_cfg.input_bands:
                     data["image"][k] = torch.fliplr(v)
             data["target"] = torch.fliplr(data["target"])
         if random.random() < self.lr_probability:
             for k, v in data["image"].items():
-                if (
-                    k not in self.ignore_modalities
-                    and k in self.encoder_cfg.input_bands
-                ):
+                if k in self.encoder_cfg.input_bands:
                     data["image"][k] = torch.flipud(v)
             data["target"] = torch.flipud(data["target"])
         return data
@@ -321,8 +312,7 @@ class GammaAugment(BaseAugment):
         data = self.dataset[index]
         if random.random() < self.probability:
             for k, v in data["image"].items() and k in self.encoder_cfg.input_bands:
-                if k not in self.ignore_modalities:
-                    data["image"][k] = torch.pow(v, random.uniform(*self.gamma_range))
+                data["image"][k] = torch.pow(v, random.uniform(*self.gamma_range))
         return data
 
 
@@ -343,10 +333,9 @@ class NormalizeMeanStd(BaseAugment):
     def __getitem__(self, index):
         data = self.dataset[index]
         for modality in self.encoder_cfg.input_bands:
-            if modality not in self.ignore_modalities:
-                data["image"][modality] = (
-                    data["image"][modality] - self.data_mean_tensors[modality]
-                ) / self.data_std_tensors[modality]
+            data["image"][modality] = (
+                data["image"][modality] - self.data_mean_tensors[modality]
+            ) / self.data_std_tensors[modality]
         return data
 
 
@@ -369,12 +358,11 @@ class NormalizeMinMax(BaseAugment):
     def __getitem__(self, index):
         data = self.dataset[index]
         for modality in self.encoder_cfg.input_bands:
-            if modality not in self.ignore_modalities:
-                data["image"][modality] = (
-                    (data["image"][modality] - self.data_min_tensors[modality])
-                    * (self.max - self.min)
-                    - self.min
-                ) / self.data_max_tensors[modality]
+            data["image"][modality] = (
+                (data["image"][modality] - self.data_min_tensors[modality])
+                * (self.max - self.min)
+                - self.min
+            ) / self.data_max_tensors[modality]
         return data
 
 
@@ -416,22 +404,20 @@ class ColorAugmentation(BaseAugment):
         data = self.dataset[index]
 
         for k, v in data["image"].items():
-            if k not in self.ignore_modalities and k in self.encoder_cfg.input_bands:
+            if k in self.encoder_cfg.input_bands:
                 brightness = random.uniform(-self.brightness, self.brightness)
                 if random.random() < self.br_probability:
-                    if k not in self.ignore_modalities:
-                        data["image"][k] = self.adjust_brightness(
-                            data["image"][k], brightness, self.clip
-                        )
+                    data["image"][k] = self.adjust_brightness(
+                        data["image"][k], brightness, self.clip
+                    )
 
         for k, v in data["image"].items():
-            if k not in self.ignore_modalities and k in self.encoder_cfg.input_bands:
+            if k in self.encoder_cfg.input_bands:
                 if random.random() < self.ct_probability:
                     contrast = random.uniform(1 - self.contrast, 1 + self.contrast)
-                    if k not in self.ignore_modalities:
-                        data["image"][k] = self.adjust_contrast(
-                            data["image"][k], contrast, self.clip
-                        )
+                    data["image"][k] = self.adjust_contrast(
+                        data["image"][k], contrast, self.clip
+                    )
 
         return data
 
@@ -444,7 +430,7 @@ class Resize(BaseAugment):
     def __getitem__(self, index):
         data = self.dataset[index]
         for k, v in data["image"].items():
-            if k not in self.ignore_modalities and k in self.encoder_cfg.input_bands:
+            if k in self.encoder_cfg.input_bands:
                 data["image"][k] = T.Resize(self.size)(v)
 
         if data["target"].ndim == 2:
@@ -486,7 +472,7 @@ class RandomCrop(BaseAugment):
             output_size=(self.size, self.size),
         )
         for k, v in data["image"].items():
-            if k not in self.ignore_modalities and k in self.encoder_cfg.input_bands:
+            if k in self.encoder_cfg.input_bands:
                 data["image"][k] = T.functional.crop(v, i, j, h, w)
         data["target"] = T.functional.crop(data["target"], i, j, h, w)
 
@@ -536,7 +522,7 @@ class ImportanceRandomCrop(BaseAugment):
         i, j, h, w = crop_candidates[crop_idx]
 
         for k, v in data["image"].items():
-            if k not in self.ignore_modalities and k in self.encoder_cfg.input_bands:
+            if k in self.encoder_cfg.input_bands:
                 data["image"][k] = T.functional.crop(v, i, j, h, w)
         data["target"] = T.functional.crop(data["target"], i, j, h, w)
 
