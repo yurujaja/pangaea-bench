@@ -1,3 +1,4 @@
+from logging import Logger
 from pathlib import Path
 
 import torch
@@ -7,32 +8,49 @@ import torch.nn as nn
 class FoundationModel(nn.Module):
     def __init__(self) -> None:
         super().__init__()
+        self._input_bands = None
+        self._input_size = None
 
     @property
     def input_bands(self) -> dict[str, list[str]]:
         raise NotImplementedError
 
+    @input_bands.setter
+    def input_bands(self, value: dict[str, list[str]]) -> None:
+        self._input_bands = value
+
     @property
     def input_size(self) -> int:
         raise NotImplementedError
 
-    def load_encoder_weights(
-        self, pretrained_path: str | Path
-    ) -> tuple[dict[str, torch.Size], dict[str, tuple[torch.Size, torch.Size]]]:
-        pretrained_model = torch.load(pretrained_path, map_location="cpu")
-        k = pretrained_model.keys()
-        pretrained_encoder = {}
-        incompatible_shape = {}
-        missing = {}
-        for name, param in self.named_parameters():
-            if name not in k:
-                missing[name] = param.shape
-            elif pretrained_model[name].shape != param.shape:
-                incompatible_shape[name] = (param.shape, pretrained_model[name].shape)
-            else:
-                pretrained_encoder[name] = pretrained_model[name]
+    @input_size.setter
+    def input_size(self, value: int) -> None:
+        self._input_size = value
 
-        return missing, incompatible_shape
+    def load_encoder_weights(self, pretrained_path: str | Path, logger: Logger) -> None:
+        # load weight
+        # call parameters_warning
+        raise NotImplementedError
+
+    def parameters_warning(
+        self,
+        missing: dict[str, torch.Size],
+        incompatible_shape: dict[str, tuple[torch.Size, torch.Size]],
+        logger: Logger,
+    ) -> None:
+        if missing:
+            logger.warning(
+                "Missing parameters:\n"
+                + "\n".join("%s: %s" % (k, v) for k, v in sorted(missing.items()))
+            )
+        if incompatible_shape:
+            logger.warning(
+                "Incompatible parameters:\n"
+                + "\n".join(
+                    "%s: expected %s but found %s" % (k, v[0], v[1])
+                    for k, v in sorted(incompatible_shape.items())
+                )
+            )
 
     def freeze(self) -> None:
         for param in self.parameters():

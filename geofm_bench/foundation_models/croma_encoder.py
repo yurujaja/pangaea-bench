@@ -7,8 +7,10 @@ import torch
 from einops import rearrange
 from torch import einsum, nn
 
+from geofm_bench.foundation_models.base import FoundationModel
 
-class CROMA_OPTICAL_Encoder(nn.Module):
+
+class CROMA_OPTICAL_Encoder(FoundationModel):
     def __init__(
         self,
         foundation_model_name: str,
@@ -76,10 +78,8 @@ class CROMA_OPTICAL_Encoder(nn.Module):
 
         return output
 
-    def load_encoder_weights(self):
-        pretrained_model = torch.load(self.encoder_weights, map_location="cpu")[
-            "s2_encoder"
-        ]
+    def load_encoder_weights(self, pretrained_path):
+        pretrained_model = torch.load(pretrained_path, map_location="cpu")["s2_encoder"]
         k = pretrained_model.keys()
         pretrained_encoder = {}
         incompatible_shape = {}
