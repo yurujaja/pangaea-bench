@@ -2,6 +2,8 @@
 
 import itertools
 import math
+from logging import Logger
+from pathlib import Path
 
 import torch
 from einops import rearrange
@@ -13,27 +15,25 @@ from geofm_bench.foundation_models.base import FoundationModel
 class CROMA_OPTICAL_Encoder(FoundationModel):
     def __init__(
         self,
-        foundation_model_name: str,
-        encoder_weights: str,
-        temporal_input: bool,
+        encoder_weights: str | Path,
         input_size: int,
-        input_bands: dict[str, list[str]],
+        input_bands: dict[str, dict[str, list[str]]],
         embed_dim: int,
         output_layers: int,
-        num_layers: int,
-        download_url: str,
         size="base",
         image_resolution=120,
     ):
-        super().__init__()
+        super().__init__(
+            encoder_weights=encoder_weights,
+            input_bands=input_bands,
+            input_size=input_size,
+            embed_dim=embed_dim,
+        )
 
-        self.input_bands = input_bands
-        self.input_size = input_size
         self.output_layers = output_layers
-        self.model_name = foundation_model_name
         self.img_size = image_resolution
-        self.encoder_weights = encoder_weights
         self.embed_dim = embed_dim
+        self.encoder_weights = encoder_weights
 
         if size == "base":
             self.encoder_dim = 768
@@ -78,8 +78,10 @@ class CROMA_OPTICAL_Encoder(FoundationModel):
 
         return output
 
-    def load_encoder_weights(self, pretrained_path):
-        pretrained_model = torch.load(pretrained_path, map_location="cpu")["s2_encoder"]
+    def load_encoder_weights(self, logger: Logger) -> None:
+        pretrained_model = torch.load(self.encoder_weights, map_location="cpu")[
+            "s2_encoder"
+        ]
         k = pretrained_model.keys()
         pretrained_encoder = {}
         incompatible_shape = {}
@@ -92,9 +94,8 @@ class CROMA_OPTICAL_Encoder(FoundationModel):
             else:
                 pretrained_encoder[name] = pretrained_model[name]
 
-        msg = self.s2_encoder.load_state_dict(pretrained_encoder, strict=False)
-
-        return missing, incompatible_shape
+        self.s2_encoder.load_state_dict(pretrained_encoder, strict=False)
+        self.parameters_warning(missing, incompatible_shape, logger)
 
 
 class CROMA_SAR_Encoder(nn.Module):

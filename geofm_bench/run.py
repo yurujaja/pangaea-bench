@@ -15,6 +15,7 @@ from torch.utils.data.distributed import DistributedSampler
 
 from geofm_bench.engine.evaluator import Evaluator
 from geofm_bench.engine.trainer import Trainer
+from geofm_bench.foundation_models.base import FoundationModel
 from geofm_bench.utils.collate_fn import get_collate_fn
 from geofm_bench.utils.logger import init_logger
 from geofm_bench.utils.utils import (
@@ -77,8 +78,6 @@ def main(cfg: DictConfig) -> None:
             resume="allow",
             id=cfg.get("wandb_run_id"),
         )
-        # TODO: add wandb_run_id to the saved config
-        # cfg["wandb_run_id"] = wandb.run.id
 
     # get datasets
     train_dataset: Dataset = instantiate(cfg.dataset, split="train")
@@ -87,27 +86,10 @@ def main(cfg: DictConfig) -> None:
     logger.info("Built {} dataset.".format(cfg.dataset.dataset_name))
 
     # prepare the foundation model
-    # TODO: change download model signature with args
+    # TODO: refactor download model
     # download_model(cfg.foundation_model)
-    foundation_model: torch.nn.Module = instantiate(cfg.foundation_model)
-    print(foundation_model)
-    missing, incompatible_shape = foundation_model.load_encoder_weights()
-    # TODO: refactor this part in load_encoder_weights(logger)
-    # logger.info("Loaded encoder weight from {}.".format(cfg.encoder.encoder_weights))
-    # if missing:
-    #     logger.warning(
-    #         "Missing parameters:\n"
-    #         + "\n".join("%s: %s" % (k, v) for k, v in sorted(missing.items()))
-    #     )
-    # if incompatible_shape:
-    #     logger.warning(
-    #         "Incompatible parameters:\n"
-    #         + "\n".join(
-    #             "%s: expected %s but found %s" % (k, v[0], v[1])
-    #             for k, v in sorted(incompatible_shape.items())
-    #         )
-    #     )
-    #
+    foundation_model: FoundationModel = instantiate(cfg.foundation_model)
+    foundation_model.load_encoder_weights(logger)
 
     # prepare the adaptor (segmentation/regression)
     model: torch.nn.Module = instantiate(
@@ -118,9 +100,10 @@ def main(cfg: DictConfig) -> None:
     model = torch.nn.parallel.DistributedDataParallel(
         model, device_ids=[local_rank], output_device=local_rank
     )
+    # TODO: refactor logging in model build
     logger.info(
         "Built {} for with {} encoder.".format(
-            model.module.model_name, foundation_model.model_name
+            model.module.model_name, type(foundation_model).__name__
         )
     )
 
@@ -178,9 +161,10 @@ def main(cfg: DictConfig) -> None:
 
         criterion = instantiate(cfg.criterion)
         optimizer = instantiate(cfg.optimizer, params=model.parameters())
-        total_iters = len(train_loader) * cfg.task.trainer.n_epochs
         lr_scheduler = instantiate(
-            cfg.lr_scheduler, optimizer=optimizer, total_iters=total_iters
+            cfg.lr_scheduler,
+            optimizer=optimizer,
+            total_iters=len(train_loader) * cfg.task.trainer.n_epochs,
         )
 
         # TODO: add val_evaluator in configs

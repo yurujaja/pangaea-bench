@@ -6,30 +6,20 @@ import torch.nn as nn
 
 
 class FoundationModel(nn.Module):
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        input_bands: dict[str, dict[str, list[str]]],
+        input_size: int,
+        embed_dim: int,
+        encoder_weights: str | Path,
+    ) -> None:
         super().__init__()
-        self._input_bands = None
-        self._input_size = None
+        self.input_bands = input_bands
+        self.input_size = input_size
+        self.embed_dim = embed_dim
+        self.encoder_weights = encoder_weights
 
-    @property
-    def input_bands(self) -> dict[str, list[str]]:
-        raise NotImplementedError
-
-    @input_bands.setter
-    def input_bands(self, value: dict[str, list[str]]) -> None:
-        self._input_bands = value
-
-    @property
-    def input_size(self) -> int:
-        raise NotImplementedError
-
-    @input_size.setter
-    def input_size(self, value: int) -> None:
-        self._input_size = value
-
-    def load_encoder_weights(self, pretrained_path: str | Path, logger: Logger) -> None:
-        # load weight
-        # call parameters_warning
+    def load_encoder_weights(self, logger: Logger) -> None:
         raise NotImplementedError
 
     def parameters_warning(
