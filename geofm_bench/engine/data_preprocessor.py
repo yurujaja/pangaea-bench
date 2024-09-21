@@ -3,7 +3,6 @@ import math
 import random
 
 import numpy as np
-import omegaconf
 import torch
 import torchvision.transforms as T
 from torch.nn import Module
@@ -13,6 +12,7 @@ from torch.utils.data import Dataset
 class RichDataset(Dataset):
     def __init__(self, dataset: Dataset, foundation_model: Module):
         self.dataset = dataset
+        # TODO: remove foundation_model for input_bands, input_size
         self.foundation_model = foundation_model
 
     def __getitem__(self, index):
@@ -175,12 +175,14 @@ class BaseAugment(RichDataset):
 
 
 class Tile(BaseAugment):
-    def __init__(self, dataset, cfg, local_cfg):
-        super().__init__(dataset, cfg, local_cfg)
-        self.min_overlap = getattr(local_cfg, "min_overlap", 0)
+    def __init__(
+        self, dataset: Dataset, foundation_model: Module, min_overlap: float = 0
+    ) -> None:
+        super().__init__(dataset, foundation_model)
+        self.min_overlap = min_overlap
         # Should be the _largest_ image in the dataset to avoid problems mentioned in __getitem__
-        self.input_size = cfg.dataset.img_size
-        self.output_size = cfg.encoder.input_size
+        self.input_size = self.dataset.img_size
+        self.output_size = self.foundation_model.input_size
         if self.output_size == self.input_size:
             self.tiles_per_dim = 1
         elif self.output_size > self.input_size:
@@ -282,57 +284,72 @@ class Tile(BaseAugment):
 
 
 class RandomFlip(BaseAugment):
-    def __init__(self, dataset, cfg, local_cfg):
-        super().__init__(dataset, cfg, local_cfg)
-        self.ud_probability = local_cfg.ud_probability
-        self.lr_probability = local_cfg.lr_probability
+    def __init__(
+        self,
+        dataset: Dataset,
+        foundation_model: Module,
+        ud_probability: float,
+        lr_probability: float,
+    ) -> None:
+        super().__init__(dataset, foundation_model)
+        self.ud_probability = ud_probability
+        self.lr_probability = lr_probability
 
     def __getitem__(self, index):
         data = self.dataset[index]
         if random.random() < self.ud_probability:
             for k, v in data["image"].items():
-                if k in self.encoder_cfg.input_bands:
+                if k in self.foundation_model.input_bands:
                     data["image"][k] = torch.fliplr(v)
             data["target"] = torch.fliplr(data["target"])
         if random.random() < self.lr_probability:
             for k, v in data["image"].items():
-                if k in self.encoder_cfg.input_bands:
+                if k in self.foundation_model.input_bands:
                     data["image"][k] = torch.flipud(v)
             data["target"] = torch.flipud(data["target"])
         return data
 
 
 class GammaAugment(BaseAugment):
-    def __init__(self, dataset, cfg, local_cfg):
-        super().__init__(dataset, cfg, local_cfg)
-        self.probability = local_cfg.probability
-        self.gamma_range = local_cfg.gamma_range
+    def __init__(
+        self,
+        dataset: Dataset,
+        foundation_model: Module,
+        probability: float,
+        gamma_range: float,
+    ) -> None:
+        super().__init__(dataset, foundation_model)
+        self.probability = probability
+        self.gamma_range = gamma_range
 
     def __getitem__(self, index):
         data = self.dataset[index]
+        # WARNING: Test this bit of code
         if random.random() < self.probability:
-            for k, v in data["image"].items() and k in self.encoder_cfg.input_bands:
+            for k, v in (
+                data["image"].items() and k in self.foundation_model.input_bands
+            ):
                 data["image"][k] = torch.pow(v, random.uniform(*self.gamma_range))
         return data
 
 
 class NormalizeMeanStd(BaseAugment):
-    def __init__(self, dataset, cfg, local_cfg):
-        super().__init__(dataset, cfg, local_cfg)
+    def __init__(self, dataset: Dataset, foundation_model: Module) -> None:
+        super().__init__(dataset, foundation_model)
         self.data_mean_tensors = {}
         self.data_std_tensors = {}
         # Bands is a dict of {modality:[b1, b2, ...], ...} so it's keys are the modalaities in use
-        for modality in self.encoder_cfg.input_bands:
+        for modality in self.foundation_model.input_bands:
             self.data_mean_tensors[modality] = torch.tensor(
-                self.data_mean[modality]
+                self.dataset.data_mean[modality]
             ).reshape((-1, 1, 1, 1))
             self.data_std_tensors[modality] = torch.tensor(
-                self.data_std[modality]
+                self.dataset.data_std[modality]
             ).reshape((-1, 1, 1, 1))
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int):
         data = self.dataset[index]
-        for modality in self.encoder_cfg.input_bands:
+        for modality in self.foundation_model.input_bands:
             data["image"][modality] = (
                 data["image"][modality] - self.data_mean_tensors[modality]
             ) / self.data_std_tensors[modality]
@@ -340,24 +357,30 @@ class NormalizeMeanStd(BaseAugment):
 
 
 class NormalizeMinMax(BaseAugment):
-    def __init__(self, dataset, cfg, local_cfg):
-        super().__init__(dataset, cfg, local_cfg)
+    def __init__(
+        self,
+        dataset: Dataset,
+        foundation_model: Module,
+        data_min: torch.Tensor,
+        data_max: torch.Tensor,
+    ) -> None:
+        super().__init__(dataset, foundation_model)
         self.normalizers = {}
         self.data_min_tensors = {}
         self.data_max_tensors = {}
-        self.min = local_cfg.min
-        self.max = local_cfg.max
-        for modality in self.encoder_cfg.input_bands:
+        self.min = data_min
+        self.max = data_max
+        for modality in self.foundation_model.input_bands:
             self.data_min_tensors[modality] = torch.tensor(
-                self.data_min[modality]
+                self.dataset.data_min[modality]
             ).reshape((-1, 1, 1, 1))
             self.data_max_tensors[modality] = torch.tensor(
-                self.data_max[modality]
+                self.dataset.data_max[modality]
             ).reshape((-1, 1, 1, 1))
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int):
         data = self.dataset[index]
-        for modality in self.encoder_cfg.input_bands:
+        for modality in self.foundation_model.input_bands:
             data["image"][modality] = (
                 (data["image"][modality] - self.data_min_tensors[modality])
                 * (self.max - self.min)
@@ -367,13 +390,22 @@ class NormalizeMinMax(BaseAugment):
 
 
 class ColorAugmentation(BaseAugment):
-    def __init__(self, dataset, cfg, local_cfg):
-        super().__init__(dataset, cfg, local_cfg)
-        self.brightness = getattr(local_cfg, "brightness", 0)
-        self.contrast = getattr(local_cfg, "contrast", 0)
-        self.clip = getattr(local_cfg, "clip", False)
-        self.br_probability = getattr(local_cfg, "br_probability", 0)
-        self.ct_probability = getattr(local_cfg, "ct_probability", 0)
+    def __init__(
+        self,
+        dataset: Dataset,
+        foundation_model: Module,
+        brightness: float = 0,
+        contrast: float = 0,
+        clip: bool = False,
+        br_probability: float = 0,
+        ct_probability: float = 0,
+    ) -> None:
+        super().__init__(dataset, foundation_model)
+        self.brightness = brightness
+        self.contrast = contrast
+        self.clip = clip
+        self.br_probability = br_probability
+        self.ct_probability = ct_probability
 
     def adjust_brightness(self, image, factor, clip_output):
         if isinstance(factor, float):
@@ -402,17 +434,16 @@ class ColorAugmentation(BaseAugment):
 
     def __getitem__(self, index):
         data = self.dataset[index]
-
-        for k, v in data["image"].items():
-            if k in self.encoder_cfg.input_bands:
+        for k, _ in data["image"].items():
+            if k in self.foundation_model.input_bands:
                 brightness = random.uniform(-self.brightness, self.brightness)
                 if random.random() < self.br_probability:
                     data["image"][k] = self.adjust_brightness(
                         data["image"][k], brightness, self.clip
                     )
 
-        for k, v in data["image"].items():
-            if k in self.encoder_cfg.input_bands:
+        for k, _ in data["image"].items():
+            if k in self.foundation_model.input_bands:
                 if random.random() < self.ct_probability:
                     contrast = random.uniform(1 - self.contrast, 1 + self.contrast)
                     data["image"][k] = self.adjust_contrast(
@@ -423,14 +454,14 @@ class ColorAugmentation(BaseAugment):
 
 
 class Resize(BaseAugment):
-    def __init__(self, dataset, cfg, local_cfg):
-        super().__init__(dataset, cfg, local_cfg)
-        self.size = (local_cfg.size, local_cfg.size)
+    def __init__(self, dataset: Dataset, foundation_model: Module, size: int) -> None:
+        super().__init__(dataset, foundation_model)
+        self.size = (size, size)
 
     def __getitem__(self, index):
         data = self.dataset[index]
         for k, v in data["image"].items():
-            if k in self.encoder_cfg.input_bands:
+            if k in self.foundation_model.input_bands:
                 data["image"][k] = T.Resize(self.size)(v)
 
         if data["target"].ndim == 2:
@@ -448,21 +479,27 @@ class Resize(BaseAugment):
 
 
 class ResizeToEncoder(Resize):
-    def __init__(self, dataset, cfg, local_cfg):
-        if not local_cfg:
-            local_cfg = omegaconf.OmegaConf.create()
-        local_cfg.size = cfg.encoder.input_size
-        super().__init__(dataset, cfg, local_cfg)
+    def __init__(self, dataset: Dataset, foundation_model: Module) -> None:
+        super().__init__(dataset, foundation_model, foundation_model.input_size)
 
 
 class RandomCrop(BaseAugment):
-    def __init__(self, dataset, cfg, local_cfg):
-        super().__init__(dataset, cfg, local_cfg)
-        self.size = local_cfg.size
-        self.padding = getattr(local_cfg, "padding", None)
-        self.pad_if_needed = getattr(local_cfg, "pad_if_needed", False)
-        self.fill = getattr(local_cfg, "fill", 0)
-        self.padding_mode = getattr(local_cfg, "padding_mode", "constant")
+    def __init__(
+        self,
+        dataset: Dataset,
+        foundation_model: Module,
+        size: int,
+        padding: str | None = None,
+        pad_if_needed: bool = False,
+        fill: int = 0,
+        padding_mode: str = "constant",
+    ) -> None:
+        super().__init__(dataset, foundation_model)
+        self.size = size
+        self.padding = padding
+        self.pad_if_needed = pad_if_needed
+        self.fill = fill
+        self.padding_mode = padding_mode
 
     def __getitem__(self, index):
         data = self.dataset[index]
@@ -472,7 +509,7 @@ class RandomCrop(BaseAugment):
             output_size=(self.size, self.size),
         )
         for k, v in data["image"].items():
-            if k in self.encoder_cfg.input_bands:
+            if k in self.foundation_model.input_bands:
                 data["image"][k] = T.functional.crop(v, i, j, h, w)
         data["target"] = T.functional.crop(data["target"], i, j, h, w)
 
@@ -480,22 +517,40 @@ class RandomCrop(BaseAugment):
 
 
 class RandomCropToEncoder(RandomCrop):
-    def __init__(self, dataset, cfg, local_cfg):
-        if not local_cfg:
-            local_cfg = omegaconf.OmegaConf.create()
-        local_cfg.size = cfg.encoder.input_size
-        super().__init__(dataset, cfg, local_cfg)
+    def __init__(
+        self,
+        dataset: Dataset,
+        foundation_model: Module,
+        padding: str | None = None,
+        pad_if_needed: bool = False,
+        fill: int = 0,
+        padding_mode: str = "constant",
+    ) -> None:
+        size = foundation_model.input_size
+        super().__init__(
+            dataset, foundation_model, size, padding, pad_if_needed, fill, padding_mode
+        )
 
 
 class ImportanceRandomCrop(BaseAugment):
-    def __init__(self, dataset, cfg, local_cfg):
-        super().__init__(dataset, cfg, local_cfg)
-        self.size = local_cfg.size
-        self.padding = getattr(local_cfg, "padding", None)
-        self.pad_if_needed = getattr(local_cfg, "pad_if_needed", False)
-        self.fill = getattr(local_cfg, "fill", 0)
-        self.padding_mode = getattr(local_cfg, "padding_mode", "constant")
-        self.n_crops = 10  # TODO: put this one in config
+    def __init__(
+        self,
+        dataset: Dataset,
+        foundation_model: Module,
+        size: int,
+        padding: str | None = None,
+        pad_if_needed: bool = False,
+        fill: int = 0,
+        padding_mode: str = "constant",
+        n_crops: int = 10,
+    ) -> None:
+        super().__init__(dataset, foundation_model)
+        self.size = size
+        self.padding = padding
+        self.pad_if_needed = pad_if_needed
+        self.fill = fill
+        self.padding_mode = padding_mode
+        self.n_crops = n_crops
 
     def __getitem__(self, index):
         data = self.dataset[index]
@@ -522,7 +577,7 @@ class ImportanceRandomCrop(BaseAugment):
         i, j, h, w = crop_candidates[crop_idx]
 
         for k, v in data["image"].items():
-            if k in self.encoder_cfg.input_bands:
+            if k in self.foundation_model.input_bands:
                 data["image"][k] = T.functional.crop(v, i, j, h, w)
         data["target"] = T.functional.crop(data["target"], i, j, h, w)
 
@@ -530,8 +585,19 @@ class ImportanceRandomCrop(BaseAugment):
 
 
 class ImportanceRandomCropToEncoder(ImportanceRandomCrop):
-    def __init__(self, dataset, cfg, local_cfg):
-        if not local_cfg:
-            local_cfg = omegaconf.OmegaConf.create()
-        local_cfg.size = cfg.encoder.input_size
-        super().__init__(dataset, cfg, local_cfg)
+    def __init__(
+        self,
+        dataset: Dataset,
+        foundation_model: Module,
+        padding: str | None = None,
+        pad_if_needed: bool = False,
+        fill: int = 0,
+        padding_mode: str = "constant",
+        n_crops: int = 10,
+    ) -> None:
+        size = foundation_model.input_size
+        super().__init__(
+            dataset,
+            foundation_model,
+            size,
+        )
