@@ -170,8 +170,8 @@ class BaseAugment(RichDataset):
     __getitem__ will recieve data in CxTxHxW format from the preprocessor.
     """
 
-    def __init__(self, dataset: torch.utils.data.Dataset, cfg, local_cfg):
-        super().__init__(dataset, cfg)
+    def __init__(self, dataset: Dataset, foundation_model: Module) -> None:
+        super().__init__(dataset, foundation_model)
         self.ignore_modalities = getattr(local_cfg, "ignore_modalities", [])
 
 
