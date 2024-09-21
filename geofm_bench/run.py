@@ -62,7 +62,7 @@ def main(cfg: DictConfig) -> None:
     logger.info(f"Device used: {device}")
 
     # init wandb
-    if cfg.trainer.use_wandb and rank == 0:
+    if cfg.task.trainer.use_wandb and rank == 0:
         import wandb
 
         wandb_cfg = OmegaConf.to_container(cfg, resolve=True)
@@ -187,23 +187,21 @@ def main(cfg: DictConfig) -> None:
             collate_fn=collate_fn,
         )
 
-        ##########################
         criterion = instantiate(cfg.criterion)
         optimizer = instantiate(cfg.optimizer, params=model.parameters())
-        total_iters = len(train_loader) * cfg.trainer.n_epochs
+        total_iters = len(train_loader) * cfg.task.trainer.n_epochs
         lr_scheduler = instantiate(
             cfg.lr_scheduler, optimizer=optimizer, total_iters=total_iters
         )
 
-        print("Criterion ", criterion)
-        print("Optimizer ", optimizer)
-        print("LRScheduler ", lr_scheduler)
-        ##################################
-
         # TODO: add val_evaluator in configs
+        print(cfg.task)
+        print(cfg.task.trainer)
+        print(cfg.task.evaluator)
+
         val_evaluator = None
         trainer: Trainer = instantiate(
-            cfg.trainer,
+            cfg.task.trainer,
             model=model,
             train_loader=train_loader,
             lr_scheduler=lr_scheduler,
