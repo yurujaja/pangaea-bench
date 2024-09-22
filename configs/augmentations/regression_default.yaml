@@ -1,7 +1,7 @@
 train:
   RegPreprocessor: ~
   NormalizeMinMax: ~
-#   NormalizeMeanStd: ~
+  NormalizeMeanStd: ~
   RandomCropToEncoder: ~
 #   RandomFlip:
 #     ud_probability: 0.3
@@ -9,5 +9,5 @@ train:
 test:
   RegPreprocessor: ~
   NormalizeMinMax: ~
-#   NormalizeMeanStd: ~
+  NormalizeMeanStd: ~
   Tile: ~
