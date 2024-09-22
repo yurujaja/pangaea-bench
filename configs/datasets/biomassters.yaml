@@ -3,8 +3,8 @@ root_path: ./data/Biomassters
 # download_url: #https://huggingface.co/datasets/ibm-nasa-geospatial/hls_burn_scars/resolve/main/hls_burn_scars.tar.gz?download=true
 auto_download: False
 img_size: 256
-temporal: 12 #6 (summer month if multi_temp false), 12
-multi_temporal: True
+temporal: 6 #6 (summer month use if multi_temp is 1)
+multi_temporal: 12
 multi_modal: True
 
 # classes
