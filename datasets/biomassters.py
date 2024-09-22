@@ -10,10 +10,10 @@ from utils.registry import DATASET_REGISTRY
 
 def read_imgs(multi_temporal, temp , fname, data_dir, img_size):
     imgs_s1, imgs_s2, mask = [], [], []
-    if multi_temporal:
-        month_list = list(range(12))
+    if multi_temporal==1:
+        month_list = [temp]        
     else:
-        month_list = [temp]
+        month_list = list(range(12))
     
     for month in month_list:
         
