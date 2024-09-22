@@ -41,18 +41,12 @@ bands:
 
 # TODO: fix the normalization 
 data_mean:
-  optical:
-#     - 66.7703
-#     - 88.4452
-#     - 85.1047
-  sar:
+  optical: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  sar: [0, 0, 0, 0]
 
 data_std:
-  optical:
-#     - 48.3066
-#     - 51.9129
-#     - 62.7612
-  sar:
+  optical: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  sar: [0, 0, 0, 0]
  
 data_min:
   optical: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
