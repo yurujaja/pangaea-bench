@@ -188,6 +188,8 @@ class RegEvaluator(Evaluator):
 
     @torch.no_grad()
     def evaluate(self, model, model_name='model', model_ckpt_path=None):
+        # TODO: Rework this to allow evaluation only runs
+        # Move common parts to parent class, and get loss function from the registry.
         t = time.time()
         
         if model_ckpt_path is not None:
