@@ -24,17 +24,17 @@ def read_imgs(multi_temporal, temp , fname, data_dir, img_size):
         if s1_filepath.exists():
             img_s1 = imread(s1_filepath)
             m = img_s1 == -9999
-            img_s1 = img_s1.astype("float32")
+            img_s1 = img_s1.astype('float32')
             img_s1 = np.where(m, 0, img_s1)
         else:            
-            img_s1 = np.zeros((img_size, img_size) + (4,), dtype="float32")
+            img_s1 = np.zeros((img_size, img_size) + (4,), dtype='float32')
         
         s2_filepath = data_dir.joinpath(s2_fname)
         if s2_filepath.exists():
             img_s2 = imread(s2_filepath)
-            img_s2 = img_s2.astype("float32")
+            img_s2 = img_s2.astype('float32')
         else:            
-            img_s2 = np.zeros((img_size, img_size) + (11,), dtype="float32")
+            img_s2 = np.zeros((img_size, img_size) + (11,), dtype='float32')
         
         img_s1 = np.transpose(img_s1, (2, 0, 1))
         img_s2 = np.transpose(img_s2, (2, 0, 1))
@@ -63,8 +63,10 @@ class BioMassters(torch.utils.data.Dataset):
         
         self.data_path = pathlib.Path(self.root_path).joinpath(f"{split}_Data_list.csv")
         self.id_list = pd.read_csv(self.data_path)['chip_id']
-        self.dir_features = pathlib.Path(self.root_path).joinpath("TRAIN/train_features")        
-        self.dir_labels = pathlib.Path(self.root_path).joinpath( "TRAIN/train_agbm")        
+        
+        self.split_path = 'train' if split == 'val' else split
+        self.dir_features = pathlib.Path(self.root_path).joinpath(f'{self.split_path}_features')
+        self.dir_labels = pathlib.Path(self.root_path).joinpath( f'{self.split_path}_agbm')
 
     def __len__(self):
         return len(self.id_list)
@@ -73,7 +75,7 @@ class BioMassters(torch.utils.data.Dataset):
 
         chip_id = self.id_list.iloc[index]
         fname = str(chip_id)+'_agbm.tif'
-
+        
         imgs_s1, imgs_s2, mask = read_imgs(self.multi_temporal, self.temp, fname, self.dir_features, self.img_size)
         with rasterio.open(self.dir_labels.joinpath(fname)) as lbl:
             target = lbl.read(1)
@@ -89,14 +91,14 @@ class BioMassters(torch.utils.data.Dataset):
                     'sar' : imgs_s1,
                     },
             'target': target,  
-            'metadata': {"masks":mask}
+            'metadata': {'masks':mask}
         }
 
     @staticmethod
     def get_splits(dataset_config):
-        dataset_train = BioMassters(cfg=dataset_config, split="train")
-        dataset_val = BioMassters(cfg=dataset_config, split="val")
-        dataset_test = BioMassters(cfg=dataset_config, split="test")
+        dataset_train = BioMassters(cfg=dataset_config, split='train')
+        dataset_val = BioMassters(cfg=dataset_config, split='val')
+        dataset_test = BioMassters(cfg=dataset_config, split='test')
         return dataset_train, dataset_val, dataset_test
     
     @staticmethod
