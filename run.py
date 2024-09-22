@@ -249,7 +249,6 @@ def main():
     # training
     if not cfg.eval_dir:
         if 0 < cfg.limited_label < 1:
-            random.seed(42)
             indices = random.sample(range(len(train_dataset)), int(len(train_dataset)*cfg.limited_label))
             train_dataset = Subset(train_dataset, indices)
             perc = cfg.limited_label*100
