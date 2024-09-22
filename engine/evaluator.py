@@ -187,8 +187,18 @@ class RegEvaluator(Evaluator):
         super().__init__(args, val_loader, exp_dir, device)
 
     @torch.no_grad()
-    def evaluate(self, model, model_name='model'):
+    def evaluate(self, model, model_name='model', model_ckpt_path=None):
         t = time.time()
+        
+        if model_ckpt_path is not None:
+            model_dict = torch.load(model_ckpt_path, map_location=self.device)
+            model_name = os.path.basename(model_ckpt_path).split('.')[0]
+            if 'model' in model_dict:
+                model.module.load_state_dict(model_dict["model"])
+            else:
+                model.module.load_state_dict(model_dict)
+
+            self.logger.info(f"Loaded model from {model_ckpt_path} for evaluation")
 
         model.eval()
 
