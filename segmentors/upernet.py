@@ -430,8 +430,8 @@ class RegMTUPerNet(RegUPerNet):
         if self.encoder.model_name in ["satlas_pretrain"]:
             self.multi_temporal_strategy = None
         if self.multi_temporal_strategy == "ltae":
-            self.tmap = LTAE2d(positional_encoding=False, in_channels=self.encoder.embed_dim, 
-                                        mlp=[self.encoder.embed_dim, self.encoder.embed_dim], d_model=self.encoder.embed_dim)
+            self.tmap = LTAE2d(positional_encoding=False, in_channels=cfg['in_channels'],
+                                        mlp=[cfg['in_channels'], cfg['in_channels']], d_model=cfg['in_channels'])
         elif self.multi_temporal_strategy == "linear":
             self.tmap = nn.Linear(self.multi_temporal, 1)
         else:
@@ -447,15 +447,16 @@ class RegMTUPerNet(RegUPerNet):
                 else:
                     feats.append(self.encoder({k: v[:,:,i,:,:] for k, v in img.items()}))   
 
-            feats = [list(i) for i in zip(*feats)]                
-            feats = [torch.stack(feat_layers, dim = 2) for feat_layers in feats] 
+            feats = [list(i) for i in zip(*feats)]
+            feats = [torch.stack(feat_layers, dim = 2) for feat_layers in feats]
+  
         else:
             if not self.finetune:
                 with torch.no_grad():
                     feats = self.encoder(img)
             else:
                 feats = self.encoder(img)
-
+        
         if self.encoder.model_name not in ["satlas_pretrain", "SpectralGPT"]:
             for i in range(len(feats)):
                 if self.multi_temporal_strategy == "ltae":
