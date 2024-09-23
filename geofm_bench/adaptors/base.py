@@ -1,14 +1,16 @@
 import torch.nn as nn
 
+from geofm_bench.foundation_models.base import FoundationModel
+
 
 class Adaptor(nn.Module):
     def __init__(
         self,
+        foundation_model: FoundationModel,
         num_classes: int,
-        channels: int,
-        encoder: nn.Module,
         finetune: bool,
-        pool_scales=(1, 2, 3, 6),
-        feature_multiplier: int = 1,
-    ):
+    ) -> None:
         super().__init__()
+        self.foundation_model = foundation_model
+        self.num_classes = num_classes
+        self.finetune = finetune

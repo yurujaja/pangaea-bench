@@ -2,10 +2,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .ltae import LTAE2d
+from geofm_bench.adaptors.base import Adaptor
+from geofm_bench.adaptors.ltae import LTAE2d
+from geofm_bench.foundation_models.base import FoundationModel
 
 
-class UPerNet(nn.Module):
+class UPerNet(Adaptor):
     """Unified Perceptual Parsing for Scene Understanding.
 
     This head is the implementation of `UPerNet
@@ -18,37 +20,38 @@ class UPerNet(nn.Module):
 
     def __init__(
         self,
+        foundation_model: FoundationModel,
         num_classes: int,
-        channels: int,
-        encoder: nn.Module,
         finetune: bool,
+        channels: int,
         pool_scales=(1, 2, 3, 6),
         feature_multiplier: int = 1,
     ):
-        super().__init__()
-
-        # self.frozen_backbone = frozen_backbone
+        super().__init__(
+            foundation_model=foundation_model,
+            num_classes=num_classes,
+            finetune=finetune,
+        )
 
         self.model_name = "UPerNet"
-        self.encoder = encoder
+        self.foundation_model = foundation_model
         self.finetune = finetune
         self.feature_multiplier = feature_multiplier
 
         if not self.finetune:
-            for param in self.encoder.parameters():
+            for param in self.foundation_model.parameters():
                 param.requires_grad = False
-        #
-        # if frozen_backbone:
-        #     for param in self.backbone.parameters():
-        #         param.requires_grad = False
 
         self.neck = Feature2Pyramid(
-            embed_dim=encoder.embed_dim * feature_multiplier, rescales=[4, 2, 1, 0.5]
+            embed_dim=foundation_model.embed_dim * feature_multiplier,
+            rescales=[4, 2, 1, 0.5],
         )
 
         self.align_corners = False
 
-        self.in_channels = [encoder.embed_dim * feature_multiplier for _ in range(4)]
+        self.in_channels = [
+            foundation_model.embed_dim * feature_multiplier for _ in range(4)
+        ]
         self.channels = channels
         self.num_classes = num_classes
 
@@ -180,9 +183,9 @@ class UPerNet(nn.Module):
         # else:
         if not self.finetune:
             with torch.no_grad():
-                feat = self.encoder(img)
+                feat = self.foundation_model(img)
         else:
-            feat = self.encoder(img)
+            feat = self.foundation_model(img)
         # print(feat)
 
         feat = self.neck(feat)
@@ -199,67 +202,87 @@ class UPerNet(nn.Module):
 
 
 class MTUPerNet(UPerNet):
-    def __init__(self, args, cfg, encoder, pool_scales=(1, 2, 3, 6)):
-        super().__init__(args, cfg, encoder, pool_scales=(1, 2, 3, 6))
+    def __init__(
+        self,
+        foundation_model: FoundationModel,
+        num_classes: int,
+        finetune: bool,
+        channels: int,
+        multi_temporal: int,
+        multi_temporal_strategy: str,
+        pool_scales: list[int] = [1, 2, 3, 6],
+    ) -> None:
+        super().__init__(
+            foundation_model=foundation_model,
+            num_classes=num_classes,
+            finetune=finetune,
+            channels=channels,
+            pool_scales=pool_scales,
+        )
 
-        self.multi_temporal = cfg["multi_temporal"]
-        self.multi_temporal_strategy = cfg["multi_temporal_strategy"]
-        if self.encoder.model_name in ["satlas_pretrain"]:
+        self.multi_temporal = multi_temporal
+        self.multi_temporal_strategy = multi_temporal_strategy
+        if self.foundation_model.model_name in ["satlas_pretrain"]:
             self.multi_temporal_strategy = None
         if self.multi_temporal_strategy == "ltae":
             self.tmap = LTAE2d(
                 positional_encoding=False,
-                in_channels=cfg["in_channels"],
-                mlp=[cfg["in_channels"], cfg["in_channels"]],
-                d_model=cfg["in_channels"],
+                in_channels=foundation_model.embed_dim,
+                mlp=[foundation_model.embed_dim, foundation_model.embed_dim],
+                d_model=foundation_model.embed_dim,
             )
         elif self.multi_temporal_strategy == "linear":
             self.tmap = nn.Linear(self.multi_temporal, 1)
         else:
             self.tmap = None
 
-    def forward(self, img, output_shape=None):
+    def forward(
+        self, img: dict[str, torch.Tensor], output_shape: torch.Size | None = None
+    ) -> torch.Tensor:
         """Forward function for change detection."""
 
-        if self.encoder.model_name in ["Prithvi", "satlas_pretrain"]:
+        if self.foundation_model.model_name in ["Prithvi", "satlas_pretrain"]:
             if not self.finetune:
                 with torch.no_grad():
-                    feats = self.encoder(img)
+                    feats = self.foundation_model(img)
             else:
-                feats = self.encoder(img)
+                feats = self.foundation_model(img)
         else:
             feats = []
             for i in range(self.multi_temporal):
+                # WARNING: ALL THIS PART (shape differences) SHOULD BE TACKLED INSIDE FM FORWARD
                 if not self.finetune:
                     with torch.no_grad():
-                        if self.encoder.model_name in ["SpectralGPT"]:
+                        if self.foundation_model.model_name in ["SpectralGPT"]:
                             feats.append(
-                                self.encoder(
+                                self.foundation_model(
                                     {k: v[:, :, [i], :, :] for k, v in img.items()}
                                 )
                             )
                         else:
                             feats.append(
-                                self.encoder(
+                                self.foundation_model(
                                     {k: v[:, :, i, :, :] for k, v in img.items()}
                                 )
                             )
                 else:
-                    if self.encoder.model_name in ["SpectralGPT"]:
+                    if self.foundation_model.model_name in ["SpectralGPT"]:
                         feats.append(
-                            self.encoder(
+                            self.foundation_model(
                                 {k: v[:, :, [i], :, :] for k, v in img.items()}
                             )
                         )
                     else:
                         feats.append(
-                            self.encoder({k: v[:, :, i, :, :] for k, v in img.items()})
+                            self.foundation_model(
+                                {k: v[:, :, i, :, :] for k, v in img.items()}
+                            )
                         )
 
             feats = [list(i) for i in zip(*feats)]
             feats = [torch.stack(feat_layers, dim=2) for feat_layers in feats]
 
-        if self.encoder.model_name not in ["satlas_pretrain"]:
+        if self.multi_temporal_strategy is not None:
             for i in range(len(feats)):
                 if self.multi_temporal_strategy == "ltae":
                     feats[i] = self.tmap(feats[i])
