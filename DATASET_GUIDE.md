@@ -34,8 +34,9 @@ This document provides a detailed overview of the datasets used in this reposito
    --use_wandb
    ```
 ###  Crop Type Mapping (South Sudan)
-- The code supports automatic downloading of the dataset into `./data` folder. 
-- The most frequent 4 classes are considered and the others are ignored. The dataset contains varied length of timeseries data from different sensor types, we select the most latest six images with the corresponding date metadata. For models that don't support multi-temporal data, each time frame is processed separately for feature extraction and then mapped into a single representation. Below is a CLI example for running the experiment with the CROMA pretrained encoder which jointly process optical and sar information:
+- The code supports automatic downloading of the dataset into `./data` folder.
+- The original dataset contains corrupted files, which are skipped during the experiment. We follow the dataset paper to use the most frequent 4 classes and the others are ignored.
+- The basic experimental setup for this dataset is a multi-temporal multi-modal semantic segmentation task. For models that don't support multi-temporal data, each time frame is processed separately for feature extraction and then mapped into a single representation. This setup requires the configuration file `configs/segmentors/upernet_mt.yaml`. Additionally, in the dataset configuration, specify the number of time frames, for example, `multi_temporal: 6`, where the latest six images are selected for both optical and SAR data. Below is a CLI example for running the experiment using the CROMA pretrained encoder, which jointly processes optical and SAR information:
 
   ```
   
