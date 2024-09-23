@@ -400,8 +400,8 @@ class NormalizeMinMax(BaseAugment):
         self.normalizers = {}
         self.data_min_tensors = {}
         self.data_max_tensors = {}
-        self.min = local_cfg.min
-        self.max = local_cfg.max
+#         self.min = local_cfg.min
+#         self.max = local_cfg.max
         for modality in self.encoder_cfg.input_bands:
             self.data_min_tensors[modality] = torch.tensor(
                 self.data_min[modality]
@@ -414,11 +414,12 @@ class NormalizeMinMax(BaseAugment):
         data = self.dataset[index]
         for modality in self.encoder_cfg.input_bands:
             if modality not in self.ignore_modalities:
-                data["image"][modality] = (
-                    (data["image"][modality] - self.data_min_tensors[modality])
-                    * (self.max - self.min)
-                    - self.min
-                ) / self.data_max_tensors[modality]
+                data["image"][modality] = (data["image"][modality] - self.data_min_tensors[modality])/ (self.data_max_tensors[modality]- self.data_min_tensors[modality])
+#                 data["image"][modality] = (
+#                     (data["image"][modality] - self.data_min_tensors[modality])
+#                     * (self.max - self.min)
+#                     - self.min
+#                 ) / self.data_max_tensors[modality]
         return data
 
 
@@ -491,14 +492,14 @@ class Resize(BaseAugment):
         data = self.dataset[index]
         for k, v in data["image"].items():
             if k not in self.ignore_modalities and k in self.encoder_cfg.input_bands:
-                data["image"][k] = T.resize(v, self.size, interpolation=T.InterpolationMode.BILINEAR, antialias=True)
+                data["image"][k] = T.Resize(self.size, interpolation=T.InterpolationMode.BILINEAR, antialias=True)(v)
 
         if data["target"].ndim == 2:
             data["target"] = data["target"].unsqueeze(0)
-            data["target"] = T.resize(data["target"], self.size, interpolation=T.InterpolationMode.NEAREST)
+            data["target"] = T.Resize(self.size, interpolation=T.InterpolationMode.NEAREST)(data["target"])
             data["target"] = data["target"].squeeze(0)
         else:
-            data["target"] = T.resize(data["target"], self.size, interpolation=T.InterpolationMode.NEAREST)
+            data["target"] = T.Resize(self.size, interpolation=T.InterpolationMode.NEAREST)(data["target"])
 
         return data
 
