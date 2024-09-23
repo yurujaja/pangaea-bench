@@ -92,18 +92,18 @@ def main(cfg: DictConfig) -> None:
     foundation_model.load_encoder_weights(logger)
 
     # prepare the adaptor (segmentation/regression)
-    model: torch.nn.Module = instantiate(
+    adaptor: torch.nn.Module = instantiate(
         cfg.adaptor,
-        encoder=foundation_model,
+        foundation_model=foundation_model,
     )
-    model.to(device)
-    model = torch.nn.parallel.DistributedDataParallel(
-        model, device_ids=[local_rank], output_device=local_rank
+    adaptor.to(device)
+    adaptor = torch.nn.parallel.DistributedDataParallel(
+        adaptor, device_ids=[local_rank], output_device=local_rank
     )
-    # TODO: refactor logging in model build
+    # TODO: refactor logging in model building
     logger.info(
         "Built {} for with {} encoder.".format(
-            model.module.model_name, type(foundation_model).__name__
+            adaptor.module.model_name, type(foundation_model).__name__
         )
     )
 
@@ -136,7 +136,7 @@ def main(cfg: DictConfig) -> None:
         train_loader = DataLoader(
             train_dataset,
             sampler=DistributedSampler(train_dataset),
-            batch_size=cfg.batch_size,  # cfg.dataset["batch"],
+            batch_size=cfg.batch_size,
             num_workers=cfg.num_workers,
             pin_memory=True,
             # persistent_workers=True causes memory leak
@@ -160,20 +160,19 @@ def main(cfg: DictConfig) -> None:
         )
 
         criterion = instantiate(cfg.criterion)
-        optimizer = instantiate(cfg.optimizer, params=model.parameters())
+        optimizer = instantiate(cfg.optimizer, params=adaptor.parameters())
         lr_scheduler = instantiate(
             cfg.lr_scheduler,
             optimizer=optimizer,
             total_iters=len(train_loader) * cfg.task.trainer.n_epochs,
         )
 
-        # TODO: add val_evaluator in configs
         val_evaluator: Evaluator = instantiate(
             cfg.task.evaluator, val_loader=val_loader, exp_dir=exp_dir, device=device
         )
         trainer: Trainer = instantiate(
             cfg.task.trainer,
-            model=model,
+            model=adaptor,
             train_loader=train_loader,
             lr_scheduler=lr_scheduler,
             optimizer=optimizer,
@@ -209,7 +208,7 @@ def main(cfg: DictConfig) -> None:
             cfg.task.evaluator, val_loader=test_loader, exp_dir=exp_dir, device=device
         )
         best_model_ckpt_path = get_best_model_ckpt_path(exp_dir)
-        test_evaluator.evaluate(model, best_model_ckpt_path)
+        test_evaluator.evaluate(adaptor, best_model_ckpt_path)
 
     if cfg.use_wandb and cfg.rank == 0:
         wandb.finish()
