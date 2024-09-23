@@ -31,6 +31,24 @@ class Trainer:
         eval_interval: int,
         log_interval: int,
     ):
+        """Initialize the Trainer.
+
+        Args:
+            model (nn.Module): model to train (foundation model + adaptor).
+            train_loader (DataLoader): train data loader.
+            criterion (nn.Module): criterion to compute the loss.
+            optimizer (Optimizer): optimizer to update the model's parameters.
+            lr_scheduler (LRScheduler): lr scheduler to update the learning rate.
+            evaluator (torch.nn.Module): task evaluator to evaluate the model.
+            n_epochs (int): number of epochs to train the model.
+            exp_dir (pathlib.Path | str): path to the experiment directory.
+            device (torch.device): model
+            precision (str): precision to train the model (fp32, fp16, bfp16).
+            use_wandb (bool): whether to use wandb for logging.
+            ckpt_interval (int): interval to save the checkpoint.
+            eval_interval (int): interval to evaluate the model.
+            log_interval (int): interval to log the training information.
+        """
         self.rank = int(os.environ["RANK"])
         self.criterion = criterion
         self.model = model
@@ -57,6 +75,7 @@ class Trainer:
         self.best_metric_key = None
         self.best_metric_comp = operator.gt
 
+        assert precision in ["fp32", "fp16", "bfp16"], f"Invalid precision {precision}, use 'fp32', 'fp16' or 'bfp16'."
         self.enable_mixed_precision = precision != "fp32"
         self.precision = torch.float16 if (precision == "fp16") else torch.bfloat16
         self.scaler = torch.GradScaler("cuda", enabled=self.enable_mixed_precision)
@@ -68,7 +87,9 @@ class Trainer:
 
             self.wandb = wandb
 
-    def train(self):
+    def train(self) -> None:
+        """Train the model for n_epochs then evaluate the model and save the best model.
+        """
         # end_time = time.time()
         for epoch in range(self.start_epoch, self.n_epochs):
             # train the network for one epoch
@@ -98,7 +119,12 @@ class Trainer:
                 self.best_ckpt["epoch"], is_best=True, checkpoint=self.best_ckpt
             )
 
-    def train_one_epoch(self, epoch):
+    def train_one_epoch(self, epoch: int) -> None:
+        """Train model for one epoch.
+
+        Args:
+            epoch (int): number of the epoch.
+        """
         self.model.train()
 
         end_time = time.time()
@@ -145,7 +171,15 @@ class Trainer:
                     step=epoch * len(self.train_loader) + batch_idx,
                 )
 
-    def get_checkpoint(self, epoch):
+    def get_checkpoint(self, epoch: int) -> dict[str, dict | int]:
+        """Create a checkpoint dictionary.
+
+        Args:
+            epoch (int): number of the epoch.
+
+        Returns:
+            dict[str, dict | int]: checkpoint dictionary.
+        """
         checkpoint = {
             "model": self.model.module.state_dict(),
             "optimizer": self.optimizer.state_dict(),
@@ -155,7 +189,15 @@ class Trainer:
         }
         return checkpoint
 
-    def save_model(self, epoch, is_final=False, is_best=False, checkpoint=None):
+    def save_model(self, epoch: int, is_final: bool=False, is_best: bool =False, checkpoint: dict[str, dict | int] | None =None):
+        """Save the model checkpoint.
+
+        Args:
+            epoch (int): number of the epoch.
+            is_final (bool, optional): whether is the final checkpoint. Defaults to False.
+            is_best (bool, optional): wheter is the best checkpoint. Defaults to False.
+            checkpoint (dict[str, dict  |  int] | None, optional): already prepared checkpoint dict. Defaults to None.
+        """
         if self.rank != 0:
             return
         checkpoint = self.get_checkpoint(epoch) if checkpoint is None else checkpoint
@@ -166,7 +208,12 @@ class Trainer:
             f"Epoch {epoch} | Training checkpoint saved at {checkpoint_path}"
         )
 
-    def load_model(self, resume_path):
+    def load_model(self, resume_path: str | pathlib.Path) -> None:
+        """Load model from the checkpoint.
+
+        Args:
+            resume_path (str | pathlib.Path): path to the checkpoint.
+        """
         model_dict = torch.load(resume_path, map_location=self.device)
         if "model" in model_dict:
             self.model.module.load_state_dict(model_dict["model"])
@@ -183,18 +230,54 @@ class Trainer:
         )
 
     def compute_loss(self, logits: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        """Compute the loss.
+
+        Args:
+            logits (torch.Tensor): logits from the model.
+            target (torch.Tensor): target tensor.
+
+        Raises:
+            NotImplementedError: raise if the method is not implemented.
+
+        Returns:
+            torch.Tensor: loss value.
+        """
         raise NotImplementedError
 
-    def set_best_checkpoint(self, eval_metrics, epoch):
+    def set_best_checkpoint(self, eval_metrics: dict[float, list[float]], epoch: int) -> None:
+        """Update the best checkpoint according to the evaluation metrics.
+
+        Args:
+            eval_metrics (dict[float, list[float]]): metrics computed by the evaluator on the validation set.
+            epoch (int): number of the epoch.
+        """
         if self.best_metric_comp(eval_metrics[self.best_metric_key], self.best_metric):
             self.best_metric = eval_metrics[self.best_metric_key]
             self.best_ckpt = self.get_checkpoint(epoch)
 
     @torch.no_grad()
-    def compute_logging_metrics(self, logits, target):
+    def compute_logging_metrics(self, logits: torch.Tensor, target: torch.Tensor) -> dict[float, list[float]]:
+        """Compute logging metrics.
+
+        Args:
+            logits (torch.Tensor): logits output by the adaptor.
+            target (torch.Tensor): target tensor.
+
+        Raises:
+            NotImplementedError: raise if the method is not implemented.
+
+        Returns:
+            dict[float, list[float]]: logging metrics.
+        """
         raise NotImplementedError
 
-    def log(self, batch_idx, epoch):
+    def log(self, batch_idx: int, epoch) -> None:
+        """Log the information.
+
+        Args:
+            batch_idx (int): number of the batch.
+            epoch (_type_): number of the epoch.
+        """
         # TO DO: upload to wandb
         left_batch_this_epoch = self.batch_per_epoch - batch_idx
         left_batch_all = (
@@ -236,10 +319,10 @@ class Trainer:
         metrics_info = "\n Training metrics: " + "\t".join(metrics_info)
         # extra_metrics_info = self.extra_info_template.format(**self.extra_info)
         log_info = basic_info + metrics_info
-
         self.logger.info(log_info)
 
-    def reset_stats(self):
+    def reset_stats(self) -> None:
+        """Reset the training stats and metrics."""
         for v in self.training_stats.values():
             v.reset()
         for v in self.training_metrics.values():
