@@ -211,6 +211,7 @@ class MTUPerNet(UPerNet):
         multi_temporal: int,
         multi_temporal_strategy: str,
         pool_scales: list[int] = [1, 2, 3, 6],
+        feature_multiplier: int = 1,
     ) -> None:
         super().__init__(
             foundation_model=foundation_model,
@@ -218,6 +219,7 @@ class MTUPerNet(UPerNet):
             finetune=finetune,
             channels=channels,
             pool_scales=pool_scales,
+            feature_multiplier=feature_multiplier,
         )
 
         self.multi_temporal = multi_temporal
@@ -302,28 +304,40 @@ class MTUPerNet(UPerNet):
 
 
 class SiamUPerNet(UPerNet):
-    def __init__(self, args, cfg, encoder, pool_scales, strategy):
+    def __init__(
+        self,
+        foundation_model: FoundationModel,
+        num_classes: int,
+        finetune: bool,
+        channels: int,
+        strategy: str,
+        pool_scales: list[int] = [1, 2, 3, 6],
+    ) -> None:
+        assert strategy in ["diff", "concat"], "startegy must be in [diff, concat]"
         self.strategy = strategy
         if self.strategy == "diff":
-            self.feature_multiplier = 1
+            feature_multiplier = 1
         elif self.strategy == "concat":
-            self.feature_multiplier = 2
+            feature_multiplier = 2
         else:
             raise NotImplementedError
 
         super().__init__(
-            args,
-            cfg,
-            encoder,
+            foundation_model=foundation_model,
+            num_classes=num_classes,
+            finetune=finetune,
+            channels=channels,
             pool_scales=pool_scales,
-            feature_multiplier=self.feature_multiplier,
+            feature_multiplier=feature_multiplier,
         )
 
-    def forward(self, img, output_shape=None):
+    def forward(
+        self, img: dict[str, torch.Tensor], output_shape: torch.Size | None = None
+    ) -> torch.Tensor:
         """Forward function for change detection."""
 
-        if self.encoder.model_name != "Prithvi":
-            if self.encoder.model_name == "SpectralGPT":
+        if self.foundation_model.model_name != "Prithvi":
+            if self.foundation_model.model_name == "SpectralGPT":
                 # Retains the temporal dimension
                 img1 = {k: v[:, :, [0], :, :] for k, v in img.items()}
                 img2 = {k: v[:, :, [1], :, :] for k, v in img.items()}
@@ -333,18 +347,18 @@ class SiamUPerNet(UPerNet):
 
             if not self.finetune:
                 with torch.no_grad():
-                    feat1 = self.encoder(img1)
-                    feat2 = self.encoder(img2)
+                    feat1 = self.foundation_model(img1)
+                    feat2 = self.foundation_model(img2)
             else:
-                feat1 = self.encoder(img1)
-                feat2 = self.encoder(img2)
+                feat1 = self.foundation_model(img1)
+                feat2 = self.foundation_model(img2)
 
         else:
             if not self.finetune:
                 with torch.no_grad():
-                    feats = self.encoder(img)
+                    feats = self.foundation_model(img)
             else:
-                feats = self.encoder(img)
+                feats = self.foundation_model(img)
 
             feat1, feat2 = [], []
             for i in range(len(feats)):
