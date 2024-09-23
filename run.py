@@ -324,7 +324,7 @@ def main():
 
         # training: put all components into engines
         if task_name == "regression":
-            val_evaluator = RegEvaluator(cfg, val_loader, exp_dir, device)
+            val_evaluator = RegEvaluator(cfg, val_loader, exp_dir, device, split= 'val')
             trainer = RegTrainer(
                 cfg,
                 model,
@@ -337,7 +337,7 @@ def main():
                 device,
             )
         else:
-            val_evaluator = SegEvaluator(cfg, val_loader, exp_dir, device)
+            val_evaluator = SegEvaluator(cfg, val_loader, exp_dir, device, split= 'val')
             trainer = SegTrainer(
                 cfg,
                 model,
@@ -372,9 +372,9 @@ def main():
 
     if task_name == "regression":
         # TODO: This doesn't work atm
-        test_evaluator = RegEvaluator(cfg, test_loader, exp_dir, device)
+        test_evaluator = RegEvaluator(cfg, test_loader, exp_dir, device, split= 'test')
     else:
-        test_evaluator = SegEvaluator(cfg, test_loader, exp_dir, device)
+        test_evaluator = SegEvaluator(cfg, test_loader, exp_dir, device, split= 'test')
 
     model_ckpt_path = os.path.join(
         exp_dir, next(f for f in os.listdir(exp_dir) if f.endswith("_best.pth"))
