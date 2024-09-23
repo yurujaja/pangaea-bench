@@ -27,6 +27,7 @@ class Evaluator:
         self.ignore_index = self.val_loader.dataset.ignore_index
         self.num_classes = len(self.classes)
         self.max_name_len = max([len(name) for name in self.classes])
+        self.use_wandb = use_wandb
 
         if use_wandb:
             import wandb
@@ -183,7 +184,9 @@ class SegEvaluator(Evaluator):
         self.logger.info(macc_str)
 
         # TODO: REMOVE THIS
-        if self.args.use_wandb and self.args.rank == 0:
+        # if self.use_wandb and self.args.rank == 0:
+        # WARNING: add rank zero only
+        if self.use_wandb and self.args.rank == 0:
             self.wandb.log(
                 {
                     "val_mIoU": metrics["mIoU"],
@@ -261,5 +264,7 @@ class RegEvaluator(Evaluator):
         rmse = "-------------------\n" + "RMSE \t{:>7}".format("%.3f" % metrics["RMSE"])
         self.logger.info(header + mse + rmse)
 
-        if self.args.use_wandb and self.args.rank == 0:
+        # WARNING: add rank zero only
+        # if self.use_wandb and self.args.rank == 0:
+        if self.use_wandb:
             self.wandb.log({"val_MSE": metrics["MSE"], "val_RMSE": metrics["RMSE"]})
