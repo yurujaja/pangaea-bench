@@ -186,7 +186,7 @@ class SegEvaluator(Evaluator):
         # TODO: REMOVE THIS
         # if self.use_wandb and self.args.rank == 0:
         # WARNING: add rank zero only
-        if self.use_wandb and self.args.rank == 0:
+        if self.use_wandb:
             self.wandb.log(
                 {
                     "val_mIoU": metrics["mIoU"],
