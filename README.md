@@ -40,6 +40,8 @@ And the following **datasets**:
 |     [BioMassters](https://papers.nips.cc/paper_files/paper/2023/file/40daf2a00278c4bea1b26cd4c8a654f8-Paper-Datasets_and_Benchmarks.pdf)     |   [link](https://huggingface.co/datasets/nascetti-a/BioMassters)       | Forest       | Regression   |  S1, S2 | Finland   |
 
 
+Please refer to [**Dataset Guide**](DATASET_GUIDE.md) to understand the processing requirements and commands specific to each dataset.
+
 The repository supports the following **tasks** using GFMs:
  - [single temporal semantic segmentation](#single-temporal-semantic-segmentation)
  - [multi-temporal semantic segmentation](#multi-temporal-semantic-segmentation)
