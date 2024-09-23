@@ -84,23 +84,43 @@ class Pastis(Dataset):
         download_url: str,
         auto_download: bool,
     ):
-        """
-        Initializes the dataset.
+        """Initialize the PASTIS dataset.
+
         Args:
-            path (str): path to the dataset
-            modalities (list): list of modalities to use
-            folds (list): list of folds to use
-            reference_date (str date): reference date for the data
-            nb_split (int): number of splits from one observation
-            num_classes (int): number of classes
+            split (str): split of the dataset (train, val, test).
+            dataset_name (str): dataset name.
+            multi_modal (bool): if the dataset is multi-modal.
+            multi_temporal (int): number of temporal frames.
+            root_path (str): root path of the dataset.
+            classes (list): classes of the dataset.
+            num_classes (int): number of classes.
+            ignore_index (int): index to ignore for metrics and loss.
+            img_size (int): size of the image. 
+            bands (dict[str, list[str]]): bands of the dataset.
+            distribution (list[int]): class distribution.
+            data_mean (dict[str, list[str]]): mean for each band for each modality. 
+            Dictionary with keys as the modality and values as the list of means.
+            e.g. {"s2": [b1_mean, ..., bn_mean], "s1": [b1_mean, ..., bn_mean]}
+            data_std (dict[str, list[str]]): str for each band for each modality.
+            Dictionary with keys as the modality and values as the list of stds.
+            e.g. {"s2": [b1_std, ..., bn_std], "s1": [b1_std, ..., bn_std]}
+            data_min (dict[str, list[str]]): min for each band for each modality.
+            Dictionary with keys as the modality and values as the list of mins.
+            e.g. {"s2": [b1_min, ..., bn_min], "s1": [b1_min, ..., bn_min]}
+            data_max (dict[str, list[str]]): max for each band for each modality.
+            Dictionary with keys as the modality and values as the list of maxs.
+            e.g. {"s2": [b1_max, ..., bn_max], "s1": [b1_max, ..., bn_max]}
+            download_url (str): url to download the dataset.
+            auto_download (bool): whether to download the dataset automatically.
         """
         super(Pastis, self).__init__()
 
+        assert split in ["train", "val", "test"], "Split must be train, val or test"
         if split == "train":
             folds = [1, 2, 3]
         elif split == "val":
             folds = [4]
-        elif split == "test":
+        else:
             folds = [5]
 
         self.dataset_name = dataset_name
@@ -135,13 +155,19 @@ class Pastis(Dataset):
                 [self.meta_patch[self.meta_patch["Fold"] == f] for f in folds]
             )
 
-    def __getitem__(self, i):
-        """
-        Returns an item from the dataset.
+    def __getitem__(self, i: int) -> dict[str, torch.Tensor | dict[str, torch.Tensor]]:
+        """Get the item at index i.
+
         Args:
-            i (int): index of the item
+            i (int): index of the item.
+
         Returns:
-            dict: dictionary with keys "label", "name" and the other corresponding to the modalities used
+            dict[str, torch.Tensor | dict[str, torch.Tensor]]: output dictionary follwing the format
+            {"image": 
+                {"optical": torch.Tensor,
+                 "sar": torch.Tensor},
+            "target": torch.Tensor,
+             "metadata": dict}.
         """
         line = self.meta_patch.iloc[i // (self.nb_split * self.nb_split)]
         name = line["ID_PATCH"]
@@ -151,10 +177,6 @@ class Pastis(Dataset):
                 os.path.join(self.path, "ANNOTATIONS/TARGET_" + str(name) + ".npy")
             )[0].astype(np.int32)
         )
-        # label = torch.unique(split_image(label, self.nb_split, part)).long()
-        # label = torch.sum(
-        #     torch.nn.functional.one_hot(label, num_classes=self.num_classes), dim=0
-        # )
         # label = label[1:-1]  # remove Background and Void classes
         output = {"label": label, "name": name}
 
@@ -343,8 +365,13 @@ class Pastis(Dataset):
         }
 
     def __len__(self) -> int:
+        """Return the length of the dataset.
+
+        Returns:
+            int: length of the dataset.
+        """
         return len(self.meta_patch) * self.nb_split * self.nb_split
 
     @staticmethod
-    def download(dataset_config: dict, silent=False):
+    def download():
         pass
