@@ -251,6 +251,8 @@ def main():
         if 0 < cfg.limited_label < 1:
             indices = random.sample(range(len(train_dataset)), int(len(train_dataset)*cfg.limited_label))
             train_dataset = Subset(train_dataset, indices)
+            val_indices = random.sample(range(len(val_dataset)), int(len(val_dataset)*cfg.limited_label))
+            val_dataset = Subset(val_dataset, val_indices)
             perc = cfg.limited_label*100
             logger.info(f"Created a subset of the train dataset, with {perc}% of the labels available")
         else:
