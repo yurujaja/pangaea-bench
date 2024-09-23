@@ -14,9 +14,9 @@ class Evaluator():
         self.exp_dir = exp_dir
         self.device = device
         # self.cls_name
-        self.classes = self.val_loader.dataset.classes
+        self.classes = args.dataset.classes
+        self.num_classes = args.dataset.num_classes        
         self.split = self.val_loader.dataset.split
-        self.num_classes = len(self.classes)
         self.max_name_len = max([len(name) for name in self.classes])
         self.ignore_index = args["dataset"]["ignore_index"]
 

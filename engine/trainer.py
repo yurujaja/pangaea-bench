@@ -149,7 +149,8 @@ class Trainer():
     
     
     def load_model(self, resume_path):
-        model_dict = torch.load(resume_path, map_location=self.device)
+        self.resume_path = resume_path
+        model_dict = torch.load(self.resume_path, map_location=self.device)
         if 'model' in model_dict:
             self.model.module.load_state_dict(model_dict["model"])
             self.optimizer.load_state_dict(model_dict["optimizer"])
@@ -160,7 +161,7 @@ class Trainer():
             self.model.module.load_state_dict(model_dict)
             self.start_epoch = 0
 
-        self.logger.info(f"Loaded model from {self.args.resume_path}. Resume training from epoch {self.start_epoch}")
+        self.logger.info(f"Loaded model from {self.resume_path}. Resume training from epoch {self.start_epoch}")
 
     def compute_loss(self, logits, target):
         pass
