@@ -313,7 +313,10 @@ class SiamUPerNet(UPerNet):
         strategy: str,
         pool_scales: list[int] = [1, 2, 3, 6],
     ) -> None:
-        assert strategy in ["diff", "concat"], "startegy must be in [diff, concat]"
+        assert strategy in [
+            "diff",
+            "concat",
+        ], "startegy must be included in [diff, concat]"
         self.strategy = strategy
         if self.strategy == "diff":
             feature_multiplier = 1
@@ -386,14 +389,42 @@ class SiamUPerNet(UPerNet):
 
 class SiamDiffUPerNet(SiamUPerNet):
     # Siamese UPerNet for change detection with feature differencing strategy
-    def __init__(self, args, cfg, encoder, pool_scales=(1, 2, 3, 6)):
-        super().__init__(args, cfg, encoder, pool_scales, "diff")
+    def __init__(
+        self,
+        foundation_model: FoundationModel,
+        num_classes: int,
+        finetune: bool,
+        channels: int,
+        pool_scales: list[int] = [1, 2, 3, 6],
+    ) -> None:
+        super().__init__(
+            foundation_model=foundation_model,
+            num_classes=num_classes,
+            finetune=finetune,
+            channels=channels,
+            strategy="diff",
+            pool_scales=pool_scales,
+        )
 
 
 class SiamConcUPerNet(SiamUPerNet):
     # Siamese UPerNet for change detection with feature concatenation strategy
-    def __init__(self, args, cfg, encoder, pool_scales=(1, 2, 3, 6)):
-        super().__init__(args, cfg, encoder, pool_scales, "concat")
+    def __init__(
+        self,
+        foundation_model: FoundationModel,
+        num_classes: int,
+        finetune: bool,
+        channels: int,
+        pool_scales: list[int] = [1, 2, 3, 6],
+    ) -> None:
+        super().__init__(
+            foundation_model=foundation_model,
+            num_classes=num_classes,
+            finetune=finetune,
+            channels=channels,
+            strategy="concat",
+            pool_scales=pool_scales,
+        )
 
 
 class PPM(nn.ModuleList):
