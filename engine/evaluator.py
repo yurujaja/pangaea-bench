@@ -6,7 +6,7 @@ import torch
 import torch.nn.functional as F
 
 class Evaluator():
-    def __init__(self, args, val_loader, exp_dir, device):
+    def __init__(self, args, val_loader, exp_dir, device, split):
 
         self.args = args
         self.val_loader = val_loader
@@ -14,9 +14,12 @@ class Evaluator():
         self.exp_dir = exp_dir
         self.device = device
         # self.cls_name
-        self.classes = self.val_loader.dataset.classes
-        self.split = self.val_loader.dataset.split
-        self.num_classes = len(self.classes)
+        self.classes = args.dataset.classes
+        self.split = split
+        self.num_classes = args.dataset.num_classes        
+        # self.classes = self.val_loader.dataset.classes
+        # self.split = self.val_loader.dataset.split
+        # self.num_classes = len(self.classes)
         self.max_name_len = max([len(name) for name in self.classes])
         self.ignore_index = args["dataset"]["ignore_index"]
 
@@ -36,8 +39,8 @@ class Evaluator():
 
 
 class SegEvaluator(Evaluator):
-    def __init__(self, args, val_loader, exp_dir, device):
-        super().__init__(args, val_loader, exp_dir, device)
+    def __init__(self, args, val_loader, exp_dir, device, split):
+        super().__init__(args, val_loader, exp_dir, device, split)
 
     @torch.no_grad()
     def evaluate(self, model, model_name='model', model_ckpt_path=None):
@@ -167,8 +170,8 @@ class SegEvaluator(Evaluator):
 
 
 class RegEvaluator(Evaluator):
-    def __init__(self, args, val_loader, exp_dir, device):
-        super().__init__(args, val_loader, exp_dir, device)
+    def __init__(self, args, val_loader, exp_dir, device, split):
+        super().__init__(args, val_loader, exp_dir, device, split)
 
     @torch.no_grad()
     def evaluate(self, model, model_name='model', model_ckpt_path=None):
