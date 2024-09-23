@@ -96,7 +96,6 @@ class UPerNet(nn.Module):
         )
 
         self.conv_seg = nn.Conv2d(self.channels, self.num_classes, kernel_size=1)
-        self.conv_reg = nn.Conv2d(self.channels, 1, kernel_size=1)
         self.dropout = nn.Dropout2d(0.1)
 
     def psp_forward(self, inputs):
