@@ -8,12 +8,14 @@ import torch.nn as nn
 class FoundationModel(nn.Module):
     def __init__(
         self,
+        model_name: str,
         input_bands: dict[str, dict[str, list[str]]],
         input_size: int,
         embed_dim: int,
         encoder_weights: str | Path,
     ) -> None:
         super().__init__()
+        self.model_name = model_name
         self.input_bands = input_bands
         self.input_size = input_size
         self.embed_dim = embed_dim
@@ -48,4 +50,3 @@ class FoundationModel(nn.Module):
 
     def forward(self):
         pass
-

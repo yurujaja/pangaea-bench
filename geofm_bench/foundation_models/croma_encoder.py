@@ -24,6 +24,7 @@ class CROMA_OPTICAL_Encoder(FoundationModel):
         image_resolution=120,
     ):
         super().__init__(
+            model_name="croma_optical",
             encoder_weights=encoder_weights,
             input_bands=input_bands,
             input_size=input_size,
