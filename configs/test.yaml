@@ -8,18 +8,17 @@ num_workers: 1
 batch_size: 8
 
 
-
 # EXPERIMENT
 finetune: false
-ckpt_dir: "20240921_024230-croma_optical-upernet-pastis"
-limited_label: 1
-n_epochs: 80
+ckpt_dir: /share/DEEPLEARNING/lebellig/scripts/geofm-bench/20240923_113641-croma_optical-upernet_mt-pastis/
+# limited_label: 1
+# n_epochs: 80
 
-
-defaults:
-  - task: ???
-  - dataset: ???
-  - foundation_model: ???
-  - adaptor: ???
-  - preprocessing: ???
-  - _self_ 
+#
+# defaults:
+#   - task: ???
+#   - dataset: ???
+#   - foundation_model: ???
+#   - adaptor: ???
+#   - preprocessing: ???
+#   - _self_ 

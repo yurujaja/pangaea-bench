@@ -61,7 +61,7 @@ class SegEvaluator(Evaluator):
         super().__init__(val_loader, exp_dir, device, use_wandb)
 
     @torch.no_grad()
-    def evaluate(self, model, model_name="model", model_ckpt_path=None):
+    def evaluate(self, model, model_ckpt_path=None):
         t = time.time()
 
         if model_ckpt_path is not None:
@@ -72,8 +72,7 @@ class SegEvaluator(Evaluator):
             else:
                 model.module.load_state_dict(model_dict)
 
-            self.logger.info(f"Loaded model from {model_ckpt_path} for evaluation")
-
+            self.logger.info(f"Loaded model from {type(model).__name__} for evaluation")
         model.eval()
 
         tag = f"Evaluating {model_name} on {self.split} set"
@@ -109,8 +108,8 @@ class SegEvaluator(Evaluator):
         return metrics, used_time
 
     @torch.no_grad()
-    def __call__(self, model, model_name="model", model_ckpt_path=None):
-        return self.evaluate(model, model_name, model_ckpt_path)
+    def __call__(self, model, model_ckpt_path=None):
+        return self.evaluate(model, model_ckpt_path)
 
     def compute_metrics(self, confusion_matrix):
         # Calculate IoU for each class

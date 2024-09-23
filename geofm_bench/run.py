@@ -37,7 +37,6 @@ def get_exp_name(hydra_config: HydraConf) -> str:
 
 @hydra.main(version_base=None, config_path="../configs", config_name="train")
 def main(cfg: DictConfig) -> None:
-    exp_name = get_exp_name(HydraConfig.get())
     # fix all random seeds
     fix_seed(cfg.seed)
     # distributed training variables
@@ -48,7 +47,10 @@ def main(cfg: DictConfig) -> None:
     torch.cuda.set_device(device)
     torch.distributed.init_process_group(backend="nccl")
 
-    if cfg.train:
+    # true if training else false
+    train_run = cfg.train
+    if train_run:
+        exp_name = get_exp_name(HydraConfig.get())
         exp_dir = pathlib.Path(cfg.work_dir) / exp_name
         exp_dir.mkdir(parents=True, exist_ok=True)
         logger_path = exp_dir / "train.log"
@@ -59,6 +61,9 @@ def main(cfg: DictConfig) -> None:
         exp_dir = pathlib.Path(cfg.ckpt_dir)
         exp_name = exp_dir.name
         logger_path = exp_dir / "test.log"
+        # load training config
+        cfg_path = exp_dir / "configs" / "config.yaml"
+        cfg = OmegaConf.load(cfg_path)
 
     logger = init_logger(logger_path, rank=rank)
     logger.info("============ Initialized logger ============")
@@ -90,6 +95,7 @@ def main(cfg: DictConfig) -> None:
     # download_model(cfg.foundation_model)
     foundation_model: FoundationModel = instantiate(cfg.foundation_model)
     foundation_model.load_encoder_weights(logger)
+    logger.info("Built {}.".format(foundation_model.model_name))
 
     # prepare the adaptor (segmentation/regression)
     adaptor: torch.nn.Module = instantiate(
@@ -100,7 +106,6 @@ def main(cfg: DictConfig) -> None:
     adaptor = torch.nn.parallel.DistributedDataParallel(
         adaptor, device_ids=[local_rank], output_device=local_rank
     )
-    # TODO: refactor logging in model building
     logger.info(
         "Built {} for with {} encoder.".format(
             adaptor.module.model_name, type(foundation_model).__name__
@@ -111,7 +116,7 @@ def main(cfg: DictConfig) -> None:
     collate_fn = get_collate_fn(modalities)
 
     # training
-    if cfg.train:
+    if train_run:
         for preprocess in cfg.preprocessing.train:
             train_dataset: Dataset = instantiate(
                 preprocess, dataset=train_dataset, foundation_model=foundation_model
@@ -191,7 +196,7 @@ def main(cfg: DictConfig) -> None:
     else:
         for preprocess in cfg.preprocessing.test:
             test_dataset: Dataset = instantiate(
-                test_dataset, dataset=test_dataset, foundation_model=foundation_model
+                preprocess, dataset=test_dataset, foundation_model=foundation_model
             )
 
         test_loader = DataLoader(
@@ -210,7 +215,7 @@ def main(cfg: DictConfig) -> None:
         best_model_ckpt_path = get_best_model_ckpt_path(exp_dir)
         test_evaluator.evaluate(adaptor, best_model_ckpt_path)
 
-    if cfg.use_wandb and cfg.rank == 0:
+    if cfg.use_wandb and rank == 0:
         wandb.finish()
 
 
