@@ -251,10 +251,12 @@ def main():
         if 0 < cfg.limited_label < 1:
             indices = random.sample(range(len(train_dataset)), int(len(train_dataset)*cfg.limited_label))
             train_dataset = Subset(train_dataset, indices)
+            train_dataset.split = "train"
             val_indices = random.sample(range(len(val_dataset)), int(len(val_dataset)*cfg.limited_label))
             val_dataset = Subset(val_dataset, val_indices)
+            val_dataset.split = "val"
             perc = cfg.limited_label*100
-            logger.info(f"Created a subset of the train dataset, with {perc}% of the labels available")
+            logger.info(f"Created a subset of the train and val dataset, with {perc}% of the labels available")
         else:
             logger.info(f"The entire train dataset will be used.")
 
@@ -324,7 +326,7 @@ def main():
 
         # training: put all components into engines
         if task_name == "regression":
-            val_evaluator = RegEvaluator(cfg, val_loader, exp_dir, device, split= 'val')
+            val_evaluator = RegEvaluator(cfg, val_loader, exp_dir, device)
             trainer = RegTrainer(
                 cfg,
                 model,
@@ -337,7 +339,7 @@ def main():
                 device,
             )
         else:
-            val_evaluator = SegEvaluator(cfg, val_loader, exp_dir, device, split= 'val')
+            val_evaluator = SegEvaluator(cfg, val_loader, exp_dir, device)
             trainer = SegTrainer(
                 cfg,
                 model,
@@ -371,10 +373,9 @@ def main():
     logger.info("Built {} dataset for evaluation.".format(dataset_name))
 
     if task_name == "regression":
-        # TODO: This doesn't work atm
-        test_evaluator = RegEvaluator(cfg, test_loader, exp_dir, device, split= 'test')
+        test_evaluator = RegEvaluator(cfg, test_loader, exp_dir, device)
     else:
-        test_evaluator = SegEvaluator(cfg, test_loader, exp_dir, device, split= 'test')
+        test_evaluator = SegEvaluator(cfg, test_loader, exp_dir, device)
 
     model_ckpt_path = os.path.join(
         exp_dir, next(f for f in os.listdir(exp_dir) if f.endswith("_best.pth"))
