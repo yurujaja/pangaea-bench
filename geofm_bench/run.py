@@ -27,6 +27,14 @@ from geofm_bench.utils.utils import (
 
 
 def get_exp_name(hydra_config: HydraConf) -> str:
+    """Create a unique experiment name based on the choices made in the config.
+
+    Args:
+        hydra_config (HydraConf): hydra config.
+
+    Returns:
+        str: experiment name.
+    """
     choices = OmegaConf.to_container(hydra_config.runtime.choices)
     timestamp = time.strftime("%Y%m%d_%H%M%S", time.localtime())
     fm = choices["foundation_model"]
@@ -37,6 +45,11 @@ def get_exp_name(hydra_config: HydraConf) -> str:
 
 @hydra.main(version_base=None, config_path="../configs", config_name="train")
 def main(cfg: DictConfig) -> None:
+    """Geofm-bench main function.
+
+    Args:
+        cfg (DictConfig): main_config
+    """
     # fix all random seeds
     fix_seed(cfg.seed)
     # distributed training variables
