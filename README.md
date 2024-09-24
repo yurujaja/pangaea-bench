@@ -36,7 +36,7 @@ And the following **datasets**:
 |   DynamicEarthNet   |          |        |      |         | Global   |
 |   [CropTypeMapping](https://openaccess.thecvf.com/content_CVPRW_2019/papers/cv4gc/Rustowicz_Semantic_Segmentation_of_Crop_Type_in_Africa_A_Novel_Dataset_CVPRW_2019_paper.pdf) |   [link](https://sustainlab-group.github.io/sustainbench/docs/datasets/sdg2/crop_type_mapping_ghana-ss.html#download) | Agriculture |Semantic Segmentation |S1, S2, Planet|South Sudan|
 |      [SpaceNet 7](https://openaccess.thecvf.com/content/CVPR2021/papers/Van_Etten_The_Multi-Temporal_Urban_Development_SpaceNet_Dataset_CVPR_2021_paper.pdf)      |    [link](https://spacenet.ai/sn7-challenge/)      |    Urban    |   Change detection   |     Planet    | Global   |
-|    AI4SmallFarms    |          |        |      |         | Cambodia/Vietnam |
+|    [AI4SmallFarms](https://ieeexplore.ieee.org/document/10278130)  | [link](https://doi.org/10.17026/dans-xy6-ngg6)  |  Agriculture     |  Semantic segmentation  |   S2   | Cambodia/Vietnam |
 |     [BioMassters](https://papers.nips.cc/paper_files/paper/2023/file/40daf2a00278c4bea1b26cd4c8a654f8-Paper-Datasets_and_Benchmarks.pdf)     |   [link](https://huggingface.co/datasets/nascetti-a/BioMassters)       | Forest       | Regression   |  S1, S2 | Finland   |
 
 
@@ -170,6 +170,226 @@ torchrun ...
 ```
 In general
 
+## 🔧 Customization
+
+### Using Your Own Dataset
+
+We have designed the repo to allow for using your own datasets with minimal effort. Follow the steps below to integrate your dataset:
+
+1. **Create a Dataset Configuration File**:
+
+   - Navigate to `configs/datasets/` and create a new YAML file named after your dataset (e.g., `my_dataset.yaml`).
+   - Define all necessary dataset parameters such as `dataset_name`, `root_path`, `img_size`, `bands`, `data_mean`, `data_std`, `num_classes`, and class labels.
+   - **Example**:
+
+     ```yaml
+     dataset_name: MyDataset
+     root_path: ./data/my_dataset
+     auto_download: False
+
+     img_size: 256
+     multi_temporal: False
+     multi_modal: False
+
+     ignore_index: -1
+     num_classes: 3
+     classes:
+       - Class1
+       - Class2
+       - Class3
+
+     bands:
+       optical:
+         - B1
+         - B2
+         - B3
+
+     data_mean:
+       optical:
+         - 0.485
+         - 0.456
+         - 0.406
+
+     data_std:
+       optical:
+         - 0.229
+         - 0.224
+         - 0.225
+     ```
+
+2. **Implement a Dataset Class**:
+
+   - In the `datasets/` directory, create a new Python file named after your dataset (e.g., `my_dataset.py`).
+   - Implement a class that inherits from `torch.utils.data.Dataset`.
+   - Register your dataset with the `@DATASET_REGISTRY.register()` decorator.
+   - Implement the required methods: `__init__`, `__len__`, `__getitem__`, `get_splits`, and `download` (if applicable).
+   - **Example**:
+
+     ```python
+     import torch
+     from utils.registry import DATASET_REGISTRY
+
+     @DATASET_REGISTRY.register()
+     class MyDataset(torch.utils.data.Dataset):
+         def __init__(self, cfg, split):
+             self.root_path = cfg['root_path']
+             self.split = split
+             # Initialize file lists or data structures here
+
+         def __len__(self):
+             # Return the total number of samples
+             return len(self.file_list)
+
+         def __getitem__(self, index):
+             # Load your data and labels here
+             image = ...  # Load image
+             target = ...  # Load target label or mask
+
+             # Convert to tensors
+             image = torch.tensor(image, dtype=torch.float32)
+             target = torch.tensor(target, dtype=torch.long)
+
+             return {
+                 'image': {'optical': image},
+                 'target': target,
+                 'metadata': {}
+             }
+
+         @staticmethod
+         def get_splits(dataset_config):
+             train_dataset = MyDataset(cfg=dataset_config, split="train")
+             val_dataset = MyDataset(cfg=dataset_config, split="val")
+             test_dataset = MyDataset(cfg=dataset_config, split="test")
+             return train_dataset, val_dataset, test_dataset
+
+         @staticmethod
+         def download(dataset_config, silent=False):
+             # Implement if your dataset requires downloading
+             pass
+     ```
+
+3. **Adjust the Augmentation Pipeline**:
+
+   - If your dataset requires specific preprocessing or augmentation, create or modify an augmentation configuration file in `configs/augmentations/`.
+   - Ensure that all preprocessing steps (e.g., normalization, resizing) match your dataset's requirements.
+
+4. **Run Training**:
+
+   - Use the `run.py` script with your dataset and augmentation configurations.
+   - **Example Command**:
+
+     ```bash
+     torchrun --nnodes=1 --nproc_per_node=1 run.py \
+     --config configs/run/default.yaml \
+     --encoder_config configs/foundation_models/prithvi.yaml \
+     --dataset_config configs/datasets/my_dataset.yaml \
+     --segmentor_config configs/segmentors/upernet.yaml \
+     --augmentation_config configs/augmentations/segmentation_default.yaml \
+     --num_workers 4 --eval_interval 1 --use_wandb
+     ```
+
+### Using Your Own Model
+
+To benchmark your own foundation model, follow these steps:
+
+1. **Create an Encoder Configuration File**:
+
+   - In `configs/foundation_models/`, create a new YAML file named after your model (e.g., `my_model.yaml`).
+   - Define model-specific parameters, including `encoder_name`, `foundation_model_name`, `encoder_weights`, `input_bands`, and any model architecture arguments.
+   - **Example**:
+
+     ```yaml
+     encoder_name: MyModel_Encoder
+     foundation_model_name: MyModel
+     encoder_weights: ./pretrained_models/my_model_weights.pth
+     download_url: https://path.to.your.model/weights.pth
+     temporal_input: False
+
+     encoder_model_args:
+       img_size: 224
+       in_chans: 3
+       embed_dim: 768
+       patch_size: 16
+       num_heads: 12
+       depth: 12
+       mlp_ratio: 4
+
+     input_bands:
+       optical:
+         - B1
+         - B2
+         - B3
+
+     output_layers:
+       - 3
+       - 5
+       - 7
+       - 11
+     ```
+
+2. **Implement an Encoder Class**:
+
+   - In `foundation_models/`, create a new Python file named after your model (e.g., `my_model_encoder.py`).
+   - Implement a class that inherits from `nn.Module`.
+   - Register your encoder with the `@ENCODER_REGISTRY.register()` decorator.
+   - Implement the required methods: `__init__`, `load_encoder_weights`, and `forward`.
+   - **Example**:
+
+     ```python
+     import torch.nn as nn
+     from utils.registry import ENCODER_REGISTRY
+
+     @ENCODER_REGISTRY.register()
+     class MyModel_Encoder(nn.Module):
+         def __init__(self, cfg, **kwargs):
+             super().__init__()
+             self.model_name = 'MyModel'
+             # Initialize your model architecture here
+             # For example:
+             self.backbone = nn.Sequential(
+                 nn.Conv2d(cfg.encoder_model_args['in_chans'], 64, kernel_size=3, padding=1),
+                 nn.ReLU(),
+                 # Add more layers as needed
+             )
+             # Specify output layers if applicable
+             self.output_layers = cfg['output_layers']
+
+         def load_encoder_weights(self, pretrained_path):
+             # Load pretrained weights
+             state_dict = torch.load(pretrained_path, map_location='cpu')
+             self.load_state_dict(state_dict, strict=False)
+             print(f"Loaded encoder weights from {pretrained_path}")
+
+         def forward(self, image):
+             x = image['optical']
+             outputs = []
+             # Forward pass through the model
+             for idx, layer in enumerate(self.backbone):
+                 x = layer(x)
+                 if idx in self.output_layers:
+                     outputs.append(x)
+             return outputs
+     ```
+
+3. **Adjust Band Mapping**:
+
+   - Ensure that the `input_bands` in your encoder configuration match the bands used in your model.
+   - Update the `input_bands` section in your encoder YAML file if necessary.
+
+4. **Run Training with Your Model**:
+
+   - Use the `run.py` script with your encoder configuration.
+   - **Example Command**:
+
+     ```bash
+     torchrun --nnodes=1 --nproc_per_node=1 run.py \
+     --config configs/run/default.yaml \
+     --encoder_config configs/foundation_models/my_model.yaml \
+     --dataset_config configs/datasets/mados.yaml \
+     --segmentor_config configs/segmentors/upernet.yaml \
+     --augmentation_config configs/augmentations/segmentation_default.yaml \
+     --num_workers 4 --eval_interval 1 --use_wandb
+     ```
 
 ## 🏃 Evaluation 
 Indicate the `eval_dir` where the checkpoints and configurations are stored.
