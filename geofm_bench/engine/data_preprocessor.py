@@ -286,8 +286,15 @@ class BaseAugment(RichDataset):
 
 class Tile(BaseAugment):
     def __init__(
-        self, dataset: GeoFMDataset, encoder: Encoder, min_overlap: float = 0
+        self, dataset: GeoFMDataset, encoder: Encoder, min_overlap: int = 0
     ) -> None:
+        """Initialize the Tiling augmentation.
+
+        Args:
+            dataset (GeoFMDataset): dataset used.
+            encoder (Encoder): encoder used.
+            min_overlap (int, optional): minimum overlap between tiles. Defaults to 0.
+        """
         super().__init__(dataset, encoder)
         self.min_overlap = min_overlap
         # Should be the _largest_ image in the dataset to avoid problems mentioned in __getitem__
@@ -318,7 +325,22 @@ class Tile(BaseAugment):
 
         self.data_cache = (None, None)
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int) -> dict[str, torch.Tensor | dict[str, torch.Tensor]]:
+        """Apply Tiling to the data.
+        Args:
+            index (int): index of data.
+
+        Returns:
+            dict[str, torch.Tensor | dict[str, torch.Tensor]]: output dictionary following the format
+            {"image":
+                {
+                encoder_modality_1: torch.Tensor of shape (C T H W) (T=1 if single timeframe),
+                ...
+                encoder_modality_N: torch.Tensor of shape (C T H W) (T=1 if single timeframe),
+                 },
+            "target": torch.Tensor of shape (H W),
+             "metadata": dict}.
+        """
         if self.tiles_per_dim == 1:
             return self.dataset[index]
 
@@ -856,7 +878,7 @@ class ImportanceRandomCrop(BaseAugment):
         padding_mode: str = "constant",
         n_crops: int = 10,
     ) -> None:
-        """Intialize the ImportanceRandomCrop.
+        """Initialize the ImportanceRandomCrop.
 
         Args:
             dataset (GeoFMDataset): dataset used.
@@ -934,6 +956,19 @@ class ImportanceRandomCropToEncoder(ImportanceRandomCrop):
         padding_mode: str = "constant",
         n_crops: int = 10,
     ) -> None:
+        """Initialize the ImportanceRandomCropToEncoder.
+        Initialize the ImportanceRandomCrop augmentation to the encoder input size.
+
+        Args:
+            dataset (GeoFMDataset): dataset used.
+            encoder (Encoder): encoder used.
+            size (int): crop size.
+            padding (str | None, optional): image padding. Defaults to None.
+            pad_if_needed (bool, optional): whether to pad. Defaults to False.
+            fill (int, optional): value for padding. Defaults to 0.
+            padding_mode (str, optional): padding mode. Defaults to "constant".
+            n_crops (int, optional): number of crops. Defaults to 10.
+        """
         size = encoder.input_size
         super().__init__(
             dataset=dataset,
