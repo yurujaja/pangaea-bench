@@ -152,7 +152,7 @@ class HLSBurnScars(GeoFMDataset):
         image = image.astype(np.float32)  # Convert to float32
         image = torch.from_numpy(image).permute(2, 0, 1)
 
-        target = tiff.imread(self._label_dir[index])
+        target = tiff.imread(self.target_list[index])
         target = target.astype(np.int64)  # Convert to int64 (since it's a mask)
         target = torch.from_numpy(target).long()
 
