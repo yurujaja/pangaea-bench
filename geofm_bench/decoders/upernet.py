@@ -240,6 +240,8 @@ class MTUPerNet(UPerNet):
         self, img: dict[str, torch.Tensor], output_shape: torch.Size | None = None
     ) -> torch.Tensor:
         """Forward function for change detection."""
+        print("DECODER MAIN FORWARD")
+        print(img["optical"].shape)
 
         if self.encoder.model_name in ["Prithvi", "satlas_pretrain"]:
             if not self.finetune:

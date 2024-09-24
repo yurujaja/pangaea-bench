@@ -212,7 +212,7 @@ class BandAdaptor:
 
         Returns:
             torch.Tensor: output image of shape (encoder_n_bands T H W).
-            In the case of sigle timeframe, T = 1.
+            In the case of single timeframe, T = 1.
         """
         # input of shape (dataset_n_bands T H W) output of shape (encoder_n_bands T H W)
         # WARNING: refactor this
@@ -236,11 +236,44 @@ class BandAdaptor:
 
 class BaseAugment(RichDataset):
     """Base class for augmentations.
-    __getitem__ will recieve data in CxTxHxW format from the preprocessor.
     """
 
     def __init__(self, dataset: GeoFMDataset, encoder: Encoder) -> None:
+        """Initalize the BaseAugment.
+
+        Args:
+            dataset (GeoFMDataset): dataset used.
+            encoder (Encoder): encoder used.
+        """
         super().__init__(dataset, encoder)
+
+    def __getitem__(self, index: int) -> dict[str, torch.Tensor | dict[str, torch.Tensor]]:
+        """Get item. Should call the dataset __getitem__ method which output a dictionary
+        with the keys "image", "target" and "metadata": 
+            dict[str, torch.Tensor | dict[str, torch.Tensor]]: output dictionary following the format
+            {"image":
+                {
+                encoder_modality_1: torch.Tensor of shape (C T H W) (T=1 if single timeframe),
+                ...
+                encoder_modality_N: torch.Tensor of shape (C T H W) (T=1 if single timeframe),
+                 },
+            "target": torch.Tensor of shape (H W),
+             "metadata": dict}.
+        Args:
+            index (int): index of data.
+
+        Returns:
+            dict[str, torch.Tensor | dict[str, torch.Tensor]]: output dictionary following the format
+            {"image":
+                {
+                encoder_modality_1: torch.Tensor of shape (C T H W) (T=1 if single timeframe),
+                ...
+                encoder_modality_N: torch.Tensor of shape (C T H W) (T=1 if single timeframe),
+                 },
+            "target": torch.Tensor of shape (H W),
+             "metadata": dict}.
+        """
+        raise NotImplementedError
 
 
 class Tile(BaseAugment):
