@@ -1,0 +1,16 @@
+_target_: geofm_bench.decoders.upernet.MTUPerNet
+# time_frames: 2
+#task_model_args:
+  #num_frames: 1
+  #mt_strategy: "ltae" #activated only when if num_frames > 1
+  #num_classes - task parameter passed from the dataset config
+  #wave_list - task parameter passed from the dataset config
+# overwritten in run
+encoder: null
+num_classes: ${dataset.num_classes}
+multi_temporal: ${dataset.multi_temporal}
+finetune: ${finetune}
+
+# to adapt
+channels: 512
+multi_temporal_strategy: linear
