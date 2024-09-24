@@ -18,13 +18,23 @@ class RichDataset(Dataset):
         self.encoder = encoder
 
         # WARNING: Patch to overcome recursive wrapping issues
+        self.split = dataset.split
+        self.dataset_name = dataset.dataset_name
+        self.multi_modal = dataset.multi_modal
+        self.multi_temporal = dataset.multi_temporal
+        self.root_path = dataset.root_path
+        self.classes = dataset.classes
+        self.num_classes = dataset.num_classes
+        self.ignore_index = dataset.ignore_index
+        self.img_size = dataset.img_size
+        self.bands = dataset.bands
+        self.distribution = dataset.distribution
         self.data_mean = dataset.data_mean
         self.data_std = dataset.data_std
         self.data_min = dataset.data_min
         self.data_max = dataset.data_max
-        self.classes = dataset.classes
-        self.split = dataset.split
-        self.ignore_index = dataset.ignore_index
+        self.download_url = dataset.download_url
+        self.auto_download = dataset.auto_download
 
     def __getitem__(self, index):
         return self.dataset[index]
