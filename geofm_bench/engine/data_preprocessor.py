@@ -248,7 +248,17 @@ class BaseAugment(RichDataset):
         super().__init__(dataset, encoder)
 
     def __getitem__(self, index: int) -> dict[str, torch.Tensor | dict[str, torch.Tensor]]:
-        """Get item.
+        """Get item. Should call the dataset __getitem__ method which output a dictionary
+        with the keys "image", "target" and "metadata": 
+            dict[str, torch.Tensor | dict[str, torch.Tensor]]: output dictionary following the format
+            {"image":
+                {
+                encoder_modality_1: torch.Tensor of shape (C T H W) (T=1 if single timeframe),
+                ...
+                encoder_modality_N: torch.Tensor of shape (C T H W) (T=1 if single timeframe),
+                 },
+            "target": torch.Tensor of shape (H W),
+             "metadata": dict}.
         Args:
             index (int): index of data.
 
