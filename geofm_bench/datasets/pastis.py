@@ -15,6 +15,8 @@ import torch
 from einops import rearrange
 from torch.utils.data import Dataset
 
+from geofm_bench.datasets.base import GeoFMDataset
+
 
 def prepare_dates(date_dict, reference_date):
     """Date formating."""
@@ -63,7 +65,7 @@ def split_image(image_tensor, nb_split, id):
         ].float()
 
 
-class Pastis(Dataset):
+class Pastis(GeoFMDataset):
     def __init__(
         self,
         split: str,
@@ -113,7 +115,25 @@ class Pastis(Dataset):
             download_url (str): url to download the dataset.
             auto_download (bool): whether to download the dataset automatically.
         """
-        super(Pastis, self).__init__()
+        super(Pastis, self).__init__(
+            split=split,
+            dataset_name=dataset_name,
+            multi_modal=multi_modal,
+            multi_temporal=multi_temporal,
+            root_path=root_path,
+            classes=classes,
+            num_classes=num_classes,
+            ignore_index=ignore_index,
+            img_size=img_size,
+            bands=bands,
+            distribution=distribution,
+            data_mean=data_mean,
+            data_std=data_std,
+            data_min=data_min,
+            data_max=data_max,
+            download_url=download_url,
+            auto_download=auto_download,
+        )
 
         assert split in ["train", "val", "test"], "Split must be train, val or test"
         if split == "train":
