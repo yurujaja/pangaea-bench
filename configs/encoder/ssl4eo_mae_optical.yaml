@@ -1,5 +1,5 @@
-_target_:  geofm_bench.encoders.ssl4eo_moco_encoder.SSL4EO_MOCO_Encoder
-encoder_weights: ./pretrained_models/B13_vits16_moco_0099.pth
+_target_:  geofm_bench.encoders.ssl4eo_mae_encoder.SSL4EO_MAE_OPTICAL_Encoder
+encoder_weights: ./pretrained_models/B13_vits16_mae_0099_ckpt.pth
 # download_url: https://drive.google.com/uc?id=1LREGuI6w7Gq6Xm0jFQdxxtp8QkmLvJWk&export=download&confirm=yes
 # temporal_input: False
 

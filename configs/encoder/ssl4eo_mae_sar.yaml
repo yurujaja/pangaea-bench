@@ -1,0 +1,23 @@
+_target_:  geofm_bench.encoders.ssl4eo_mae_encoder.SSL4EO_MAE_SAR_Encoder
+encoder_weights: ./pretrained_models/B2_vits16_mae_ep99.pth
+# download_url: https://huggingface.co/wangyi111/SSL4EO-S12/resolve/main/B2_vits16_mae_ep99.pth
+# temporal_input: False
+
+embed_dim: 384
+input_size: 224
+in_chans: 2
+patch_size: 16
+num_heads: 6
+depth: 12
+mlp_ratio: 4
+
+input_bands:
+  sar:
+    - VV
+    - VH
+
+output_layers:
+  - 3
+  - 5
+  - 7
+  - 11
