@@ -13,14 +13,14 @@ For the moment, we support the following **models**:
 |             | Paper | GitHub | Keywords |
 |:-----------:|:-----:|:------:|:--------:|
 |  [SSL4EOS12](https://arxiv.org/abs/2211.07044)  | SSL4EO-S12: A Large-Scale Multi-Modal, Multi-Temporal <br> Dataset for Self-Supervised Learning in Earth Observation      | [link](https://github.com/zhu-xlab/SSL4EO-S12) | DINO, MAE, DATA2VEC, MOCO|
-|  [Scale-MAE](https://arxiv.org/pdf/2212.14532)  | Scale-MAE: Scalable Masked Autoencoders for Self-Supervised Learning on Climate Datasets      | [link](https://github.com/bair-climate-initiative/scale-mae) | Masked Autoencoders, Multiscale|
-|  [SatlasNet](https://arxiv.org/pdf/2211.15660)  | SatlasNet: A Spatio-Temporal Atlas for Global Mapping from Satellite Images | [link](https://github.com/allenai/satlas/tree/main) | Supervised, Multi-temporal |
-|  [GFM](https://arxiv.org/pdf/2302.04476)        | GFM: Generalized Foundation Models for Climate Science | [link](https://github.com/mmendiet/GFM) | Swin, Continual Pre-training |
-|  [SpectralGPT](https://arxiv.org/abs/2311.07113) | SpectralGPT: Generative Pretrained Transformer for Hyperspectral Image Analysis      | [link](https://github.com/danfenghong/IEEE_TPAMI_SpectralGPT) | MAE, Multi-spectral |
-|  [DOFA](https://arxiv.org/pdf/2403.15356)       | DOFA: Dynamic Object Feature Aggregation for Self-Supervised Learning in Satellite Data      | [link](https://github.com/zhu-xlab/DOFA) | MAE, Dynamic bands |
-|  [CROMA](https://arxiv.org/pdf/2311.00566)      | CROMA: Cross-Modal Alignment for Satellite Image Analysis      | [link](https://github.com/antofuller/CROMA) | Contrastive Learning, MAE |
-|  [Prithvi](https://arxiv.org/pdf/2310.18660)    | Prithvi: Foundation Models for Earth Observation Data      | [link](https://github.com/NASA-IMPACT/hls-foundation-os) | MAE, Multi-temporal |
-|  [RemoteCLIP](https://arxiv.org/pdf/2306.11029) | RemoteCLIP: A Contrastive Language-Image Pretraining Model for Remote Sensing      | [link](https://github.com/ChenDelong1999/RemoteCLIP) | Contrastive Learning |
+|  [Scale-MAE](https://arxiv.org/pdf/2212.14532)  | Scale-MAE: A Scale-Aware Masked Autoencoder for Multiscale Geospatial Representation Learning     | [link](https://github.com/bair-climate-initiative/scale-mae) | Masked Autoencoders, Multiscale|
+|  [SatlasNet](https://arxiv.org/pdf/2211.15660)  | SatlasPretrain: A Large-Scale Dataset for Remote Sensing Image Understanding | [link](https://github.com/allenai/satlas/tree/main) | Supervised, Multi-temporal |
+|  [GFM](https://arxiv.org/pdf/2302.04476)        | Towards Geospatial Foundation Models via Continual Pretraining | [link](https://github.com/mmendiet/GFM) | Swin, Continual Pre-training |
+|  [SpectralGPT](https://arxiv.org/abs/2311.07113) | SpectralGPT: Spectral Remote Sensing Foundation Model      | [link](https://github.com/danfenghong/IEEE_TPAMI_SpectralGPT) | MAE, Multi-spectral |
+|  [DOFA](https://arxiv.org/pdf/2403.15356)       | Neural Plasticity-Inspired Multimodal Foundation Model for Earth Observation   | [link](https://github.com/zhu-xlab/DOFA) | MAE, Dynamic bands |
+|  [CROMA](https://arxiv.org/pdf/2311.00566)      | CROMA: Remote Sensing Representations with Contrastive Radar-Optical Masked Autoencoders  | [link](https://github.com/antofuller/CROMA) | Contrastive Learning, MAE |
+|  [Prithvi](https://arxiv.org/pdf/2310.18660)    | Foundation Models for Generalist Geospatial Artificial Intelligence      | [link](https://github.com/NASA-IMPACT/hls-foundation-os) | MAE, Multi-temporal |
+|  [RemoteCLIP](https://arxiv.org/pdf/2306.11029) | RemoteCLIP: A Vision Language Foundation Model for Remote Sensing    | [link](https://github.com/ChenDelong1999/RemoteCLIP) | Contrastive Learning |
 
 
 And the following **datasets**:
@@ -32,7 +32,7 @@ And the following **datasets**:
 |        [PASTIS](https://arxiv.org/pdf/2112.07558v1)       |    [link](https://github.com/VSainteuf/pastis-benchmark)       |   Agriculture     |  Semantic Segmentation    |    S1, S2, SPOT-6  | France   |
 |     [Sen1Floods11](http://openaccess.thecvf.com/content_CVPRW_2020/html/w11/Bonafilia_Sen1Floods11_A_Georeferenced_Dataset_to_Train_and_Test_Deep_Learning_CVPRW_2020_paper.html)    | [link](https://github.com/cloudtostreet/Sen1Floods11) |  Flood |Semantic Segmentation  | S1, S2 | Global |
 |        [xView2](https://openaccess.thecvf.com/content_CVPRW_2019/html/cv4gc/Gupta_Creating_xBD_A_Dataset_for_Assessing_Building_Damage_from_Satellite_CVPRW_2019_paper.html)       | [link](https://xview2.org/dataset) | HADR | Semantic Segmentation | Maxar | Global   |
-| [Five Billion Pixels](https://www.sciencedirect.com/science/article/pii/S0924271622003264) |  [original version](https://x-ytong.github.io/project/Five-Billion-Pixels.html) (custom version coming soon)        |  (Urban) Land Cover     |  Semantic Segmentation    |    Gaofen-2     | China    |
+| [Five Billion Pixels](https://www.sciencedirect.com/science/article/pii/S0924271622003264) |  [original version](https://x-ytong.github.io/project/Five-Billion-Pixels.html) <br> (custom version coming soon)        |  (Urban) Land Cover     |  Semantic Segmentation    |    Gaofen-2     | China    |
 |   [DynamicEarthNet](https://arxiv.org/pdf/2203.12560)   |   [link](https://mediatum.ub.tum.de/1650201)        |    (Urban) Land Cover    |   Semantic Segmentation   |   PlanetFusion      | Global   |
 |   [CropTypeMapping](https://openaccess.thecvf.com/content_CVPRW_2019/papers/cv4gc/Rustowicz_Semantic_Segmentation_of_Crop_Type_in_Africa_A_Novel_Dataset_CVPRW_2019_paper.pdf) |   [link](https://sustainlab-group.github.io/sustainbench/docs/datasets/sdg2/crop_type_mapping_ghana-ss.html#download) | Agriculture |Semantic Segmentation |S1, S2, Planet|South Sudan|
 |      [SpaceNet 7](https://openaccess.thecvf.com/content/CVPR2021/papers/Van_Etten_The_Multi-Temporal_Urban_Development_SpaceNet_Dataset_CVPR_2021_paper.pdf)      |    [link](https://spacenet.ai/sn7-challenge/)      |    Urban    |   Change detection   |     Planet    | Global   |
