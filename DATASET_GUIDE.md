@@ -52,5 +52,3 @@ This document provides a detailed overview of the datasets used in this reposito
   --augmentation_config "configs/augmentations/ai4smallfarms.yaml" \
   --use_wandb
   ```
-
-  ```
