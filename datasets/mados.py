@@ -78,19 +78,17 @@ class MADOS(torch.utils.data.Dataset):
             upscale_factor = int(os.path.basename(os.path.dirname(path))) // 10
 
             band = tifffile.imread(path)
-            band = np.transpose(band, (2, 0, 1))
             band_tensor = torch.from_numpy(band)
-            band_tensor.unsqueeze_(0)
+            band_tensor.unsqueeze_(0).unsqueeze_(0)
             band_tensor = torch.nn.functional.interpolate(
                 band_tensor, scale_factor=upscale_factor, mode="nearest"
-            )
+            ).squeeze_(0)
             current_image.append(band_tensor)
 
-        image = torch.stack(current_image)
+        image = torch.cat(current_image)
         invalid_mask = torch.isnan(image)
         image[invalid_mask] = 0
         target = tifffile.imread(self.target_list[index])
-        target = np.transpose(target, (2, 0, 1))
         target = torch.from_numpy(target.astype(np.int64))
         target = target - 1
 
