@@ -270,6 +270,7 @@ class SSL4EO_Data2Vec_Encoder(Encoder):
             input_bands=input_bands,
             input_size=input_size,
             embed_dim=embed_dim,
+            output_dim=embed_dim,
             multi_temporal=False,
         )
 

@@ -43,13 +43,13 @@ class UPerNet(Decoder):
                 param.requires_grad = False
 
         self.neck = Feature2Pyramid(
-            embed_dim=encoder.embed_dim * feature_multiplier,
+            embed_dim=encoder.output_dim * feature_multiplier,
             rescales=[4, 2, 1, 0.5],
         )
 
         self.align_corners = False
 
-        self.in_channels = [encoder.embed_dim * feature_multiplier for _ in range(4)]
+        self.in_channels = [encoder.output_dim * feature_multiplier for _ in range(4)]
         self.channels = channels
         self.num_classes = num_classes
 
@@ -227,9 +227,9 @@ class MTUPerNet(UPerNet):
         if self.multi_temporal_strategy == "ltae":
             self.tmap = LTAE2d(
                 positional_encoding=False,
-                in_channels=encoder.embed_dim,
-                mlp=[encoder.embed_dim, encoder.embed_dim],
-                d_model=encoder.embed_dim,
+                in_channels=encoder.output_dim,
+                mlp=[encoder.output_dim, encoder.output_dim],
+                d_model=encoder.output_dim,
             )
         elif self.multi_temporal_strategy == "linear":
             self.tmap = nn.Linear(self.multi_temporal, 1)

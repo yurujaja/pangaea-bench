@@ -36,6 +36,7 @@ class SSL4EO_MAE_OPTICAL_Encoder(Encoder):
             input_bands=input_bands,
             input_size=input_size,
             embed_dim=embed_dim,
+            output_dim=embed_dim,
             multi_temporal=False,
         )
 
@@ -158,6 +159,7 @@ class SSL4EO_MAE_SAR_Encoder(SSL4EO_MAE_OPTICAL_Encoder):
 
         self.model_name="ssl4eo_mae_sar"
         self.multi_temporal=False
+        self.output_dim = embed_dim
         
     def forward(self, image):
         # embed patches

@@ -27,6 +27,7 @@ class CROMA_OPTICAL_Encoder(Encoder):
             input_bands=input_bands,
             input_size=input_size,
             embed_dim=768,
+            output_dim=768,
             multi_temporal=False,
         )
 
@@ -45,6 +46,7 @@ class CROMA_OPTICAL_Encoder(Encoder):
             self.num_heads = 16
             self.patch_size = 8
         
+        self.output_dim = self.embed_dim
         self.num_patches = int((self.img_size / 8) ** 2)
         self.s2_channels = 12  # fixed at 12 multispectral optical channels
         self.attn_bias = get_2dalibi(
@@ -111,6 +113,7 @@ class CROMA_SAR_Encoder(Encoder):
             input_bands=input_bands,
             input_size=input_size,
             embed_dim=768,
+            output_dim=768,
             multi_temporal=False,
             
         )
@@ -129,6 +132,8 @@ class CROMA_SAR_Encoder(Encoder):
             self.encoder_depth = 24
             self.num_heads = 16
             self.patch_size = 8
+
+        self.output_dim = self.embed_dim
 
         self.num_patches = int((self.img_size / 8) ** 2)
         self.s1_channels = 2  # fixed at 2 SAR backscatter channels
@@ -165,8 +170,8 @@ class CROMA_SAR_Encoder(Encoder):
 
         return output
 
-    def load_encoder_weights(self, pretrained_path):
-        pretrained_model = torch.load(pretrained_path, map_location="cpu")["s1_encoder"]
+    def load_encoder_weights(self, logger: Logger) -> None:
+        pretrained_model = torch.load(self.encoder_weights, map_location="cpu")["s1_encoder"]
         k = pretrained_model.keys()
         pretrained_encoder = {}
         incompatible_shape = {}
@@ -179,9 +184,8 @@ class CROMA_SAR_Encoder(Encoder):
             else:
                 pretrained_encoder[name] = pretrained_model[name]
 
-        msg = self.s1_encoder.load_state_dict(pretrained_encoder, strict=False)
-
-        return missing, incompatible_shape
+        self.s1_encoder.load_state_dict(pretrained_encoder, strict=False)
+        self.parameters_warning(missing, incompatible_shape, logger)
 
 
 class CROMA_JOINT_Encoder(Encoder):
@@ -199,6 +203,7 @@ class CROMA_JOINT_Encoder(Encoder):
             input_bands=input_bands,
             input_size=input_size,
             embed_dim=768,
+            output_dim=768,
             multi_temporal=False,      
         )
 
@@ -217,7 +222,8 @@ class CROMA_JOINT_Encoder(Encoder):
             self.num_heads = 16
             self.patch_size = 8
 
-
+        self.output_dim = self.embed_dim
+        
         self.num_patches = int((self.img_size / 8) ** 2)
         self.s1_channels = 2  # fixed at 2 SAR backscatter channels
         self.s2_channels = 12  # fixed at 12 multispectral optical channels
@@ -268,8 +274,8 @@ class CROMA_JOINT_Encoder(Encoder):
 
         return output
 
-    def load_encoder_weights(self, pretrained_path):
-        pretrained_model = torch.load(pretrained_path, map_location="cpu")
+    def load_encoder_weights(self, logger: Logger) -> None:
+        pretrained_model = torch.load(self.encoder_weights, map_location="cpu")
         combined_state_dict = {}
         for prefix, module in pretrained_model.items():
             for k, v in module.items():
@@ -291,9 +297,8 @@ class CROMA_JOINT_Encoder(Encoder):
             else:
                 pretrained_encoder[name] = pretrained_model[name]
 
-        msg = self.load_state_dict(pretrained_encoder, strict=False)
-
-        return missing, incompatible_shape
+        self.load_state_dict(pretrained_encoder, strict=False)
+        self.parameters_warning(missing, incompatible_shape, logger)
 
 
 def get_2dalibi(num_heads, num_patches):
