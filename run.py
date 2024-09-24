@@ -10,6 +10,7 @@ from omegaconf import OmegaConf
 import torch
 from torch.utils.data import DataLoader, Subset
 from torch.utils.data.distributed import DistributedSampler
+from sklearn.model_selection import StratifiedShuffleSplit
 
 import foundation_models
 import datasets
@@ -85,6 +86,8 @@ parser.add_argument("--limited_label", type=float,
                     default=-1,
                     help="Percentage of the dataset to use as a decimal, \
                           (e.g., 0.1 for 10%). Default -1 to use the entire dataset.")
+
+parser.add_argument("--stratified_sampling", action="store_true", help="use stratified sampling for dataset splitting")
 
 parser.add_argument("--seed", type=int,
                     help="random seed")
@@ -246,13 +249,28 @@ def main():
         )
     )
     collate_fn = get_collate_fn(cfg)
+    
     # training
     if not cfg.eval_dir:
         if 0 < cfg.limited_label < 1:
-            indices = random.sample(range(len(train_dataset)), int(len(train_dataset)*cfg.limited_label))
-            train_dataset = Subset(train_dataset, indices)
-            perc = cfg.limited_label*100
-            logger.info(f"Created a subset of the train dataset, with {perc}% of the labels available")
+            if cfg.stratified_sampling:
+                # Use stratified sampling with the limited label
+                stratified_split = StratifiedShuffleSplit(n_splits=1, train_size=cfg.limited_label, random_state=cfg.seed)
+                
+                labels = train_dataset.targets  # Adjust depending on how labels are stored in your dataset
+                for train_idx, _ in stratified_split.split(torch.zeros(len(labels)), labels):
+                    train_dataset = Subset(train_dataset, train_idx)
+                
+                perc = cfg.limited_label * 100
+                logger.info(f"Created a stratified subset of the train dataset, with {perc}% of the labels available.")
+            
+            else:
+                # Randomly sample a percentage of the dataset
+                indices = random.sample(range(len(train_dataset)), int(len(train_dataset) * cfg.limited_label))
+                train_dataset = Subset(train_dataset, indices)
+                
+                perc = cfg.limited_label * 100
+                logger.info(f"Created a random subset of the train dataset, with {perc}% of the labels available.")
         else:
             logger.info(f"The entire train dataset will be used.")
 
