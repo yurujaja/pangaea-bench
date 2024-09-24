@@ -48,8 +48,6 @@ class SegPreprocessor(RichDataset):
             if "sar" in dataset.bands.keys()
             else None
         )
-        # TO DO: other modalities
-
         for modality in self.encoder.input_bands:
             new_stats = self.preprocessor[modality].preprocess_band_statistics(
                 self.dataset.data_mean[modality],
@@ -65,6 +63,9 @@ class SegPreprocessor(RichDataset):
 
     def __getitem__(self, index):
         data = self.dataset[index]
+
+        # WARNING: k in self.encoder.input_bands is actually checking if
+        # k is a modality of the encoder. Should be clearer
 
         for k, v in data["image"].items():
             if k in self.encoder.input_bands:
@@ -89,15 +90,29 @@ class RegPreprocessor(SegPreprocessor):
 
 class BandAdaptor:
     def __init__(self, dataset: GeoFMDataset, encoder: Encoder, modality: str) -> None:
+        """Intialize the BandAdaptor.
+
+        Args:
+            dataset (GeoFMDataset): dataset used.
+            encoder (Encoder): encoder unded.
+            modality (str): image modality.
+        """
         self.dataset_bands = dataset.bands[modality]
         self.input_bands = getattr(encoder.input_bands, modality, [])
 
+
+        # list of length dataset_n_bands with True if the band is used in the encoder
+        # and is available in the dataset
         self.used_bands_mask = torch.tensor(
             [b in self.input_bands for b in self.dataset_bands], dtype=torch.bool
         )
+        # list of length encoder_n_bands with True if the band is available in the dataset
+        # and used in the encoder
         self.avail_bands_mask = torch.tensor(
             [b in self.dataset_bands for b in self.input_bands], dtype=torch.bool
         )
+        # list of length encoder_n_bands with the index of the band in the dataset
+        # if the band is available in the dataset and -1 otherwise
         self.avail_bands_indices = torch.tensor(
             [
                 self.dataset_bands.index(b) if b in self.dataset_bands else -1
@@ -106,6 +121,8 @@ class BandAdaptor:
             dtype=torch.long,
         )
 
+        # if the encoder requires bands that are not available in the dataset
+        # then we need to pad the input with zeros
         self.need_padded = self.avail_bands_mask.sum() < len(self.input_bands)
         self.logger = logging.getLogger()
         self.logger.info(f"Adaptor for modality: {modality}")
@@ -143,6 +160,19 @@ class BandAdaptor:
         list[float],
         list[float],
     ]:
+        """Filter the statistics to match the available bands.
+
+        Args:
+            data_mean (list[float]): dataset mean (per band in dataset).
+            data_std (list[float]): dataset std (per band in dataset).
+            data_min (list[float]): dataset min (per band in dataset).
+            data_max (list[float]): dataset max (per band in dataset).
+
+        Returns:
+            tuple[ list[float], list[float], list[float], list[float], ]: 
+            dataset mean, std, min, max (per band in encoder). Pad with zeros
+            if the band is required by the encoder but not included in the dataset.
+        """
         data_mean = [
             data_mean[i] if i != -1 else 0.0 for i in self.avail_bands_indices.tolist()
         ]
@@ -158,14 +188,37 @@ class BandAdaptor:
         return data_mean, data_std, data_min, data_max
 
     def preprocess_single_timeframe(self, image: torch.Tensor) -> torch.Tensor:
+        """Apply the preprocessing to a single timeframe, i.e. pad unavailable
+        bands with zeros if needed to match encoder's bands.
+
+        Args:
+            image (torch.Tensor): input image of shape (dataset_n_bands H W).
+
+        Returns:
+            torch.Tensor: output image of shape (encoder_n_bands H W).
+        """
+        # add padding band at index 0 on the first dim
         padded_image = torch.cat([torch.zeros_like(image[0:1]), image], dim=0)
-        image = padded_image[self.avail_bands_indices + 1]
-        return image
+        # request all encoder's band. In self.avail_band_indices we have
+        # -1 for bands not available in the dataset. So we add 1 to get the
+        # correct index in the padded image (index 0 is the 0-padding band)
+        return padded_image[self.avail_bands_indices + 1]
 
     def __call__(self, image: torch.Tensor) -> torch.Tensor:
-        if len(image.shape) == 3:
+        """Apply the preprocessing to the image. Pad unavailable bands with zeros.
+
+        Args:
+            image (torch.Tensor): image of shape (dataset_n_bands H W).
+
+        Returns:
+            torch.Tensor: output image of shape (encoder_n_bands T H W).
+            In the case of sigle timeframe, T = 1.
+        """
+        # input of shape (dataset_n_bands T H W) output of shape (encoder_n_bands T H W)
+        # WARNING: refactor this
+        if len(image.shape) == 3: # (dataset_n_bands H W)
             # Add a time dimension so preprocessing can work on consistent images
-            image = image.unsqueeze(1)
+            image = image.unsqueeze(1) # (dataset_n_bands H W)-> (dataset_n_bands 1 H W)
 
         if image.shape[1] != 1:
             final_image = []
@@ -175,6 +228,9 @@ class BandAdaptor:
         else:
             image = self.preprocess_single_timeframe(image)
 
+        print("OUTPUT SHAPE", image.shape)
+
+        # OUTPUT SHAPE (encoder_n_bands T H W) (T = 1 in the case of single timeframe)
         return image
 
 
