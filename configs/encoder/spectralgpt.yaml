@@ -1,0 +1,38 @@
+_target_: geofm_bench.encoders.spectralgpt_encoder.SpectralGPT_Encoder
+encoder_weights: ./pretrained_models/SpectralGPT+.pth
+# download_url: https://zenodo.org/records/8412455/files/SpectralGPT+.pth
+# temporal_input: False
+
+input_size: 128
+output_dim: 3072   # 768 * (in_chans / t_patch_size)
+in_chans: 12    # number of spectral bands
+t_patch_size: 3
+depth: 12
+embed_dim: 768
+
+num_heads: 12
+patch_size: 8
+mlp_ratio: 4
+
+input_bands:
+  optical:
+    - B1
+    - B2
+    - B3
+    - B4
+    - B5
+    - B6
+    - B7
+    - B8
+    - B8A
+    - B9
+    - B11
+    - B12
+
+output_layers:
+  - 3
+  - 5
+  - 7
+  - 11
+
+
