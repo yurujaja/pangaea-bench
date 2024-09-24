@@ -1,0 +1,31 @@
+_target_: geofm_bench.encoders.gfmswin_encoder.GFMSwin_Encoder
+encoder_weights: ./pretrained_models/gfm.pth
+# download_url: 
+# temporal_input: False
+
+input_size: 192
+in_chans: 3  
+t_patch_size: 3
+depth: 12
+embed_dim: 128
+output_dim: 1024
+img_size: 192    # fixed to 192 to avoid interpolation in checkpoints which leads to drop in performance
+depths: [ 2, 2, 18, 2 ]  
+num_heads: [ 4, 8, 16, 32 ]
+window_size: 6
+patch_size: 4
+mlp_ratio: 4
+only_output_last: True
+
+input_bands:
+  optical:
+    - B4
+    - B3
+    - B2
+
+output_layers:
+  - 0
+  - 1
+  - 2
+  - 3
+
