@@ -1,4 +1,4 @@
-_target_: geofm_bench.decoder.upernet.MTUPerNet
+_target_: geofm_bench.decoders.upernet.MTUPerNet
 # time_frames: 2
 #task_model_args:
   #num_frames: 1

@@ -5,7 +5,6 @@ import random
 import numpy as np
 import torch
 import torchvision.transforms as T
-from torch.nn import Encoder
 from torch.utils.data import Dataset
 
 from geofm_bench.encoders.base import Encoder
