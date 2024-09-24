@@ -1,0 +1,24 @@
+_target_: geofm_bench.encoders.remoteclip_encoder.RemoteCLIP_Encoder
+encoder_weights: ./pretrained_models/RemoteCLIP-ViT-B-32.pt
+# download_url: https://huggingface.co/chendelong/RemoteCLIP/resolve/main/RemoteCLIP-ViT-B-32.pt
+# temporal_input: False
+
+embed_dim: 768
+input_size: 224
+layers: 12
+width: 768
+head_width: 64
+patch_size: 32
+mlp_ratio: 4.0
+
+input_bands:
+  optical:
+    - B4
+    - B3
+    - B2
+
+output_layers:
+  - 3
+  - 5
+  - 7
+  - 11

@@ -243,6 +243,6 @@ class DOFA_Encoder(Encoder):
             else:
                 pretrained_encoder[name] = pretrained_model[name]
 
-        msg = self.load_state_dict(pretrained_encoder, strict=False)
+        self.load_state_dict(pretrained_encoder, strict=False)
+        self.parameters_warning(missing, incompatible_shape, logger)
 
-        return missing, incompatible_shape
