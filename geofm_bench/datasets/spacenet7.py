@@ -124,6 +124,7 @@ class AbstractSN7(GeoFMDataset):
         j_split: int,
     ):
         """Initialize the SpaceNet dataset.
+        Link: https://spacenet.ai/sn7-challenge/
 
         Args:
             split (str): split of the dataset (train, val, test).
@@ -303,7 +304,7 @@ class SN7MAPPING(AbstractSN7):
         i_split: int,
         j_split: int,
     ):
-        """Initialize the SpaceNet dataset.
+        """Initialize the SpaceNet dataset for building mapping.
         """
         super(SN7MAPPING, self).__init__(
             split=split,
@@ -422,15 +423,6 @@ class SN7MAPPING(AbstractSN7):
 
         return output
 
-    # @staticmethod
-    # def get_splits(dataset_config):
-    #     dataset_train = SN7MAPPING(cfg=dataset_config, split='train')
-    #     dataset_val = SN7MAPPING(cfg=dataset_config, split='val')
-    #     dataset_test = SN7MAPPING(cfg=dataset_config, split='test')
-    #     return dataset_train, dataset_val, dataset_test
-
-
-# @DATASET_REGISTRY.register()
 class SN7CD(AbstractSN7):
     def __init__(
         self,
@@ -457,7 +449,7 @@ class SN7CD(AbstractSN7):
         eval_mode: bool,
         dataset_multiplier: int,
     ):
-        """Initialize the SpaceNet dataset.
+        """Initialize the SpaceNet dataset for change detection.
 
             ...
             eval_mode (bool): select if evaluation is happening. Instanciate true for val and test

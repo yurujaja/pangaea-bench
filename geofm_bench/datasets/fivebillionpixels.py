@@ -46,6 +46,7 @@ class FiveBillionPixels(GeoFMDataset):
         use_cmyk: bool,
     ):
         """Initialize the FiveBillionPixels dataset.
+        Link to original dataset: https://x-ytong.github.io/project/Five-Billion-Pixels.html
 
         Args:
             split (str): split of the dataset (train, val, test).

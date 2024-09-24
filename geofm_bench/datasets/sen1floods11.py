@@ -35,6 +35,7 @@ class Sen1Floods11(GeoFMDataset):
         gcs_bucket: str, 
     ):
         """Initialize the Sen1Floods11 dataset.
+        Link: https://github.com/cloudtostreet/Sen1Floods11
 
         Args:
             split (str): split of the dataset (train, val, test).

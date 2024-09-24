@@ -8,7 +8,6 @@ from os.path import join as opj
 
 from geofm_bench.datasets.utils import read_tif
 from geofm_bench.datasets.base import GeoFMDataset
-# from utils.registry import DATASET_REGISTRY
 
 def read_imgs(multi_temporal, temp , fname, data_dir, img_size):
     imgs_s1, imgs_s2, mask = [], [], []
@@ -75,6 +74,7 @@ class BioMassters(GeoFMDataset):
         temp: int,
     ):
         """Initialize the BioMassters dataset.
+        Link: https://huggingface.co/datasets/nascetti-a/BioMassters
 
         Args:
             split (str): split of the dataset (train, val, test).

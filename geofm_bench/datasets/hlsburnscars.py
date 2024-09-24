@@ -2,7 +2,8 @@ import os
 import time
 import torch
 import numpy as np
-import rasterio
+# import rasterio
+import tifffile as tiff
 from typing import Sequence, Dict, Any, Union, Literal, Tuple
 from sklearn.model_selection import train_test_split
 from glob import glob
@@ -43,6 +44,7 @@ class HLSBurnScars(GeoFMDataset):
     ):
         
         """Initialize the HLSBurnScars dataset.
+        Link: https://huggingface.co/datasets/ibm-nasa-geospatial/hls_burn_scars
 
         Args:
             split (str): split of the dataset (train, val, test).
@@ -111,43 +113,50 @@ class HLSBurnScars(GeoFMDataset):
         # ISSUE
         self.split_mapping = {'train': 'training', 'val': 'validation', 'test': 'validation'}
 
-        self.image_list = sorted(glob(os.path.join(self.root_path, self.split_mapping[self.split], '*merged.tif')))
-        self.target_list = sorted(glob(os.path.join(self.root_path, self.split_mapping[self.split], '*mask.tif')))
+        all_files = sorted(glob(os.path.join(self.root_path, self.split_mapping[self.split], '*merged.tif')))
+        all_targets = sorted(glob(os.path.join(self.root_path, self.split_mapping[self.split], '*mask.tif')))
 
-        # if self.split != "test":
-        #     train_val_idcs = self.get_stratified_train_val_split(all_files)
-        #     all_files = [all_files[i] for i in train_val_idcs[self.split]]
+        if self.split != "test":
+            split_indices = self.get_stratified_train_val_split(all_files)
+            if self.split == "train":
+                indices = split_indices["train"]
+            else:
+                indices = split_indices["val"]
+            self.image_list = [all_files[i] for i in indices]
+            self.target_list = [all_targets[i] for i in indices]
+        else:
+            self.image_list = all_files
+            self.target_list = all_targets
+
     
-    # @staticmethod
-    # def get_stratified_train_val_split(all_files, split) -> Tuple[Sequence[int], Sequence[int]]:
+    @staticmethod
+    def get_stratified_train_val_split(all_files, split) -> Tuple[Sequence[int], Sequence[int]]:
 
-    #    # Fixed stratified sample to split data into train/val. 
-    #    # This keeps 90% of datapoints belonging to an individual event in the training set and puts the remaining 10% in the validation set. 
-    #     disaster_names = list(
-    #         map(lambda path: pathlib.Path(path).name.split("_")[0], all_files))
-    #     train_idxs, val_idxs = train_test_split(np.arange(len(all_files)),
-    #                                             test_size=0.1,
-    #                                             random_state=23,
-    #                                             stratify=disaster_names)
-    #     if split == "train":
-    #         return train_idxs
-    #     else:
-    #         return val_idxs
+       # Fixed stratified sample to split data into train/val. 
+       # This keeps 90% of datapoints belonging to an individual event in the training set and puts the remaining 10% in the validation set. 
+        # disaster_names = list(
+            # map(lambda path: pathlib.Path(path).name.split("_")[0], all_files))
+        train_idxs, val_idxs = train_test_split(np.arange(len(all_files)),
+                                                test_size=0.1,
+                                                random_state=23,
+                                                # stratify=disaster_names
+                                                )
+        return {"train": train_idxs, "val": val_idxs}
         
     def __len__(self):
         return len(self.image_list)
 
     def __getitem__(self, index):
-        with rasterio.open(self.image_list[index]) as src:
-            image = src.read()
-        with rasterio.open(self.target_list[index]) as src:
-            target = src.read(1)
 
-        image = torch.from_numpy(image)
-        target = torch.from_numpy(target.astype(np.int64))
+        image = tiff.imread(self.image_list[index])
+        image = image.astype(np.float32)  # Convert to float32
+        image = torch.from_numpy(image).permute(2, 0, 1)
+
+        target = tiff.imread(self._label_dir[index])
+        target = target.astype(np.int64)  # Convert to int64 (since it's a mask)
+        target = torch.from_numpy(target).long()
 
         invalid_mask = image == 9999
-        # image = self.transform(image)
         image[invalid_mask] = 0
 
 

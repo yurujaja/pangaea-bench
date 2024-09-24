@@ -38,6 +38,7 @@ class DynamicEarthNet(GeoFMDataset):
         auto_download: bool,
     ):
         """Initialize the DynamicEarthNet dataset.
+        Link: https://github.com/aysim/dynnet
 
         Args:
             split (str): split of the dataset (train, val, test).

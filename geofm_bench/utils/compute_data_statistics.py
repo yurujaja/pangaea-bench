@@ -7,6 +7,29 @@ import torch
 
 
 class RunningStats:
+    """
+    Compute running statistics for a given tensor.
+
+    This class maintains running statistics (mean, standard deviation, min, max) 
+    for a given tensor. It supports updating these statistics incrementally 
+    as new data is provided.
+
+    Attributes:
+        n (int): The number of elements processed.
+        sum (torch.Tensor): The running sum of the elements.
+        sum_2 (torch.Tensor): The running sum of the squares of the elements.
+        min (torch.Tensor): The running minimum of the elements.
+        max (torch.Tensor): The running maximum of the elements.
+
+    Methods:
+        update(x, reduce_dim):
+            Update the running statistics with a new tensor `x`, reducing 
+            dimensions specified by `reduce_dim`.
+        
+        finalize():
+            Finalize and return the computed statistics as a dictionary.
+    """
+
     def __init__(self, stats_dim):
         self.n = 0
         self.sum = torch.zeros(stats_dim)

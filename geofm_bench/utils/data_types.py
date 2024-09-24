@@ -15,13 +15,42 @@ SENSOR_BANDS = {
 
 
 class SensorData(OrderedDict):
+    """
+    A class to represent sensor data for a specific sensor. This class extends OrderedDict
+    to store band data as key-value pairs where the key is the band name and the value is
+    a torch.Tensor representing the band data.
+
+    Attributes:
+        sensor (str): The name of the sensor.
+        bands (List[str]): The list of bands for the sensor.
+    """
+
     def __init__(self, sensor: str) -> None:
+        """
+        Initializes the SensorData object with the given sensor name.
+
+        Args:
+            sensor (str): The name of the sensor.
+        """
         super(SensorData, self).__init__()
         self.sensor = sensor
         self.bands = SENSOR_BANDS[sensor]
 
     def __setitem__(self, band_name: str, band_data: torch.Tensor) -> None:
-        # check if key is a string
+        """
+        Sets the band data for a specific band name. If the band name is "all", it sets
+        the data for all bands at once.
+
+        Args:
+            band_name (str): The name of the band.
+            band_data (torch.Tensor): The data for the band.
+
+        Raises:
+            ValueError: If the band name is not a string or the band data is not a torch.Tensor.
+            ValueError: If the band name is "all" and the shape of the band data does not match
+                        the expected number of bands.
+            ValueError: If the band name is not in the list of valid bands for the sensor.
+        """
         if not isinstance(band_name, str):
             raise ValueError(f"Band name must be a string, got {type(band_name)}")
         if not isinstance(band_data, torch.Tensor):
@@ -29,7 +58,6 @@ class SensorData(OrderedDict):
 
         if band_name == "all":
             # all bands are provided all at once
-            # check if the
             assert (
                 len(band_data.shape) == 3
             ), f"Expected 3D tensor, got {band_data.shape}"
@@ -39,7 +67,6 @@ class SensorData(OrderedDict):
                 )
             for bn, bd in zip(self.bands, band_data):
                 self.__setitem__(bn, bd)
-        # check if the key is refering to a valid band
         else:
             assert (
                 len(band_data.shape) == 2
@@ -49,6 +76,19 @@ class SensorData(OrderedDict):
             super(SensorData, self).__setitem__(band_name, band_data)
 
     def __getitem__(self, band_name: str) -> torch.Tensor:
+        """
+        Gets the band data for a specific band name. If the band name is "all", it returns
+        the data for all bands stacked along the first dimension.
+
+        Args:
+            band_name (str): The name of the band.
+
+        Raises:
+            ValueError: If the band name is not a string.
+
+        Returns:
+            torch.Tensor: The data for the specified band or all bands.
+        """
         if not isinstance(band_name, str):
             raise ValueError(f"Band name must be a string, got {type(band_name)}")
 
@@ -69,20 +109,48 @@ class SensorData(OrderedDict):
             return super(SensorData, self).__getitem__(band_name)
 
     def to(self, device):
+        """
+        Moves all band data to the specified device.
+
+        Args:
+            device: The device to move the data to.
+
+        Returns:
+            SensorData: The SensorData object with data moved to the specified device.
+        """
         for key, value in self.items():
             self.__setitem__(key, value.to(device))
         return self
 
     def to_dtype(self, dtype):
+        """
+        Converts all band data to the specified dtype.
+
+        Args:
+            dtype: The dtype to convert the data to.
+
+        Returns:
+            SensorData: The SensorData object with data converted to the specified dtype.
+        """
         for key, value in self.items():
             self.__setitem__(key, value.to(dtype))
         return self
 
     def to_device_dtype(self, device, dtype):
+        """
+        Moves all band data to the specified device and converts it to the specified dtype.
+
+        Args:
+            device: The device to move the data to.
+            dtype: The dtype to convert the data to.
+
+        Returns:
+            SensorData: The SensorData object with data moved to the specified device and
+                        converted to the specified dtype.
+        """
         for key, value in self.items():
             self.__setitem__(key, value.to(device, dtype))
         return self
-
 
 class TimeSerieData(OrderedDict):
     def __init__(self, sensor: str) -> None:

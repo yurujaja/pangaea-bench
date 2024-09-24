@@ -47,6 +47,7 @@ class MADOS(GeoFMDataset):
         auto_download: bool,
     ):
         """Initialize the MADOS dataset.
+        Link: https://marine-pollution.github.io/index.html
 
         Args:
             split (str): split of the dataset (train, val, test).

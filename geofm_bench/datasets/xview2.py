@@ -17,9 +17,8 @@ import tarfile
 from geofm_bench.datasets.utils import DownloadProgressBar
 from geofm_bench.datasets.base import GeoFMDataset
 
-# @DATASET_REGISTRY.register()
+
 class xView2(GeoFMDataset):
-    # Note that this dataset must be downloaded from the competition website, which you will need to sign up for.
     def __init__(
         self,
         split: str,
@@ -41,6 +40,8 @@ class xView2(GeoFMDataset):
         auto_download: bool,
     ):
         """Initialize the xView2 dataset.
+        Link: https://xview2.org/dataset
+        Note that this dataset must be downloaded from the competition website, which you will need to sign up for.
 
         Args:
             split (str): split of the dataset (train, val, test).

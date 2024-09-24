@@ -5,12 +5,10 @@ import numpy as np
 from glob import glob
 from pyDataverse.api import NativeApi, DataAccessApi
 from tifffile import imread
-# from utils.registry import DATASET_REGISTRY
 import requests
 
 from geofm_bench.datasets.base import GeoFMDataset
 
-# @DATASET_REGISTRY.register()
 class AI4SmallFarms(GeoFMDataset):
     def __init__(
         self,
@@ -33,6 +31,7 @@ class AI4SmallFarms(GeoFMDataset):
         auto_download: bool,
     ):
         """Initialize the AI4SmallFarms dataset.
+            Link: https://phys-techsciences.datastations.nl/dataset.xhtml?persistentId=doi:10.17026/dans-xy6-ngg6
 
         Args:
             split (str): split of the dataset (train, val, test).
@@ -129,13 +128,6 @@ class AI4SmallFarms(GeoFMDataset):
             'target': target,
             'metadata': {}
         }
-
-    # @staticmethod
-    # def get_splits(dataset_config):
-    #     dataset_train = AI4SmallFarms(cfg=dataset_config, split="train")
-    #     dataset_val = AI4SmallFarms(cfg=dataset_config, split="validate")
-    #     dataset_test = AI4SmallFarms(cfg=dataset_config, split="test")
-    #     return dataset_train, dataset_val, dataset_test
 
     @staticmethod
     def download(dataset_config: dict, silent=False):

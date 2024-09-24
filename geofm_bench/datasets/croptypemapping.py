@@ -40,6 +40,7 @@ class CropTypeMappingSouthSudan(GeoFMDataset):
         use_pad: bool,
     ):
         """Initialize the CropTypeMappingSouthSudan dataset.
+        Link: https://sustainlab-group.github.io/sustainbench/docs/datasets/sdg2/crop_type_mapping_ghana-ss.html#download
 
         Args:
             split (str): split of the dataset (train, val, test).

@@ -4,7 +4,7 @@ from datetime import timedelta
 import time
 
 class AverageMeter(object):
-    """computes and stores the average and current value"""
+    """Computes and stores the average and current value."""
 
     def __init__(self):
         self.val = 0
