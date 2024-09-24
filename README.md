@@ -371,12 +371,7 @@ To benchmark your own foundation model, follow these steps:
              return outputs
      ```
 
-3. **Adjust Band Mapping**:
-
-   - Ensure that the `input_bands` in your encoder configuration match the bands used in your model.
-   - Update the `input_bands` section in your encoder YAML file if necessary.
-
-4. **Run Training with Your Model**:
+3. **Run Training with Your Model**:
 
    - Use the `run.py` script with your encoder configuration.
    - **Example Command**:
@@ -411,11 +406,12 @@ Some features are under construction:
 
 A pre-print is coming soon... Stay tuned!
 
-| Encoder | Dataset      | Epochs | mIoU   |
-|---------|--------------|--------|--------|
-| Prithvi | MADOS        | 80     | 53.455 |
-| Prithvi | HLSBurnScars | 80     | 86.208 |
-| Prithvi | Sen1Floods11 | 80     | 87.217 |
+| Encoder | Dataset       | Epochs | mIoU   |
+|---------|---------------|--------|--------|
+| Prithvi | MADOS         | 80     | 53.455 |
+| Prithvi | HLSBurnScars  | 80     | 86.208 |
+| Prithvi | Sen1Floods11  | 80     | 87.217 |
+| Prithvi | AI4SmallFarms | 80     | 33.796 |
 
 Please note: #add different conditions 
 
