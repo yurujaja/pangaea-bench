@@ -20,13 +20,13 @@ class CROMA_OPTICAL_Encoder(Encoder):
         input_bands: dict[str, list[str]],
         output_layers: int | list[int],
         size="base",
-        embed_dim=768
     ):
         super().__init__(
             model_name="croma_optical",
             encoder_weights=encoder_weights,
             input_bands=input_bands,
             input_size=input_size,
+            embed_dim=768,
             multi_temporal=False,
         )
 
@@ -44,7 +44,7 @@ class CROMA_OPTICAL_Encoder(Encoder):
             self.encoder_depth = 24
             self.num_heads = 16
             self.patch_size = 8
-
+        
         self.num_patches = int((self.img_size / 8) ** 2)
         self.s2_channels = 12  # fixed at 12 multispectral optical channels
         self.attn_bias = get_2dalibi(
@@ -52,7 +52,7 @@ class CROMA_OPTICAL_Encoder(Encoder):
         )
 
         self.s2_encoder = ViT(
-            dim=self.encoder_dim, depth=self.encoder_depth, in_channels=self.s2_channels
+            dim=self.embed_dim, depth=self.encoder_depth, in_channels=self.s2_channels
         )
 
     def forward(self, image):
@@ -110,8 +110,9 @@ class CROMA_SAR_Encoder(Encoder):
             encoder_weights=encoder_weights,
             input_bands=input_bands,
             input_size=input_size,
+            embed_dim=768,
             multi_temporal=False,
-            embed_dim=768
+            
         )
 
         self.output_layers = output_layers
@@ -136,7 +137,7 @@ class CROMA_SAR_Encoder(Encoder):
         )
 
         self.s1_encoder = ViT(
-            dim=self.encoder_dim,
+            dim=self.embed_dim,
             depth=int(self.encoder_depth / 2),
             in_channels=self.s1_channels,
         )
@@ -197,8 +198,8 @@ class CROMA_JOINT_Encoder(Encoder):
             encoder_weights=encoder_weights,
             input_bands=input_bands,
             input_size=input_size,
-            multi_temporal=False,
-            embed_dim=768
+            embed_dim=768,
+            multi_temporal=False,      
         )
 
         self.output_layers = output_layers
@@ -216,6 +217,7 @@ class CROMA_JOINT_Encoder(Encoder):
             self.num_heads = 16
             self.patch_size = 8
 
+
         self.num_patches = int((self.img_size / 8) ** 2)
         self.s1_channels = 2  # fixed at 2 SAR backscatter channels
         self.s2_channels = 12  # fixed at 12 multispectral optical channels
@@ -224,15 +226,15 @@ class CROMA_JOINT_Encoder(Encoder):
         )
 
         self.s1_encoder = ViT(
-            dim=self.encoder_dim,
+            dim=self.embed_dim,
             depth=int(self.encoder_depth / 2),
             in_channels=self.s1_channels,
         )
         self.s2_encoder = ViT(
-            dim=self.encoder_dim, depth=self.encoder_depth, in_channels=self.s2_channels
+            dim=self.embed_dim, depth=self.encoder_depth, in_channels=self.s2_channels
         )
         self.cross_encoder = BaseTransformerCrossAttn(
-            dim=self.encoder_dim,
+            dim=self.embed_dim,
             depth=int(self.encoder_depth / 2),
             num_heads=self.num_heads,
         )
