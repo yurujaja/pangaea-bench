@@ -371,12 +371,7 @@ To benchmark your own foundation model, follow these steps:
              return outputs
      ```
 
-3. **Adjust Band Mapping**:
-
-   - Ensure that the `input_bands` in your encoder configuration match the bands used in your model.
-   - Update the `input_bands` section in your encoder YAML file if necessary.
-
-4. **Run Training with Your Model**:
+3. **Run Training with Your Model**:
 
    - Use the `run.py` script with your encoder configuration.
    - **Example Command**:
