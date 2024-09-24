@@ -3,8 +3,8 @@ from torch.utils.data import Dataset
 
 
 class GeoFMDataset(Dataset):
-    """Base class for all datasets.
-    """
+    """Base class for all datasets."""
+
     def __init__(
         self,
         split: str,
@@ -39,7 +39,7 @@ class GeoFMDataset(Dataset):
             img_size (int): dataset's image size
             bands (dict[str, list[str]]): bands of the dataset
             distribution (list[int]): class distribution.
-            data_mean (dict[str, list[str]]): mean for each band for each modality. 
+            data_mean (dict[str, list[str]]): mean for each band for each modality.
             Dictionary with keys as the modality and values as the list of means.
             e.g. {"s2": [b1_mean, ..., bn_mean], "s1": [b1_mean, ..., bn_mean]}
             data_std (dict[str, list[str]]): str for each band for each modality.
@@ -94,10 +94,12 @@ class GeoFMDataset(Dataset):
 
         Returns:
             dict[str, torch.Tensor | dict[str, torch.Tensor]]: output dictionary follwing the format
-            {"image": 
-                {"optical": torch.Tensor,
-                 "sar": torch.Tensor},
-            "target": torch.Tensor,
+            {"image":
+                {
+                "optical": torch.Tensor of shape (C H W) (or (C T H W) if multi-temporal dataset),
+                 "sar": torch.Tensor of shape (C H W) (or (C T H W) if multi-temporal dataset)
+                 },
+            "target": torch.Tensor of shape (C H W),
              "metadata": dict}.
         """
         raise NotImplementedError
