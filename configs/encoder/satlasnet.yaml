@@ -1,0 +1,24 @@
+
+_target_: geofm_bench.encoders.satlasnet_encoder.SatlasNet_Encoder
+
+model_identifier: Sentinel2_SwinB_SI_MS #Sentinel2_SwinB_SI_RGB   #
+fpn: False
+input_size: 128
+output_dim: 1024
+
+input_bands:
+  optical:
+    # - B4
+    # - B3
+    # - B2
+
+    #MS Bands 
+    - B2
+    - B3
+    - B4
+    - B5
+    - B6
+    - B7
+    - B8
+    - B11
+    - B12
