@@ -122,7 +122,7 @@ class BioMassters(GeoFMDataset):
             data_max=data_max,
             download_url=download_url,
             auto_download=auto_download,
-            temp = temp,
+            # temp = temp,
         )
         
         self.root_path = root_path

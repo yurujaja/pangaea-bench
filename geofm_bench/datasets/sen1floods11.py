@@ -32,6 +32,7 @@ class Sen1Floods11(GeoFMDataset):
         data_max: dict[str, list[str]],
         download_url: str,
         auto_download: bool,
+        gcs_bucket: str, 
     ):
         """Initialize the Sen1Floods11 dataset.
 
@@ -61,6 +62,7 @@ class Sen1Floods11(GeoFMDataset):
             e.g. {"s2": [b1_max, ..., bn_max], "s1": [b1_max, ..., bn_max]}
             download_url (str): url to download the dataset.
             auto_download (bool): whether to download the dataset automatically.
+            gcs_bucket (str): subset for downloading the dataset.
         """
         super(Sen1Floods11, self).__init__(
             split=split,
@@ -80,6 +82,7 @@ class Sen1Floods11(GeoFMDataset):
             data_max=data_max,
             download_url=download_url,
             auto_download=auto_download,
+            # gcs_bucket=gcs_bucket,
         )
 
         self.root_path = root_path
@@ -97,6 +100,7 @@ class Sen1Floods11(GeoFMDataset):
         self.ignore_index = ignore_index
         self.download_url = download_url
         self.auto_download = auto_download
+        self.gcs_bucket = gcs_bucket
         
         self.split_mapping = {'train': 'train', 'val': 'valid', 'test': 'test'}
 

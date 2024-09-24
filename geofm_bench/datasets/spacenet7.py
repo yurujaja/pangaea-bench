@@ -173,9 +173,9 @@ class AbstractSN7(GeoFMDataset):
             data_max=data_max,
             download_url=download_url,
             auto_download=auto_download,
-            domain_shift=domain_shift,
-            i_split=i_split,
-            j_split=j_split,
+            # domain_shift=domain_shift,
+            # i_split=i_split,
+            # j_split=j_split,
         )
 
 
@@ -484,8 +484,8 @@ class SN7CD(AbstractSN7):
             domain_shift=domain_shift,
             i_split=i_split,
             j_split=j_split,
-            eval_mode=eval_mode,
-            dataset_multiplier=dataset_multiplier,
+            # eval_mode=eval_mode,
+            # dataset_multiplier=dataset_multiplier,
 
         )
 

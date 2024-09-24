@@ -93,10 +93,9 @@ class FiveBillionPixels(GeoFMDataset):
             data_max=data_max,
             download_url=download_url,
             auto_download=auto_download,
-            use_cmyk=use_cmyk,
+            # use_cmyk=use_cmyk,
         )
 
-        super().__init__()
         self._base_dir = root_path
         self.classes = classes
         self.use_cmyk = use_cmyk

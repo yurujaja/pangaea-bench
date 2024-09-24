@@ -147,7 +147,7 @@ class HLSBurnScars(GeoFMDataset):
         target = torch.from_numpy(target.astype(np.int64))
 
         invalid_mask = image == 9999
-        image = self.transform(image)
+        # image = self.transform(image)
         image[invalid_mask] = 0
 
 

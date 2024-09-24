@@ -87,7 +87,7 @@ class CropTypeMappingSouthSudan(GeoFMDataset):
             data_max=data_max,
             download_url=download_url,
             auto_download=auto_download,
-            use_pad=use_pad
+            # use_pad=use_pad
         )
 
         self.root_path = root_path
