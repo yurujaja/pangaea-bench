@@ -1,6 +1,7 @@
-_target_: geofm_bench.encoders.croma_encoder.CROMA_OPTICAL_Encoder
+_target_: geofm_bench.encoders.croma_encoder.CROMA_JOINT_Encoder
 encoder_weights: ./pretrained_models/CROMA_large.pt
 # download_url: https://huggingface.co/antofuller/CROMA/resolve/main/CROMA_large.pt
+# temporal_input: False
 
 input_size: 120  # the paper uses 120
 size: 'large'
@@ -19,6 +20,10 @@ input_bands:
     - B9
     - B11
     - B12
+  sar:
+    - VV
+    - VH
+
 output_layers:
   - 3
   - 5

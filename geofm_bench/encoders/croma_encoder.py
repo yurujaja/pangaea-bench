@@ -18,38 +18,34 @@ class CROMA_OPTICAL_Encoder(Encoder):
         encoder_weights: str | Path,
         input_size: int,
         input_bands: dict[str, list[str]],
-        embed_dim: int,
-        output_layers: int,
+        output_layers: int | list[int],
         size="base",
-        image_resolution=120,
+        embed_dim=768
     ):
         super().__init__(
             model_name="croma_optical",
             encoder_weights=encoder_weights,
             input_bands=input_bands,
             input_size=input_size,
-            embed_dim=embed_dim,
             multi_temporal=False,
         )
 
         self.output_layers = output_layers
-        self.img_size = image_resolution
-        self.embed_dim = embed_dim
-        self.encoder_weights = encoder_weights
+        self.img_size = input_size
 
         if size == "base":
-            self.encoder_dim = 768
+            self.embed_dim = 768
             self.encoder_depth = 12
             self.num_heads = 16
             self.patch_size = 8
         else:
             # large by default
-            self.encoder_dim = 1024
+            self.embed_dim = 1024
             self.encoder_depth = 24
             self.num_heads = 16
             self.patch_size = 8
 
-        self.num_patches = int((image_resolution / 8) ** 2)
+        self.num_patches = int((self.img_size / 8) ** 2)
         self.s2_channels = 12  # fixed at 12 multispectral optical channels
         self.attn_bias = get_2dalibi(
             num_heads=self.num_heads, num_patches=self.num_patches
@@ -100,28 +96,40 @@ class CROMA_OPTICAL_Encoder(Encoder):
         self.parameters_warning(missing, incompatible_shape, logger)
 
 
-class CROMA_SAR_Encoder(nn.Module):
-    def __init__(self, cfg, size="base", image_resolution=120):
-        super().__init__()
+class CROMA_SAR_Encoder(Encoder):
+    def __init__(
+        self,
+        encoder_weights: str | Path,
+        input_size: int,
+        input_bands: dict[str, list[str]],
+        output_layers: int | list[int],
+        size="base",
+    ):
+        super().__init__(
+            model_name="croma_sar",
+            encoder_weights=encoder_weights,
+            input_bands=input_bands,
+            input_size=input_size,
+            multi_temporal=False,
+            embed_dim=768
+        )
 
-        self.input_bands = cfg["input_bands"]
-        self.output_layers = cfg["output_layers"]
-        self.model_name = "CROMA_SAR"
-        self.img_size = image_resolution
+        self.output_layers = output_layers
+        self.img_size = input_size
 
         if size == "base":
-            self.encoder_dim = 768
+            self.embed_dim = 768
             self.encoder_depth = 12
             self.num_heads = 16
             self.patch_size = 8
         else:
             # large by default
-            self.encoder_dim = 1024
+            self.embed_dim = 1024
             self.encoder_depth = 24
             self.num_heads = 16
             self.patch_size = 8
 
-        self.num_patches = int((image_resolution / 8) ** 2)
+        self.num_patches = int((self.img_size / 8) ** 2)
         self.s1_channels = 2  # fixed at 2 SAR backscatter channels
         self.attn_bias = get_2dalibi(
             num_heads=self.num_heads, num_patches=self.num_patches
@@ -175,28 +183,40 @@ class CROMA_SAR_Encoder(nn.Module):
         return missing, incompatible_shape
 
 
-class CROMA_JOINT_Encoder(nn.Module):
-    def __init__(self, cfg, size="base", image_resolution=120):
-        super().__init__()
+class CROMA_JOINT_Encoder(Encoder):
+    def __init__(
+        self,
+        encoder_weights: str | Path,
+        input_size: int,
+        input_bands: dict[str, list[str]],
+        output_layers: int | list[int],
+        size="base",
+    ):
+        super().__init__(
+            model_name="croma_joint",
+            encoder_weights=encoder_weights,
+            input_bands=input_bands,
+            input_size=input_size,
+            multi_temporal=False,
+            embed_dim=768
+        )
 
-        self.input_bands = cfg["input_bands"]
-        self.output_layers = cfg["output_layers"]
-        self.model_name = "CROMA"
-        self.img_size = image_resolution
+        self.output_layers = output_layers
+        self.img_size = input_size
 
         if size == "base":
-            self.encoder_dim = 768
+            self.embed_dim = 768
             self.encoder_depth = 12
             self.num_heads = 16
             self.patch_size = 8
         else:
             # large by default
-            self.encoder_dim = 1024
+            self.embed_dim = 1024
             self.encoder_depth = 24
             self.num_heads = 16
             self.patch_size = 8
 
-        self.num_patches = int((image_resolution / 8) ** 2)
+        self.num_patches = int((self.img_size / 8) ** 2)
         self.s1_channels = 2  # fixed at 2 SAR backscatter channels
         self.s2_channels = 12  # fixed at 12 multispectral optical channels
         self.attn_bias = get_2dalibi(
