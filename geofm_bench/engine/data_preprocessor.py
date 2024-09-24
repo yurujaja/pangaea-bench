@@ -12,9 +12,16 @@ from geofm_bench.encoders.base import Encoder
 
 
 class RichDataset(Dataset):
+    """Dataset wrapper to add preprocessing steps.
+    """
     def __init__(self, dataset: GeoFMDataset, encoder: Encoder):
+        """Initialize the RichDataset.
+
+        Args:
+            dataset (GeoFMDataset): dataset used.
+            encoder (Encoder): encoder used.
+        """
         self.dataset = dataset
-        # TODO: remove encoder for input_bands, input_size
         self.encoder = encoder
 
         # WARNING: Patch to overcome recursive wrapping issues
@@ -36,15 +43,40 @@ class RichDataset(Dataset):
         self.download_url = dataset.download_url
         self.auto_download = dataset.auto_download
 
-    def __getitem__(self, index):
+    def __getitem__(self, index : int) -> dict[str, torch.Tensor | dict[str, torch.Tensor]]:
+        """Return a modified item from the dataset.
+
+        Args:
+            index (int): index of data.
+        Returns:
+            dict[str, torch.Tensor | dict[str, torch.Tensor]]: output dictionary following the format
+            {"image":
+                {
+                "optical": torch.Tensor of shape (C H W) (or (C T H W) if multi-temporal dataset),
+                 "sar": torch.Tensor of shape (C H W) (or (C T H W) if multi-temporal dataset)
+                 },
+            "target": torch.Tensor of shape (H W),
+             "metadata": dict}.
+        """
         return self.dataset[index]
 
-    def __len__(self):
+    def __len__(self) -> int:
+        """Return the length of the dataset.
+
+        Returns:
+            int: length of the dataset.
+        """
         return len(self.dataset)
 
 
 class SegPreprocessor(RichDataset):
     def __init__(self, dataset: GeoFMDataset, encoder: Encoder) -> None:
+        """Initialize the SegPreprocessor for segmentation tasks.
+
+        Args:
+            dataset (GeoFMDataset): dataset used.
+            encoder (Encoder): encoder used.
+        """
         super().__init__(dataset, encoder)
 
         self.preprocessor = {}
@@ -58,8 +90,6 @@ class SegPreprocessor(RichDataset):
             if "sar" in dataset.bands.keys()
             else None
         )
-        # TO DO: other modalities
-
         for modality in self.encoder.input_bands:
             new_stats = self.preprocessor[modality].preprocess_band_statistics(
                 self.dataset.data_mean[modality],
@@ -73,7 +103,22 @@ class SegPreprocessor(RichDataset):
             self.dataset.data_min[modality] = new_stats[2]
             self.dataset.data_max[modality] = new_stats[3]
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int) -> dict[str, torch.Tensor | dict[str, torch.Tensor]]:
+        """Return a modified item from the dataset.
+
+        Args:
+            index (int): index of data.
+        Returns:
+            dict[str, torch.Tensor | dict[str, torch.Tensor]]: output dictionary following the format
+            {"image":
+                {
+                encoder_modality_1: torch.Tensor of shape (C H W) (or (C T H W) if multi-temporal dataset),
+                ...
+                encoder_modality_N: torch.Tensor of shape (C H W) (or (C T H W) if multi-temporal dataset),
+                 },
+            "target": torch.Tensor of shape (H W),
+             "metadata": dict}.
+        """
         data = self.dataset[index]
 
         for k, v in data["image"].items():
@@ -86,9 +131,25 @@ class SegPreprocessor(RichDataset):
 
 class RegPreprocessor(SegPreprocessor):
     def __init__(self, dataset: GeoFMDataset, encoder: Encoder) -> None:
+        """Initialize the RegPreprocessor for regression tasks."""
         super().__init__(dataset, encoder)
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int) -> dict[str, torch.Tensor | dict[str, torch.Tensor]]:
+        """Return a modified item from the dataset.
+
+        Args:
+            index (int): index of data.
+        Returns:
+            dict[str, torch.Tensor | dict[str, torch.Tensor]]: output dictionary following the format
+            {"image":
+                {
+                encoder_modality_1: torch.Tensor of shape (C H W) (or (C T H W) if multi-temporal dataset),
+                ...
+                encoder_modality_N: torch.Tensor of shape (C H W) (or (C T H W) if multi-temporal dataset),
+                 },
+            "target": torch.Tensor of shape (H W),
+             "metadata": dict}.
+        """
         data = self.dataset[index]
         for k, v in data["image"].items():
             if k in self.encoder.input_bands:
