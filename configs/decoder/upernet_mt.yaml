@@ -1,4 +1,4 @@
-_target_: geofm_bench.adaptors.upernet.MTUPerNet
+_target_: geofm_bench.decoder.upernet.MTUPerNet
 # time_frames: 2
 #task_model_args:
   #num_frames: 1
@@ -6,7 +6,7 @@ _target_: geofm_bench.adaptors.upernet.MTUPerNet
   #num_classes - task parameter passed from the dataset config
   #wave_list - task parameter passed from the dataset config
 # overwritten in run
-foundation_model: null
+encoder: null
 num_classes: ${dataset.num_classes}
 multi_temporal: ${dataset.multi_temporal}
 finetune: ${finetune}
