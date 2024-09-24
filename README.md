@@ -15,7 +15,7 @@ For the moment, we support the following **models**:
 |  [SSL4EOS12](https://arxiv.org/abs/2211.07044)  | SSL4EO-S12: A Large-Scale Multi-Modal, Multi-Temporal <br> Dataset for Self-Supervised Learning in Earth Observation      | [link](https://github.com/zhu-xlab/SSL4EO-S12) | DINO, MAE, DATA2VEC, MOCO|
 |  [Scale-MAE](https://arxiv.org/pdf/2212.14532)  | Scale-MAE: Scalable Masked Autoencoders for Self-Supervised Learning on Climate Datasets      | [link](https://github.com/bair-climate-initiative/scale-mae) | Masked Autoencoders, Multiscale|
 |  [SatlasNet](https://arxiv.org/pdf/2211.15660)  | SatlasNet: A Spatio-Temporal Atlas for Global Mapping from Satellite Images | [link](https://github.com/allenai/satlas/tree/main) | Supervised, Multi-temporal |
-|  [GFM](https://arxiv.org/pdf/2404.01260)        | GFM: Generalized Foundation Models for Climate Science | [link](https://github.com/mmendiet/GFM) | |
+|  [GFM](https://arxiv.org/pdf/2302.04476)        | GFM: Generalized Foundation Models for Climate Science | [link](https://github.com/mmendiet/GFM) | Swin, Continual Pre-training |
 |  [SpectralGPT](https://arxiv.org/abs/2311.07113) | SpectralGPT: Generative Pretrained Transformer for Hyperspectral Image Analysis      | [link](https://github.com/danfenghong/IEEE_TPAMI_SpectralGPT) | MAE, Multi-spectral |
 |  [DOFA](https://arxiv.org/pdf/2403.15356)       | DOFA: Dynamic Object Feature Aggregation for Self-Supervised Learning in Satellite Data      | [link](https://github.com/zhu-xlab/DOFA) | MAE, Dynamic bands |
 |  [CROMA](https://arxiv.org/pdf/2311.00566)      | CROMA: Cross-Modal Alignment for Satellite Image Analysis      | [link](https://github.com/antofuller/CROMA) | Contrastive Learning, MAE |
@@ -27,13 +27,13 @@ And the following **datasets**:
 
 |                     | Download | Domain | Task | Sensors | Location |
 |:-------------------:|:--------:|:------:|:----:|:-------:|:--------:|
-| [HLS Burn Scars](https://huggingface.co/datasets/ibm-nasa-geospatial/hls_burn_scars) | [link](https://huggingface.co/datasets/ibm-nasa-geospatial/hls_burn_scars) | Wildfire | Semantic Segmentation | HLS (Harmonized Landsat Sentinel-2) | Global |
-|        MADOS        |          |        |      |         | Global   |
-|        PASTIS       |          |        |      |         | France   |
+| [HLS Burn Scars](https://huggingface.co/datasets/ibm-nasa-geospatial/hls_burn_scars) | [link](https://huggingface.co/datasets/ibm-nasa-geospatial/hls_burn_scars) | Wildfire | Semantic Segmentation | HLS (Harmonized Landsat Sentinel-2) | USA |
+|        [MADOS](https://www.sciencedirect.com/science/article/pii/S0924271624000625)        |  [link](https://marine-pollution.github.io/index.html)        |  Marine      |  Semantic Segmentation    |    S2   | Global   |
+|        [PASTIS](https://arxiv.org/pdf/2112.07558v1)       |    [link](https://github.com/VSainteuf/pastis-benchmark)       |   Agriculture     |  Semantic Segmentation    |    S1, S2, SPOT-6  | France   |
 |     [Sen1Floods11](http://openaccess.thecvf.com/content_CVPRW_2020/html/w11/Bonafilia_Sen1Floods11_A_Georeferenced_Dataset_to_Train_and_Test_Deep_Learning_CVPRW_2020_paper.html)    | [link](https://github.com/cloudtostreet/Sen1Floods11) |  Flood |Semantic Segmentation  | S1, S2 | Global |
 |        [xView2](https://openaccess.thecvf.com/content_CVPRW_2019/html/cv4gc/Gupta_Creating_xBD_A_Dataset_for_Assessing_Building_Damage_from_Satellite_CVPRW_2019_paper.html)       | [link](https://xview2.org/dataset) | HADR | Semantic Segmentation | Maxar | Global   |
-| Five Billion Pixels |          |        |      |         | China    |
-|   DynamicEarthNet   |          |        |      |         | Global   |
+| [Five Billion Pixels](https://www.sciencedirect.com/science/article/pii/S0924271622003264) |  [original version](https://x-ytong.github.io/project/Five-Billion-Pixels.html) (custom version coming soon)        |  (Urban) Land Cover     |  Semantic Segmentation    |    Gaofen-2     | China    |
+|   [DynamicEarthNet](https://arxiv.org/pdf/2203.12560)   |   [link](https://mediatum.ub.tum.de/1650201)        |    (Urban) Land Cover    |   Semantic Segmentation   |   PlanetFusion      | Global   |
 |   [CropTypeMapping](https://openaccess.thecvf.com/content_CVPRW_2019/papers/cv4gc/Rustowicz_Semantic_Segmentation_of_Crop_Type_in_Africa_A_Novel_Dataset_CVPRW_2019_paper.pdf) |   [link](https://sustainlab-group.github.io/sustainbench/docs/datasets/sdg2/crop_type_mapping_ghana-ss.html#download) | Agriculture |Semantic Segmentation |S1, S2, Planet|South Sudan|
 |      [SpaceNet 7](https://openaccess.thecvf.com/content/CVPR2021/papers/Van_Etten_The_Multi-Temporal_Urban_Development_SpaceNet_Dataset_CVPR_2021_paper.pdf)      |    [link](https://spacenet.ai/sn7-challenge/)      |    Urban    |   Change detection   |     Planet    | Global   |
 |    [AI4SmallFarms](https://ieeexplore.ieee.org/document/10278130)  | [link](https://doi.org/10.17026/dans-xy6-ngg6)  |  Agriculture     |  Semantic segmentation  |   S2   | Cambodia/Vietnam |
@@ -49,7 +49,7 @@ The repository supports the following **tasks** using GFMs:
  - [single temporal regression](#single-temporal-regression)
  - [multi-temporal regression](#multi-temporal-regression)
 
-It is possible also to train some [supervised baselines](#-fully-supervised-training), based on UNet.
+It is also possible to train some [supervised baselines](#-fully-supervised-training), based on UNet.
 
 ## 🛠️ Setup
 Clone the repository:
