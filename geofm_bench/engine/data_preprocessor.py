@@ -12,8 +12,8 @@ from geofm_bench.encoders.base import Encoder
 
 
 class RichDataset(Dataset):
-    """Dataset wrapper to add preprocessing steps.
-    """
+    """Dataset wrapper to add preprocessing steps."""
+
     def __init__(self, dataset: GeoFMDataset, encoder: Encoder):
         """Initialize the RichDataset.
 
@@ -43,7 +43,9 @@ class RichDataset(Dataset):
         self.download_url = dataset.download_url
         self.auto_download = dataset.auto_download
 
-    def __getitem__(self, index : int) -> dict[str, torch.Tensor | dict[str, torch.Tensor]]:
+    def __getitem__(
+        self, index: int
+    ) -> dict[str, torch.Tensor | dict[str, torch.Tensor]]:
         """Return a modified item from the dataset.
 
         Args:
@@ -103,7 +105,9 @@ class SegPreprocessor(RichDataset):
             self.dataset.data_min[modality] = new_stats[2]
             self.dataset.data_max[modality] = new_stats[3]
 
-    def __getitem__(self, index: int) -> dict[str, torch.Tensor | dict[str, torch.Tensor]]:
+    def __getitem__(
+        self, index: int
+    ) -> dict[str, torch.Tensor | dict[str, torch.Tensor]]:
         """Return a modified item from the dataset.
 
         Args:
@@ -112,9 +116,9 @@ class SegPreprocessor(RichDataset):
             dict[str, torch.Tensor | dict[str, torch.Tensor]]: output dictionary following the format
             {"image":
                 {
-                encoder_modality_1: torch.Tensor of shape (C H W) (or (C T H W) if multi-temporal dataset),
+                encoder_modality_1: torch.Tensor of shape (C T H W) (with T=1 if single timeframe)
                 ...
-                encoder_modality_N: torch.Tensor of shape (C H W) (or (C T H W) if multi-temporal dataset),
+                encoder_modality_N: torch.Tensor of shape (C T H W) (with T=1 if single timeframe)
                  },
             "target": torch.Tensor of shape (H W),
              "metadata": dict}.
@@ -134,7 +138,9 @@ class RegPreprocessor(SegPreprocessor):
         """Initialize the RegPreprocessor for regression tasks."""
         super().__init__(dataset, encoder)
 
-    def __getitem__(self, index: int) -> dict[str, torch.Tensor | dict[str, torch.Tensor]]:
+    def __getitem__(
+        self, index: int
+    ) -> dict[str, torch.Tensor | dict[str, torch.Tensor]]:
         """Return a modified item from the dataset.
 
         Args:
@@ -143,9 +149,9 @@ class RegPreprocessor(SegPreprocessor):
             dict[str, torch.Tensor | dict[str, torch.Tensor]]: output dictionary following the format
             {"image":
                 {
-                encoder_modality_1: torch.Tensor of shape (C H W) (or (C T H W) if multi-temporal dataset),
+                encoder_modality_1: torch.Tensor of shape (C T H W) (with T=1 if single timeframe)
                 ...
-                encoder_modality_N: torch.Tensor of shape (C H W) (or (C T H W) if multi-temporal dataset),
+                encoder_modality_N: torch.Tensor of shape (C T H W) (with T=1 if single timeframe)
                  },
             "target": torch.Tensor of shape (H W),
              "metadata": dict}.
