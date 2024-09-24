@@ -27,7 +27,7 @@ And the following **datasets**:
 
 |                     | Download | Domain | Task | Sensors | Location |
 |:-------------------:|:--------:|:------:|:----:|:-------:|:--------:|
-|    HLS Burn Scars   |          |        |      |         | Global   |
+| [HLS Burn Scars](https://huggingface.co/datasets/ibm-nasa-geospatial/hls_burn_scars) | [link](https://huggingface.co/datasets/ibm-nasa-geospatial/hls_burn_scars) | Wildfire | Semantic Segmentation | HLS (Harmonized Landsat Sentinel-2) | Global |
 |        MADOS        |          |        |      |         | Global   |
 |        PASTIS       |          |        |      |         | France   |
 |     [Sen1Floods11](http://openaccess.thecvf.com/content_CVPRW_2020/html/w11/Bonafilia_Sen1Floods11_A_Georeferenced_Dataset_to_Train_and_Test_Deep_Learning_CVPRW_2020_paper.html)    | [link](https://github.com/cloudtostreet/Sen1Floods11) |  Flood |Semantic Segmentation  | S1, S2 | Global |
