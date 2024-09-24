@@ -7,11 +7,12 @@ import torch
 import torchvision.transforms as T
 from torch.utils.data import Dataset
 
+from geofm_bench.datasets.base import GeoFMDataset
 from geofm_bench.encoders.base import Encoder
 
 
 class RichDataset(Dataset):
-    def __init__(self, dataset: Dataset, encoder: Encoder):
+    def __init__(self, dataset: GeoFMDataset, encoder: Encoder):
         self.dataset = dataset
         # TODO: remove encoder for input_bands, input_size
         self.encoder = encoder
@@ -33,7 +34,7 @@ class RichDataset(Dataset):
 
 
 class SegPreprocessor(RichDataset):
-    def __init__(self, dataset: Dataset, encoder: Encoder) -> None:
+    def __init__(self, dataset: GeoFMDataset, encoder: Encoder) -> None:
         super().__init__(dataset, encoder)
 
         self.preprocessor = {}
@@ -74,7 +75,7 @@ class SegPreprocessor(RichDataset):
 
 
 class RegPreprocessor(SegPreprocessor):
-    def __init__(self, dataset: Dataset, encoder: Encoder) -> None:
+    def __init__(self, dataset: GeoFMDataset, encoder: Encoder) -> None:
         super().__init__(dataset, encoder)
 
     def __getitem__(self, index):
@@ -87,7 +88,7 @@ class RegPreprocessor(SegPreprocessor):
 
 
 class BandAdaptor:
-    def __init__(self, dataset: Dataset, encoder: Encoder, modality: str) -> None:
+    def __init__(self, dataset: GeoFMDataset, encoder: Encoder, modality: str) -> None:
         self.dataset_bands = dataset.bands[modality]
         self.input_bands = getattr(encoder.input_bands, modality, [])
 
@@ -182,13 +183,13 @@ class BaseAugment(RichDataset):
     __getitem__ will recieve data in CxTxHxW format from the preprocessor.
     """
 
-    def __init__(self, dataset: Dataset, encoder: Encoder) -> None:
+    def __init__(self, dataset: GeoFMDataset, encoder: Encoder) -> None:
         super().__init__(dataset, encoder)
 
 
 class Tile(BaseAugment):
     def __init__(
-        self, dataset: Dataset, encoder: Encoder, min_overlap: float = 0
+        self, dataset: GeoFMDataset, encoder: Encoder, min_overlap: float = 0
     ) -> None:
         super().__init__(dataset, encoder)
         self.min_overlap = min_overlap
@@ -298,7 +299,7 @@ class Tile(BaseAugment):
 class RandomFlip(BaseAugment):
     def __init__(
         self,
-        dataset: Dataset,
+        dataset: GeoFMDataset,
         encoder: Encoder,
         ud_probability: float,
         lr_probability: float,
@@ -325,7 +326,7 @@ class RandomFlip(BaseAugment):
 class GammaAugment(BaseAugment):
     def __init__(
         self,
-        dataset: Dataset,
+        dataset: GeoFMDataset,
         encoder: Encoder,
         probability: float,
         gamma_range: float,
@@ -344,7 +345,7 @@ class GammaAugment(BaseAugment):
 
 
 class NormalizeMeanStd(BaseAugment):
-    def __init__(self, dataset: Dataset, encoder: Encoder) -> None:
+    def __init__(self, dataset: GeoFMDataset, encoder: Encoder) -> None:
         super().__init__(dataset, encoder)
         self.data_mean_tensors = {}
         self.data_std_tensors = {}
@@ -369,7 +370,7 @@ class NormalizeMeanStd(BaseAugment):
 class NormalizeMinMax(BaseAugment):
     def __init__(
         self,
-        dataset: Dataset,
+        dataset: GeoFMDataset,
         encoder: Encoder,
         data_min: torch.Tensor,
         data_max: torch.Tensor,
@@ -402,7 +403,7 @@ class NormalizeMinMax(BaseAugment):
 class ColorAugmentation(BaseAugment):
     def __init__(
         self,
-        dataset: Dataset,
+        dataset: GeoFMDataset,
         encoder: Encoder,
         brightness: float = 0,
         contrast: float = 0,
@@ -464,7 +465,7 @@ class ColorAugmentation(BaseAugment):
 
 
 class Resize(BaseAugment):
-    def __init__(self, dataset: Dataset, encoder: Encoder, size: int) -> None:
+    def __init__(self, dataset: GeoFMDataset, encoder: Encoder, size: int) -> None:
         super().__init__(dataset, encoder)
         self.size = (size, size)
 
@@ -489,14 +490,14 @@ class Resize(BaseAugment):
 
 
 class ResizeToEncoder(Resize):
-    def __init__(self, dataset: Dataset, encoder: Encoder) -> None:
+    def __init__(self, dataset: GeoFMDataset, encoder: Encoder) -> None:
         super().__init__(dataset, encoder, encoder.input_size)
 
 
 class RandomCrop(BaseAugment):
     def __init__(
         self,
-        dataset: Dataset,
+        dataset: GeoFMDataset,
         encoder: Encoder,
         size: int,
         padding: str | None = None,
@@ -529,7 +530,7 @@ class RandomCrop(BaseAugment):
 class RandomCropToEncoder(RandomCrop):
     def __init__(
         self,
-        dataset: Dataset,
+        dataset: GeoFMDataset,
         encoder: Encoder,
         padding: str | None = None,
         pad_if_needed: bool = False,
@@ -545,7 +546,7 @@ class RandomCropToEncoder(RandomCrop):
 class ImportanceRandomCrop(BaseAugment):
     def __init__(
         self,
-        dataset: Dataset,
+        dataset: GeoFMDataset,
         encoder: Encoder,
         size: int,
         padding: str | None = None,
@@ -597,7 +598,7 @@ class ImportanceRandomCrop(BaseAugment):
 class ImportanceRandomCropToEncoder(ImportanceRandomCrop):
     def __init__(
         self,
-        dataset: Dataset,
+        dataset: GeoFMDataset,
         encoder: Encoder,
         padding: str | None = None,
         pad_if_needed: bool = False,
