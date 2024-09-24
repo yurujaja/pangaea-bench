@@ -1,7 +1,7 @@
 import glob
 import numpy as np
 import os
-import rasterio
+import tifffile
 
 
 split_file = os.path.join("data/sen1floods11_v1.1/v1.1", f"splits/flood_handlabeled/flood_train_data.csv")
@@ -20,9 +20,8 @@ sum = np.zeros(2).astype(np.float64)
 sum_sq = np.zeros(2).astype(np.float64)
 data_list = []
 for i, img in enumerate(path[:]):
-    with rasterio.open(img) as src:
-        data = src.read()
-        data = np.nan_to_num(data)
+    data = tifffile.imread(img)
+    data = np.nan_to_num(data)
 
     data = data.reshape((2, -1))#.astype(np.float64)
     data_list.append(data)

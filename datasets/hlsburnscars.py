@@ -2,10 +2,9 @@ import os
 import time
 import torch
 import numpy as np
-import rasterio
+import tifffile
 from glob import glob
 
-import torch
 import torchvision.transforms.functional as TF
 import torchvision.transforms as T
 
@@ -41,11 +40,8 @@ class HLSBurnScars(torch.utils.data.Dataset):
         return len(self.image_list)
 
     def __getitem__(self, index):
-        with rasterio.open(self.image_list[index]) as src:
-            image = src.read()
-        with rasterio.open(self.target_list[index]) as src:
-            target = src.read(1)
-
+        image = tifffile.imread(self.image_list[index])
+        target = tifffile.imread(self.target_list[index], key=0)
         image = torch.from_numpy(image)
         target = torch.from_numpy(target.astype(np.int64))
 
