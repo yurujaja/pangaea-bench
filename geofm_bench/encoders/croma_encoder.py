@@ -17,7 +17,7 @@ class CROMA_OPTICAL_Encoder(Encoder):
         self,
         encoder_weights: str | Path,
         input_size: int,
-        input_bands: dict[str, dict[str, list[str]]],
+        input_bands: dict[str, list[str]],
         embed_dim: int,
         output_layers: int,
         size="base",
@@ -29,6 +29,7 @@ class CROMA_OPTICAL_Encoder(Encoder):
             input_bands=input_bands,
             input_size=input_size,
             embed_dim=embed_dim,
+            multi_temporal=False,
         )
 
         self.output_layers = output_layers
