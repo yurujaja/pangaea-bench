@@ -579,7 +579,9 @@ class ImportanceRandomCrop(BaseAugment):
             crop_weight = T.functional.crop(data['weight'], i, j, h, w)
             crop_weights.append(torch.sum(crop_weight).item())
         
-        crop_weights = np.array(crop_weights) / sum(crop_weights)
+        crop_weights = np.array(crop_weights)
+        
+        crop_weights = crop_weights / np.sum(crop_weights)
         crop_idx = np.random.choice(self.n_crops, p=crop_weights)
         i, j, h, w = crop_candidates[crop_idx]
 

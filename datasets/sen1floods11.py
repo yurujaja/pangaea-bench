@@ -21,6 +21,7 @@ class Sen1Floods11(torch.utils.data.Dataset):
         self.data_mean = cfg['data_mean']
         self.data_std = cfg['data_std']
         self.classes = cfg['classes']
+        self.distribution = cfg['distribution']
         self.class_num = len(self.classes)
         self.split = split
         
@@ -76,12 +77,18 @@ class Sen1Floods11(torch.utils.data.Dataset):
         s1_image = torch.from_numpy(s1_image).float()   
         target = torch.from_numpy(target)
 
+        weight = torch.zeros_like(target).float()
+        for i, freq in enumerate(self.distribution):
+            weight[target == i] = 1 - freq
+        weight[target == -1] = 1e-6
+
         output = {
             'image': {
                 'optical': s2_image,
                 'sar' : s1_image,
             },
             'target': target,
+            'weight': weight,
             'metadata': {
                 "timestamp": timestamp,
             }

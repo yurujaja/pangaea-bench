@@ -1,4 +1,4 @@
-name: gfm-bench8
+name: geofm-bench
 channels:
   - pytorch
   - nvidia
@@ -19,7 +19,6 @@ dependencies:
   - tifffile
   - timm
   - einops
-  - open-clip-torch
   - rioxarray
   - pytorch-cuda=11.8
   - gdown
@@ -29,3 +28,5 @@ dependencies:
   - omegaconf
   - pydataverse
   - pytest
+  - yacs
+  - wandb

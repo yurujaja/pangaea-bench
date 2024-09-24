@@ -1,6 +1,7 @@
 from .ai4smallfarms import AI4SmallFarms
 from .biomassters import BioMassters
 from .croptypemapping import CropTypeMappingSouthSudan
+from .croptypemapping2 import CropTypeMappingSouthSudan2
 from .fivebillionpixels import FiveBillionPixels
 from .hlsburnscars import HLSBurnScars
 from .mados import MADOS

@@ -55,21 +55,32 @@ cd geofm-bench
 ```
 
 **Dependencies**
+We provide several ways to install the dependencies.
 
-Use either Conda or Mamba:
-```
-conda env create -f environment.yaml
-conda activate geofm-bench8
-```
+1. Using either Conda or Mamba:
+    ```
+    conda env create -f environment.yaml
+    conda activate geofm-bench
+    ```
 
-Optional: install [Mamba](https://github.com/conda-forge/miniforge/releases/) for faster resolution times
-```
-wget https://github.com/conda-forge/miniforge/releases/download/24.3.0-0/Mambaforge-24.3.0-0-Linux-x86_64.sh
-./Mambaforge-24.3.0-0-Linux-x86_64.sh
+    Optional: install [Mamba](https://github.com/conda-forge/miniforge/releases/) for faster resolution times
+    ```
+    wget https://github.com/conda-forge/miniforge/releases/download/24.3.0-0/Mambaforge-24.3.0-0-Linux-x86_64.sh
+    sh ./Mambaforge-24.3.0-0-Linux-x86_64.sh
 
-mamba env create -f environment.yaml
-mamba activate geofm-bench8
-```
+    mamba env create -f environment.yaml
+    mamba activate geofm-bench
+    ```
+
+2. Using pip, create a Python native virtual environment and install dependencies into it:
+    ```
+    export GFMBENCH_PATH=/path/to/venv/geofm-bench  # change this
+    python3 -m venv ${GFMBENCH_PATH}
+    source ${GFMBENCH_PATH}/bin/activate
+
+    pip install -r requirements.txt
+    ```
+
 
 ## 🏋️ Training
 
