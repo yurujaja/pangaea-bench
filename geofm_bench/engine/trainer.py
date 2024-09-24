@@ -471,23 +471,23 @@ class RegTrainer(Trainer):
         eval_interval: int,
         log_interval: int,
     ):
-    """Initialize the Trainer for regression task.
-    Args:
-        model (nn.Module): model to train (foundation model + adaptor).
-        train_loader (DataLoader): train data loader.
-        criterion (nn.Module): criterion to compute the loss.
-        optimizer (Optimizer): optimizer to update the model's parameters.
-        lr_scheduler (LRScheduler): lr scheduler to update the learning rate.
-        evaluator (torch.nn.Module): task evaluator to evaluate the model.
-        n_epochs (int): number of epochs to train the model.
-        exp_dir (pathlib.Path | str): path to the experiment directory.
-        device (torch.device): model
-        precision (str): precision to train the model (fp32, fp16, bfp16).
-        use_wandb (bool): whether to use wandb for logging.
-        ckpt_interval (int): interval to save the checkpoint.
-        eval_interval (int): interval to evaluate the model.
-        log_interval (int): interval to log the training information.
-    """
+        """Initialize the Trainer for regression task.
+        Args:
+            model (nn.Module): model to train (foundation model + adaptor).
+            train_loader (DataLoader): train data loader.
+            criterion (nn.Module): criterion to compute the loss.
+            optimizer (Optimizer): optimizer to update the model's parameters.
+            lr_scheduler (LRScheduler): lr scheduler to update the learning rate.
+            evaluator (torch.nn.Module): task evaluator to evaluate the model.
+            n_epochs (int): number of epochs to train the model.
+            exp_dir (pathlib.Path | str): path to the experiment directory.
+            device (torch.device): model
+            precision (str): precision to train the model (fp32, fp16, bfp16).
+            use_wandb (bool): whether to use wandb for logging.
+            ckpt_interval (int): interval to save the checkpoint.
+            eval_interval (int): interval to evaluate the model.
+            log_interval (int): interval to log the training information.
+        """
         super().__init__(
             model=model,
             train_loader=train_loader,
