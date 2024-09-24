@@ -35,7 +35,10 @@ class Evaluator:
             self.wandb = wandb
 
     def evaluate(
-        self, model: torch.nn.Module, model_ckpt_path: str | Path | None = None
+        self,
+        model: torch.nn.Module,
+        model_name: str,
+        model_ckpt_path: str | Path | None = None,
     ) -> None:
         raise NotImplementedError
 
@@ -61,7 +64,7 @@ class SegEvaluator(Evaluator):
         super().__init__(val_loader, exp_dir, device, use_wandb)
 
     @torch.no_grad()
-    def evaluate(self, model, model_ckpt_path=None):
+    def evaluate(self, model, model_name, model_ckpt_path=None):
         t = time.time()
 
         if model_ckpt_path is not None:
@@ -108,8 +111,8 @@ class SegEvaluator(Evaluator):
         return metrics, used_time
 
     @torch.no_grad()
-    def __call__(self, model, model_ckpt_path=None):
-        return self.evaluate(model, model_ckpt_path)
+    def __call__(self, model, model_name, model_ckpt_path=None):
+        return self.evaluate(model, model_name, model_ckpt_path)
 
     def compute_metrics(self, confusion_matrix):
         # Calculate IoU for each class

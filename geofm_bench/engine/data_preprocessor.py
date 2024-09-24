@@ -5,15 +5,17 @@ import random
 import numpy as np
 import torch
 import torchvision.transforms as T
-from torch.nn import Module
 from torch.utils.data import Dataset
+
+from geofm_bench.datasets.base import GeoFMDataset
+from geofm_bench.encoders.base import Encoder
 
 
 class RichDataset(Dataset):
-    def __init__(self, dataset: Dataset, foundation_model: Module):
+    def __init__(self, dataset: GeoFMDataset, encoder: Encoder):
         self.dataset = dataset
-        # TODO: remove foundation_model for input_bands, input_size
-        self.foundation_model = foundation_model
+        # TODO: remove encoder for input_bands, input_size
+        self.encoder = encoder
 
         # WARNING: Patch to overcome recursive wrapping issues
         self.data_mean = dataset.data_mean
@@ -32,27 +34,23 @@ class RichDataset(Dataset):
 
 
 class SegPreprocessor(RichDataset):
-    def __init__(self, dataset: Dataset, foundation_model: Module) -> None:
-        super().__init__(dataset, foundation_model)
+    def __init__(self, dataset: GeoFMDataset, encoder: Encoder) -> None:
+        super().__init__(dataset, encoder)
 
         self.preprocessor = {}
         self.preprocessor["optical"] = (
-            BandAdaptor(
-                dataset=dataset, foundation_model=foundation_model, modality="optical"
-            )
+            BandAdaptor(dataset=dataset, encoder=encoder, modality="optical")
             if "optical" in dataset.bands.keys()
             else None
         )
         self.preprocessor["sar"] = (
-            BandAdaptor(
-                dataset=dataset, foundation_model=foundation_model, modality="sar"
-            )
+            BandAdaptor(dataset=dataset, encoder=encoder, modality="sar")
             if "sar" in dataset.bands.keys()
             else None
         )
         # TO DO: other modalities
 
-        for modality in self.foundation_model.input_bands:
+        for modality in self.encoder.input_bands:
             new_stats = self.preprocessor[modality].preprocess_band_statistics(
                 self.dataset.data_mean[modality],
                 self.dataset.data_std[modality],
@@ -69,7 +67,7 @@ class SegPreprocessor(RichDataset):
         data = self.dataset[index]
 
         for k, v in data["image"].items():
-            if k in self.foundation_model.input_bands:
+            if k in self.encoder.input_bands:
                 data["image"][k] = self.preprocessor[k](v)
 
         data["target"] = data["target"].long()
@@ -77,24 +75,22 @@ class SegPreprocessor(RichDataset):
 
 
 class RegPreprocessor(SegPreprocessor):
-    def __init__(self, dataset: Dataset, foundation_model: Module) -> None:
-        super().__init__(dataset, foundation_model)
+    def __init__(self, dataset: GeoFMDataset, encoder: Encoder) -> None:
+        super().__init__(dataset, encoder)
 
     def __getitem__(self, index):
         data = self.dataset[index]
         for k, v in data["image"].items():
-            if k in self.foundation_model.input_bands:
+            if k in self.encoder.input_bands:
                 data["image"][k] = self.preprocessor[k](v)
         data["target"] = data["target"].float()
         return data
 
 
 class BandAdaptor:
-    def __init__(
-        self, dataset: Dataset, foundation_model: Module, modality: str
-    ) -> None:
+    def __init__(self, dataset: GeoFMDataset, encoder: Encoder, modality: str) -> None:
         self.dataset_bands = dataset.bands[modality]
-        self.input_bands = getattr(foundation_model.input_bands, modality, [])
+        self.input_bands = getattr(encoder.input_bands, modality, [])
 
         self.used_bands_mask = torch.tensor(
             [b in self.input_bands for b in self.dataset_bands], dtype=torch.bool
@@ -187,19 +183,19 @@ class BaseAugment(RichDataset):
     __getitem__ will recieve data in CxTxHxW format from the preprocessor.
     """
 
-    def __init__(self, dataset: Dataset, foundation_model: Module) -> None:
-        super().__init__(dataset, foundation_model)
+    def __init__(self, dataset: GeoFMDataset, encoder: Encoder) -> None:
+        super().__init__(dataset, encoder)
 
 
 class Tile(BaseAugment):
     def __init__(
-        self, dataset: Dataset, foundation_model: Module, min_overlap: float = 0
+        self, dataset: GeoFMDataset, encoder: Encoder, min_overlap: float = 0
     ) -> None:
-        super().__init__(dataset, foundation_model)
+        super().__init__(dataset, encoder)
         self.min_overlap = min_overlap
         # Should be the _largest_ image in the dataset to avoid problems mentioned in __getitem__
         self.input_size = self.dataset.img_size
-        self.output_size = self.foundation_model.input_size
+        self.output_size = self.encoder.input_size
         if self.output_size == self.input_size:
             self.tiles_per_dim = 1
         elif self.output_size > self.input_size:
@@ -266,7 +262,7 @@ class Tile(BaseAugment):
         tiled_data = {"image": {}, "target": None}
         tiled_data["image"] = {}
         for k, v in data["image"].items():
-            if k in self.foundation_model.input_bands:
+            if k in self.encoder.input_bands:
                 tiled_data["image"][k] = v[
                     ..., h : h + self.output_size, w : w + self.output_size
                 ].clone()
@@ -303,12 +299,12 @@ class Tile(BaseAugment):
 class RandomFlip(BaseAugment):
     def __init__(
         self,
-        dataset: Dataset,
-        foundation_model: Module,
+        dataset: GeoFMDataset,
+        encoder: Encoder,
         ud_probability: float,
         lr_probability: float,
     ) -> None:
-        super().__init__(dataset, foundation_model)
+        super().__init__(dataset, encoder)
         self.ud_probability = ud_probability
         self.lr_probability = lr_probability
 
@@ -316,12 +312,12 @@ class RandomFlip(BaseAugment):
         data = self.dataset[index]
         if random.random() < self.ud_probability:
             for k, v in data["image"].items():
-                if k in self.foundation_model.input_bands:
+                if k in self.encoder.input_bands:
                     data["image"][k] = torch.fliplr(v)
             data["target"] = torch.fliplr(data["target"])
         if random.random() < self.lr_probability:
             for k, v in data["image"].items():
-                if k in self.foundation_model.input_bands:
+                if k in self.encoder.input_bands:
                     data["image"][k] = torch.flipud(v)
             data["target"] = torch.flipud(data["target"])
         return data
@@ -330,12 +326,12 @@ class RandomFlip(BaseAugment):
 class GammaAugment(BaseAugment):
     def __init__(
         self,
-        dataset: Dataset,
-        foundation_model: Module,
+        dataset: GeoFMDataset,
+        encoder: Encoder,
         probability: float,
         gamma_range: float,
     ) -> None:
-        super().__init__(dataset, foundation_model)
+        super().__init__(dataset, encoder)
         self.probability = probability
         self.gamma_range = gamma_range
 
@@ -343,20 +339,18 @@ class GammaAugment(BaseAugment):
         data = self.dataset[index]
         # WARNING: Test this bit of code
         if random.random() < self.probability:
-            for k, v in (
-                data["image"].items() and k in self.foundation_model.input_bands
-            ):
+            for k, v in data["image"].items() and k in self.encoder.input_bands:
                 data["image"][k] = torch.pow(v, random.uniform(*self.gamma_range))
         return data
 
 
 class NormalizeMeanStd(BaseAugment):
-    def __init__(self, dataset: Dataset, foundation_model: Module) -> None:
-        super().__init__(dataset, foundation_model)
+    def __init__(self, dataset: GeoFMDataset, encoder: Encoder) -> None:
+        super().__init__(dataset, encoder)
         self.data_mean_tensors = {}
         self.data_std_tensors = {}
         # Bands is a dict of {modality:[b1, b2, ...], ...} so it's keys are the modalaities in use
-        for modality in self.foundation_model.input_bands:
+        for modality in self.encoder.input_bands:
             self.data_mean_tensors[modality] = torch.tensor(
                 self.dataset.data_mean[modality]
             ).reshape((-1, 1, 1, 1))
@@ -366,7 +360,7 @@ class NormalizeMeanStd(BaseAugment):
 
     def __getitem__(self, index: int):
         data = self.dataset[index]
-        for modality in self.foundation_model.input_bands:
+        for modality in self.encoder.input_bands:
             data["image"][modality] = (
                 data["image"][modality] - self.data_mean_tensors[modality]
             ) / self.data_std_tensors[modality]
@@ -376,18 +370,18 @@ class NormalizeMeanStd(BaseAugment):
 class NormalizeMinMax(BaseAugment):
     def __init__(
         self,
-        dataset: Dataset,
-        foundation_model: Module,
+        dataset: GeoFMDataset,
+        encoder: Encoder,
         data_min: torch.Tensor,
         data_max: torch.Tensor,
     ) -> None:
-        super().__init__(dataset, foundation_model)
+        super().__init__(dataset, encoder)
         self.normalizers = {}
         self.data_min_tensors = {}
         self.data_max_tensors = {}
         self.min = data_min
         self.max = data_max
-        for modality in self.foundation_model.input_bands:
+        for modality in self.encoder.input_bands:
             self.data_min_tensors[modality] = torch.tensor(
                 self.dataset.data_min[modality]
             ).reshape((-1, 1, 1, 1))
@@ -397,7 +391,7 @@ class NormalizeMinMax(BaseAugment):
 
     def __getitem__(self, index: int):
         data = self.dataset[index]
-        for modality in self.foundation_model.input_bands:
+        for modality in self.encoder.input_bands:
             data["image"][modality] = (
                 (data["image"][modality] - self.data_min_tensors[modality])
                 * (self.max - self.min)
@@ -409,15 +403,15 @@ class NormalizeMinMax(BaseAugment):
 class ColorAugmentation(BaseAugment):
     def __init__(
         self,
-        dataset: Dataset,
-        foundation_model: Module,
+        dataset: GeoFMDataset,
+        encoder: Encoder,
         brightness: float = 0,
         contrast: float = 0,
         clip: bool = False,
         br_probability: float = 0,
         ct_probability: float = 0,
     ) -> None:
-        super().__init__(dataset, foundation_model)
+        super().__init__(dataset, encoder)
         self.brightness = brightness
         self.contrast = contrast
         self.clip = clip
@@ -452,7 +446,7 @@ class ColorAugmentation(BaseAugment):
     def __getitem__(self, index):
         data = self.dataset[index]
         for k, _ in data["image"].items():
-            if k in self.foundation_model.input_bands:
+            if k in self.encoder.input_bands:
                 brightness = random.uniform(-self.brightness, self.brightness)
                 if random.random() < self.br_probability:
                     data["image"][k] = self.adjust_brightness(
@@ -460,7 +454,7 @@ class ColorAugmentation(BaseAugment):
                     )
 
         for k, _ in data["image"].items():
-            if k in self.foundation_model.input_bands:
+            if k in self.encoder.input_bands:
                 if random.random() < self.ct_probability:
                     contrast = random.uniform(1 - self.contrast, 1 + self.contrast)
                     data["image"][k] = self.adjust_contrast(
@@ -471,14 +465,14 @@ class ColorAugmentation(BaseAugment):
 
 
 class Resize(BaseAugment):
-    def __init__(self, dataset: Dataset, foundation_model: Module, size: int) -> None:
-        super().__init__(dataset, foundation_model)
+    def __init__(self, dataset: GeoFMDataset, encoder: Encoder, size: int) -> None:
+        super().__init__(dataset, encoder)
         self.size = (size, size)
 
     def __getitem__(self, index):
         data = self.dataset[index]
         for k, v in data["image"].items():
-            if k in self.foundation_model.input_bands:
+            if k in self.encoder.input_bands:
                 data["image"][k] = T.Resize(self.size)(v)
 
         if data["target"].ndim == 2:
@@ -496,22 +490,22 @@ class Resize(BaseAugment):
 
 
 class ResizeToEncoder(Resize):
-    def __init__(self, dataset: Dataset, foundation_model: Module) -> None:
-        super().__init__(dataset, foundation_model, foundation_model.input_size)
+    def __init__(self, dataset: GeoFMDataset, encoder: Encoder) -> None:
+        super().__init__(dataset, encoder, encoder.input_size)
 
 
 class RandomCrop(BaseAugment):
     def __init__(
         self,
-        dataset: Dataset,
-        foundation_model: Module,
+        dataset: GeoFMDataset,
+        encoder: Encoder,
         size: int,
         padding: str | None = None,
         pad_if_needed: bool = False,
         fill: int = 0,
         padding_mode: str = "constant",
     ) -> None:
-        super().__init__(dataset, foundation_model)
+        super().__init__(dataset, encoder)
         self.size = size
         self.padding = padding
         self.pad_if_needed = pad_if_needed
@@ -526,7 +520,7 @@ class RandomCrop(BaseAugment):
             output_size=(self.size, self.size),
         )
         for k, v in data["image"].items():
-            if k in self.foundation_model.input_bands:
+            if k in self.encoder.input_bands:
                 data["image"][k] = T.functional.crop(v, i, j, h, w)
         data["target"] = T.functional.crop(data["target"], i, j, h, w)
 
@@ -536,24 +530,24 @@ class RandomCrop(BaseAugment):
 class RandomCropToEncoder(RandomCrop):
     def __init__(
         self,
-        dataset: Dataset,
-        foundation_model: Module,
+        dataset: GeoFMDataset,
+        encoder: Encoder,
         padding: str | None = None,
         pad_if_needed: bool = False,
         fill: int = 0,
         padding_mode: str = "constant",
     ) -> None:
-        size = foundation_model.input_size
+        size = encoder.input_size
         super().__init__(
-            dataset, foundation_model, size, padding, pad_if_needed, fill, padding_mode
+            dataset, encoder, size, padding, pad_if_needed, fill, padding_mode
         )
 
 
 class ImportanceRandomCrop(BaseAugment):
     def __init__(
         self,
-        dataset: Dataset,
-        foundation_model: Module,
+        dataset: GeoFMDataset,
+        encoder: Encoder,
         size: int,
         padding: str | None = None,
         pad_if_needed: bool = False,
@@ -561,7 +555,7 @@ class ImportanceRandomCrop(BaseAugment):
         padding_mode: str = "constant",
         n_crops: int = 10,
     ) -> None:
-        super().__init__(dataset, foundation_model)
+        super().__init__(dataset, encoder)
         self.size = size
         self.padding = padding
         self.pad_if_needed = pad_if_needed
@@ -594,7 +588,7 @@ class ImportanceRandomCrop(BaseAugment):
         i, j, h, w = crop_candidates[crop_idx]
 
         for k, v in data["image"].items():
-            if k in self.foundation_model.input_bands:
+            if k in self.encoder.input_bands:
                 data["image"][k] = T.functional.crop(v, i, j, h, w)
         data["target"] = T.functional.crop(data["target"], i, j, h, w)
 
@@ -604,17 +598,22 @@ class ImportanceRandomCrop(BaseAugment):
 class ImportanceRandomCropToEncoder(ImportanceRandomCrop):
     def __init__(
         self,
-        dataset: Dataset,
-        foundation_model: Module,
+        dataset: GeoFMDataset,
+        encoder: Encoder,
         padding: str | None = None,
         pad_if_needed: bool = False,
         fill: int = 0,
         padding_mode: str = "constant",
         n_crops: int = 10,
     ) -> None:
-        size = foundation_model.input_size
+        size = encoder.input_size
         super().__init__(
-            dataset,
-            foundation_model,
-            size,
+            dataset=dataset,
+            encoder=encoder,
+            size=size,
+            padding=padding,
+            pad_if_needed=pad_if_needed,
+            fill=fill,
+            padding_mode=padding_mode,
+            n_crops=n_crops,
         )

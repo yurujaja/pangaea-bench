@@ -9,15 +9,15 @@ import torch
 from einops import rearrange
 from torch import einsum, nn
 
-from geofm_bench.foundation_models.base import FoundationModel
+from geofm_bench.encoders.base import Encoder
 
 
-class CROMA_OPTICAL_Encoder(FoundationModel):
+class CROMA_OPTICAL_Encoder(Encoder):
     def __init__(
         self,
         encoder_weights: str | Path,
         input_size: int,
-        input_bands: dict[str, dict[str, list[str]]],
+        input_bands: dict[str, list[str]],
         embed_dim: int,
         output_layers: int,
         size="base",
@@ -29,6 +29,7 @@ class CROMA_OPTICAL_Encoder(FoundationModel):
             input_bands=input_bands,
             input_size=input_size,
             embed_dim=embed_dim,
+            multi_temporal=False,
         )
 
         self.output_layers = output_layers

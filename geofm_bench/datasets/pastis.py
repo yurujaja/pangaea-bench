@@ -13,7 +13,6 @@ import pandas as pd
 import rasterio
 import torch
 from einops import rearrange
-from torch.utils.data import Dataset
 
 from geofm_bench.datasets.base import GeoFMDataset
 
@@ -97,10 +96,10 @@ class Pastis(GeoFMDataset):
             classes (list): classes of the dataset.
             num_classes (int): number of classes.
             ignore_index (int): index to ignore for metrics and loss.
-            img_size (int): size of the image. 
+            img_size (int): size of the image.
             bands (dict[str, list[str]]): bands of the dataset.
             distribution (list[int]): class distribution.
-            data_mean (dict[str, list[str]]): mean for each band for each modality. 
+            data_mean (dict[str, list[str]]): mean for each band for each modality.
             Dictionary with keys as the modality and values as the list of means.
             e.g. {"s2": [b1_mean, ..., bn_mean], "s1": [b1_mean, ..., bn_mean]}
             data_std (dict[str, list[str]]): str for each band for each modality.
@@ -183,7 +182,7 @@ class Pastis(GeoFMDataset):
 
         Returns:
             dict[str, torch.Tensor | dict[str, torch.Tensor]]: output dictionary follwing the format
-            {"image": 
+            {"image":
                 {"optical": torch.Tensor,
                  "sar": torch.Tensor},
             "target": torch.Tensor,

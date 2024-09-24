@@ -13,9 +13,10 @@ from omegaconf import DictConfig, OmegaConf
 from torch.utils.data import DataLoader, Dataset, Subset
 from torch.utils.data.distributed import DistributedSampler
 
+from geofm_bench.decoders.base import Decoder
+from geofm_bench.encoders.base import Encoder
 from geofm_bench.engine.evaluator import Evaluator
 from geofm_bench.engine.trainer import Trainer
-from geofm_bench.foundation_models.base import FoundationModel
 from geofm_bench.utils.collate_fn import get_collate_fn
 from geofm_bench.utils.logger import init_logger
 from geofm_bench.utils.utils import (
@@ -37,10 +38,10 @@ def get_exp_name(hydra_config: HydraConf) -> str:
     """
     choices = OmegaConf.to_container(hydra_config.runtime.choices)
     timestamp = time.strftime("%Y%m%d_%H%M%S", time.localtime())
-    fm = choices["foundation_model"]
-    adaptor = choices["adaptor"]
+    fm = choices["encoder"]
+    decoder = choices["decoder"]
     ds = choices["dataset"]
-    return f"{timestamp}-{fm}-{adaptor}-{ds}"
+    return f"{timestamp}-{fm}-{decoder}-{ds}"
 
 
 @hydra.main(version_base=None, config_path="../configs", config_name="train")
@@ -103,40 +104,39 @@ def main(cfg: DictConfig) -> None:
     test_dataset: Dataset = instantiate(cfg.dataset, split="test")
     logger.info("Built {} dataset.".format(cfg.dataset.dataset_name))
 
-    # prepare the foundation model
     # TODO: refactor download model
-    # download_model(cfg.foundation_model)
-    foundation_model: FoundationModel = instantiate(cfg.foundation_model)
-    foundation_model.load_encoder_weights(logger)
-    logger.info("Built {}.".format(foundation_model.model_name))
+    # download_model(cfg.encoder)
+    encoder: Encoder = instantiate(cfg.encoder)
+    encoder.load_encoder_weights(logger)
+    logger.info("Built {}.".format(encoder.model_name))
 
-    # prepare the adaptor (segmentation/regression)
-    adaptor: torch.nn.Module = instantiate(
-        cfg.adaptor,
-        foundation_model=foundation_model,
+    # prepare the decoder (segmentation/regression)
+    decoder: Decoder = instantiate(
+        cfg.decoder,
+        encoder=encoder,
     )
-    adaptor.to(device)
-    adaptor = torch.nn.parallel.DistributedDataParallel(
-        adaptor, device_ids=[local_rank], output_device=local_rank
+    decoder.to(device)
+    decoder = torch.nn.parallel.DistributedDataParallel(
+        decoder, device_ids=[local_rank], output_device=local_rank
     )
     logger.info(
         "Built {} for with {} encoder.".format(
-            adaptor.module.model_name, type(foundation_model).__name__
+            decoder.module.model_name, type(encoder).__name__
         )
     )
 
-    modalities = list(foundation_model.input_bands.keys())
+    modalities = list(encoder.input_bands.keys())
     collate_fn = get_collate_fn(modalities)
 
     # training
     if train_run:
         for preprocess in cfg.preprocessing.train:
             train_dataset: Dataset = instantiate(
-                preprocess, dataset=train_dataset, foundation_model=foundation_model
+                preprocess, dataset=train_dataset, encoder=encoder
             )
         for preprocess in cfg.preprocessing.test:
             val_dataset: Dataset = instantiate(
-                preprocess, dataset=val_dataset, foundation_model=foundation_model
+                preprocess, dataset=val_dataset, encoder=encoder
             )
         if 0 < cfg.limited_label < 1:
             n_train_samples = len(train_dataset)
@@ -178,7 +178,7 @@ def main(cfg: DictConfig) -> None:
         )
 
         criterion = instantiate(cfg.criterion)
-        optimizer = instantiate(cfg.optimizer, params=adaptor.parameters())
+        optimizer = instantiate(cfg.optimizer, params=decoder.parameters())
         lr_scheduler = instantiate(
             cfg.lr_scheduler,
             optimizer=optimizer,
@@ -190,7 +190,7 @@ def main(cfg: DictConfig) -> None:
         )
         trainer: Trainer = instantiate(
             cfg.task.trainer,
-            model=adaptor,
+            model=decoder,
             train_loader=train_loader,
             lr_scheduler=lr_scheduler,
             optimizer=optimizer,
@@ -209,7 +209,7 @@ def main(cfg: DictConfig) -> None:
     else:
         for preprocess in cfg.preprocessing.test:
             test_dataset: Dataset = instantiate(
-                preprocess, dataset=test_dataset, foundation_model=foundation_model
+                preprocess, dataset=test_dataset, encoder=encoder
             )
 
         test_loader = DataLoader(
@@ -226,7 +226,7 @@ def main(cfg: DictConfig) -> None:
             cfg.task.evaluator, val_loader=test_loader, exp_dir=exp_dir, device=device
         )
         best_model_ckpt_path = get_best_model_ckpt_path(exp_dir)
-        test_evaluator.evaluate(adaptor, best_model_ckpt_path)
+        test_evaluator.evaluate(decoder, best_model_ckpt_path)
 
     if cfg.use_wandb and rank == 0:
         wandb.finish()

@@ -14,11 +14,3 @@ ckpt_dir: /share/DEEPLEARNING/lebellig/scripts/geofm-bench/20240923_113641-croma
 # limited_label: 1
 # n_epochs: 80
 
-#
-# defaults:
-#   - task: ???
-#   - dataset: ???
-#   - foundation_model: ???
-#   - adaptor: ???
-#   - preprocessing: ???
-#   - _self_ 

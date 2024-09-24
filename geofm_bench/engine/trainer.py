@@ -34,7 +34,7 @@ class Trainer:
         """Initialize the Trainer.
 
         Args:
-            model (nn.Module): model to train (foundation model + adaptor).
+            model (nn.Module): model to train (encoder + decoder).
             train_loader (DataLoader): train data loader.
             criterion (nn.Module): criterion to compute the loss.
             optimizer (Optimizer): optimizer to update the model's parameters.
@@ -75,7 +75,11 @@ class Trainer:
         self.best_metric_key = None
         self.best_metric_comp = operator.gt
 
-        assert precision in ["fp32", "fp16", "bfp16"], f"Invalid precision {precision}, use 'fp32', 'fp16' or 'bfp16'."
+        assert precision in [
+            "fp32",
+            "fp16",
+            "bfp16",
+        ], f"Invalid precision {precision}, use 'fp32', 'fp16' or 'bfp16'."
         self.enable_mixed_precision = precision != "fp32"
         self.precision = torch.float16 if (precision == "fp16") else torch.bfloat16
         self.scaler = torch.GradScaler("cuda", enabled=self.enable_mixed_precision)
@@ -88,8 +92,7 @@ class Trainer:
             self.wandb = wandb
 
     def train(self) -> None:
-        """Train the model for n_epochs then evaluate the model and save the best model.
-        """
+        """Train the model for n_epochs then evaluate the model and save the best model."""
         # end_time = time.time()
         for epoch in range(self.start_epoch, self.n_epochs):
             # train the network for one epoch
@@ -189,7 +192,13 @@ class Trainer:
         }
         return checkpoint
 
-    def save_model(self, epoch: int, is_final: bool=False, is_best: bool =False, checkpoint: dict[str, dict | int] | None =None):
+    def save_model(
+        self,
+        epoch: int,
+        is_final: bool = False,
+        is_best: bool = False,
+        checkpoint: dict[str, dict | int] | None = None,
+    ):
         """Save the model checkpoint.
 
         Args:
@@ -244,7 +253,9 @@ class Trainer:
         """
         raise NotImplementedError
 
-    def set_best_checkpoint(self, eval_metrics: dict[float, list[float]], epoch: int) -> None:
+    def set_best_checkpoint(
+        self, eval_metrics: dict[float, list[float]], epoch: int
+    ) -> None:
         """Update the best checkpoint according to the evaluation metrics.
 
         Args:
@@ -256,11 +267,13 @@ class Trainer:
             self.best_ckpt = self.get_checkpoint(epoch)
 
     @torch.no_grad()
-    def compute_logging_metrics(self, logits: torch.Tensor, target: torch.Tensor) -> dict[float, list[float]]:
+    def compute_logging_metrics(
+        self, logits: torch.Tensor, target: torch.Tensor
+    ) -> dict[float, list[float]]:
         """Compute logging metrics.
 
         Args:
-            logits (torch.Tensor): logits output by the adaptor.
+            logits (torch.Tensor): logits output by the decoder.
             target (torch.Tensor): target tensor.
 
         Raises:
@@ -349,7 +362,7 @@ class SegTrainer(Trainer):
     ):
         """Initialize the Trainer for segmentation task.
         Args:
-            model (nn.Module): model to train (foundation model + adaptor).
+            model (nn.Module): model to train (encoder + decoder).
             train_loader (DataLoader): train data loader.
             criterion (nn.Module): criterion to compute the loss.
             optimizer (Optimizer): optimizer to update the model's parameters.
@@ -392,7 +405,7 @@ class SegTrainer(Trainer):
         """Compute the loss.
 
         Args:
-            logits (torch.Tensor): logits from the adaptor.
+            logits (torch.Tensor): logits from the decoder.
             target (torch.Tensor): target tensor.
 
         Returns:
@@ -407,7 +420,7 @@ class SegTrainer(Trainer):
         """Compute logging metrics.
 
         Args:
-            logits (torch.Tensor): loggits from the adaptor.
+            logits (torch.Tensor): loggits from the decoder.
             target (torch.Tensor): target tensor.
         """
         # logits = F.interpolate(logits, size=target.shape[1:], mode='bilinear')
@@ -473,7 +486,7 @@ class RegTrainer(Trainer):
     ):
         """Initialize the Trainer for regression task.
         Args:
-            model (nn.Module): model to train (foundation model + adaptor).
+            model (nn.Module): model to train (encoder + decoder).
             train_loader (DataLoader): train data loader.
             criterion (nn.Module): criterion to compute the loss.
             optimizer (Optimizer): optimizer to update the model's parameters.
@@ -516,7 +529,7 @@ class RegTrainer(Trainer):
         """Compute the loss.
 
         Args:
-            logits (torch.Tensor): logits from the adaptor.
+            logits (torch.Tensor): logits from the decoder.
             target (torch.Tensor): target tensor.
 
         Returns:
@@ -525,11 +538,13 @@ class RegTrainer(Trainer):
         return self.criterion(logits.squeeze(dim=1), target)
 
     @torch.no_grad()
-    def compute_logging_metrics(self, logits: torch.Tensor, target: torch.Tensor) -> None:
+    def compute_logging_metrics(
+        self, logits: torch.Tensor, target: torch.Tensor
+    ) -> None:
         """Compute logging metrics.
 
         Args:
-            logits (torch.Tensor): logits from the adaptor.
+            logits (torch.Tensor): logits from the decoder.
             target (torch.Tensor): target tensor.
         """
         # logits = F.interpolate(logits, size=target.shape[1:], mode='bilinear')
