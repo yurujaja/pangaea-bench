@@ -99,7 +99,7 @@ class GeoFMDataset(Dataset):
                 "optical": torch.Tensor of shape (C H W) (or (C T H W) if multi-temporal dataset),
                  "sar": torch.Tensor of shape (C H W) (or (C T H W) if multi-temporal dataset)
                  },
-            "target": torch.Tensor of shape (C H W),
+            "target": torch.Tensor of shape (H W),
              "metadata": dict}.
         """
         raise NotImplementedError
