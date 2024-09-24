@@ -1,0 +1,53 @@
+_target_: geofm_bench.datasets.utae_dynamicen.DynamicEarthNet
+dataset_name: DynamicEarthNet
+root_path: ./data/DynamicEarthNet
+download_url: None
+auto_download: False
+
+img_size: 1024
+multi_temporal: 6
+multi_modal: False
+
+# classes
+ignore_index: -1
+num_classes: 6
+classes:
+  - impervious surface
+  - agriculture
+  - forest & other vegetation
+  - wetlands
+  - soil
+  - water
+distribution:
+  - 0.071
+  - 0.103
+  - 0.449
+  - 0.07
+  - 0.28
+  - 0.08
+
+# data stats
+bands:
+  optical:
+    - B2
+    - B3
+    - B4
+    - B5
+
+data_mean:
+  optical:
+    - 1042.59240722656
+    - 915.618408203125
+    - 671.260559082031
+    - 2605.20922851562
+data_std:
+  optical:
+    - 957.958435058593
+    - 715.548767089843
+    - 596.943908691406
+    - 1059.90319824218
+
+data_min:
+  optical: [0.0000, 0.0000, 0.0000, 0.0000]
+data_max:
+  optical: [0.0000, 0.0000, 0.0000, 0.0000]
