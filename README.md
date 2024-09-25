@@ -1,6 +1,6 @@
 [![Tests](https://github.com/yurujaja/geofm-bench/actions/workflows/python-test.yml/badge.svg)](https://github.com/yurujaja/geofm-bench/actions/workflows/python-test.yml)
 
-# TITLE 
+# PANGAEA: a diverse benchmark for geospatial foundation models
 
 ## 📚 Introduction
 
@@ -88,18 +88,22 @@ We provide several ways to install the dependencies.
 
 ## 🏋️ Training
 
-There are 5 basic component types in our config system:
-
-- `config`: Information of training settings such as batch size, epochs, use wandb. `limited_label` is to indicate the percentage of dataset used for training, for example, `-1` means the full training dataset is used while `0.5` means 50% used. #strategy used
-- `encoder_config`: GFM encoder related parameters. `output_layers` is used for which layers are used for Upernet decoder. 
-- `dataset_config`: Information of downstream datasets such as image size, band_statistics, etc. 
-- `segmentor_config`: Downstream task decoder fine-tuning related parameters, including the head type, loss, optimizer, scheduler, etc.
-- `augmentation_config`: Both preprocessing and augmentations steps required for the dataset, such as bands adaptation, normalization, resize/crop.
+To run experiments, please refer to `configs/train.yaml`. In it, in addition to some basic info about training (e.g. `finetune` for fine-tuning also the encoder, `limited_label` to train the model on a subset of labels, `num_workers`, `batch_size` and so on), there are 5 different basic configs:
+- `dataset`: Information of downstream datasets such as image size, band_statistics, classes etc.
+- `decoder`: Downstream task decoder fine-tuning related parameters, like the type of architecture (e.g. UPerNet), which multi-temporal strategy to use, and other related hparams (e.g. nr of channels)
+- `encoder`: GFM encoder related parameters. `output_layers` is used for which layers are used for Upernet decoder.  
+- `preprocessing`: Both preprocessing and augmentations steps required for the dataset, such as bands adaptation, normalization, resize/crop.
+- `task`: Information about the trainer and evaluator. Most of the parameters are overwritten in run. Trainer and evaluator can be used for segmentation (`SegTrainer`) or regression (`RegTrainer`)
+  
+Other 3 configs are used to set other training parameters:
+- `criterion`: in which you can choose the loss for the training. Consider that if you want to add a custom loss, you should add to `geofm_bench/utils/losses.py`. Currently, we support `cross_entropy`, `weigthed_cross_entropy` and `dice_loss`.
+- `lr_scheduler`: in which you can choose the scheduler. Consider that if you want to add a custom one, you should add to `geofm_bench/utils/schedulers.py`. 
+- `optimizer`: in which you can choose the optimizer. Consider that if you want to add a custom one, you should add to `geofm_bench/utils/optimizers.py`.
 
 We provide several examples of command lines to initilize different training tasks on single GPU.
 
 Please note:
- - Command line's parameters have the priority on the parameters in the config files. So, if you want to change e.g. the `batch size`, without changing the `config`, you can just add `--batch size n` to the command line
+ - The repo adopts `hydra`, so you can easily log your experiments and overwrite parameters from the command line. More examples are provided later.
  - To use more gpus or nodes, set `--nnodes` and `--nproc_per_node` correspondingly, see:
 https://pytorch.org/docs/stable/elastic/run.html
  - To use mixed precision training, specify either `--fp16` for float16 and or `--bf16` for bfloat16
@@ -107,63 +111,124 @@ https://pytorch.org/docs/stable/elastic/run.html
 ### 💻 Decoder Finetuning
 #### Single Temporal Semantic Segmentation
 
-Take MADOS dataset, Prithvi Encoder and Upernet Decoder as example:
+Take HLSBurnScars dataset, RemoteCLIP Encoder and Upernet Decoder as example:
 ```
-torchrun --nnodes=1 --nproc_per_node=1 run.py  \
---config configs/run/default.yaml  \
---encoder_config configs/foundation_models/prithvi.yaml  \
---dataset_config configs/datasets/mados.yaml   \
---segmentor_config configs/segmentors/upernet.yaml \
---augmentation_config configs/augmentations/segmentation_default.yaml  \
---num_workers 4 --eval_interval 1  --use_wandb
+torchrun --nnodes=1 --nproc_per_node=1 geofm_bench/run.py \
+   --config-name=train \
+   dataset=hlsburnscars \
+   encoder=remoteclip \
+   decoder=upernet\
+   preprocessing=default \
+   criterion=cross_entropy \
+   task=segmentation
+```
+
+If you want to overwrite some parameters (e.g. turn off wandbe, and changing batch size and the path to the dataset):
+```
+torchrun --nnodes=1 --nproc_per_node=1 geofm_bench/run.py \
+   --config-name=train \
+   dataset=hlsburnscars \
+   encoder=remoteclip \
+   decoder=upernet\
+   preprocessing=default \
+   criterion=cross_entropy \
+   task=segmentation \
+   dataset.root_path= /path/to/the/dataset/hlsburnscars \
+   batch_size=16 \
+   use_wandb=False
 ```
 
 #### Multi-Temporal Semantic Segmentation
 
-Multi-temporal model `configs/segmentors/upernet_mt.yaml` should be used. In addition, in the dataset config, indicate the number of time frames, e.g., `multi_temporal: 6`
+Multi-temporal model `configs/decoder/upernet_mt.yaml` should be used. e.g. Prithvi encoder on CropTypeMapping
+In addition, in the dataset config, indicate the number of time frames, e.g., `multi_temporal: 6`
+
 ```
-torchrun --nnodes=1 --nproc_per_node=1 run.py  \
---config configs/run/default.yaml  \
---encoder_config configs/foundation_models/prithvi.yaml  \
---dataset_config configs/datasets/croptypemapping.yaml   \
---segmentor_config configs/segmentors/upernet_mt.yaml \
---augmentation_config configs/augmentations/ctm.yaml  \
---num_workers 4 --eval_interval 1 --use_wandb
+torchrun --nnodes=1 --nproc_per_node=1 geofm_bench/run.py \
+   --config-name=train \
+   dataset=croptypemapping \
+   encoder=prithvi \
+   decoder=upernet_mt \
+   preprocessing=mt_resize \
+   criterion=cross_entropy \
+   task=segmentation\
 ```
+
+To overwrite parameter, please check the Single Temporal Semantic Segmentation example
 
 #### Change Detection
+
+One of the change detection decoder (e.g. `configs/decoder/siamdiffupernet.yaml`) should be used. 
+e.g. Prithvi encoder on xView2
+
 ```
-torchrun --nnodes=1 --nproc_per_node=1 run.py  \
---config configs/run/default.yaml  \
---encoder_config configs/foundation_models/prithvi.yaml  \
---dataset_config configs/datasets/xview2.yaml   \
---segmentor_config configs/segmentors/siamdiffupernet.yaml \
---augmentation_config configs/augmentations/segmentation_oversampling.yaml  \
---num_workers 4 --eval_interval 1 --use_wandb
+torchrun --nnodes=1 --nproc_per_node=1 geofm_bench/run.py \
+   --config-name=train \
+   dataset=xview2 \
+   encoder=prithvi \
+   decoder=siamdiffupernet \
+   preprocessing=default \
+   criterion=cross_entropy \
+   task=segmentation\
 ```
+
+To overwrite parameter, please check the Single Temporal Semantic Segmentation example
+
 #### Single Temporal Regression
+
+The regression decoder (e.g. `configs/decoder/reg_upernet.yaml`) and the regression task (e.g. `configs/task/regression.yaml`) configs should be used. 
+e.g. Prithvi encoder on BioMassters
+
 ```
-torchrun --nnodes=1 --nproc_per_node=1 run.py  \
---config configs/run/default.yaml  \
---encoder_config configs/foundation_models/prithvi.yaml  \
---dataset_config configs/datasets/biomassters.yaml   \
---segmentor_config configs/segmentors/reg_upernet.yaml \
---augmentation_config configs/augmentations/regression_default.yaml  \
---num_workers 4 --eval_interval 1 --use_wandb
+torchrun --nnodes=1 --nproc_per_node=1 geofm_bench/run.py \
+   --config-name=train \
+   dataset=biomassters \
+   encoder=prithvi \
+   decoder=reg_upernet \
+   preprocessing=default \
+   criterion=cross_entropy \
+   task=regression\
 ```
+
+To overwrite parameter, please check the Single Temporal Semantic Segmentation example
 
 #### Multi-Temporal Regression
+
+The multi-temporal regression decoder (e.g. `configs/decoder/reg_upernet.yaml`) and the regression task (e.g. `configs/task/regression.yaml`) configs should be used. 
+e.g. Prithvi encoder on BioMassters
+
 ```
-torchrun --nnodes=1 --nproc_per_node=1 run.py  \
---config configs/run/default.yaml  \
---encoder_config configs/foundation_models/prithvi.yaml  \
---dataset_config configs/datasets/biomassters.yaml   \
---segmentor_config configs/segmentors/reg_upernet_mt.yaml \
---augmentation_config configs/augmentations/regression_default.yaml  \
---num_workers 4 --eval_interval 1 --use_wandb
+torchrun --nnodes=1 --nproc_per_node=1 geofm_bench/run.py \
+   --config-name=train \
+   dataset=biomassters \
+   encoder=prithvi \
+   decoder=reg_upernet_mt \
+   preprocessing=default \
+   criterion=cross_entropy \
+   task=regression\
 ```
 
-### 💻 Fully Supervised Training
+To overwrite parameter, please check the Single Temporal Semantic Segmentation example
+
+### 💻 End-to-end Finetuning
+
+It is enough to add `finetune=True` to the command line.
+
+For example, for single-temporal semantic segmentation:
+```
+torchrun --nnodes=1 --nproc_per_node=1 geofm_bench/run.py \
+   --config-name=train \
+   dataset=hlsburnscars \
+   encoder=remoteclip \
+   decoder=upernet\
+   preprocessing=default \
+   criterion=cross_entropy \
+   task=segmentation \
+   finetune=True
+```
+
+### 💻 Fully Supervised Training 
+MISSING
 #### Single Temporal Semantic Segmentation
 ```
 torchrun ...
@@ -176,10 +241,109 @@ In general
 
 We have designed the repo to allow for using your own datasets with minimal effort. Follow the steps below to integrate your dataset:
 
-1. **Create a Dataset Configuration File**:
+1. **Implement a Dataset Class**:
+   - Refer to the 
+
+1. **Implement a Dataset Class**:
+
+   - In the `datasets/` directory, create a new Python file named after your dataset (e.g., `my_dataset.py`).
+   - Implement a class that inherits from `GeoFMDataset`. You can check it in `geofm_bench/datasets/base.py`.
+   - Be sure that your dataset is inited with all the required parameters from the `GeoFMDataset`. You can also newly added parameters.
+   - Implement the required methods: `__init__`, `__len__`, `__getitem__`, and `download` (if applicable, otherwise a `NotImplementedError is raised`).
+   - **Example**:
+
+     ```python
+     import torch
+
+     class MyDataset(GeoFMDataset):
+          def __init__(
+             self,
+             split: str,
+             dataset_name: str,
+             multi_modal: bool,
+             multi_temporal: int,
+             root_path: str,
+             classes: list,
+             num_classes: int,
+             ignore_index: int,
+             img_size: int,
+             bands: dict[str, list[str]],
+             distribution: list[int],
+             data_mean: dict[str, list[str]],
+             data_std: dict[str, list[str]],
+             data_min: dict[str, list[str]],
+             data_max: dict[str, list[str]],
+             download_url: str,
+             auto_download: bool,
+             temp: int, #newly added parameter
+         ):
+             super(MyDataset, self).__init__(
+                 split=split,
+                 dataset_name=dataset_name,
+                 multi_modal=multi_modal,
+                 multi_temporal=multi_temporal,
+                 root_path=root_path,
+                 classes=classes,
+                 num_classes=num_classes,
+                 ignore_index=ignore_index,
+                 img_size=img_size,
+                 bands=bands,
+                 distribution=distribution,
+                 data_mean=data_mean,
+                 data_std=data_std,
+                 data_min=data_min,
+                 data_max=data_max,
+                 download_url=download_url,
+                 auto_download=auto_download,
+             )
+             
+             self.root_path = root_path
+             self.multi_temporal = multi_temporal
+             self.split = split
+             self.data_mean = data_mean
+             self.data_std = data_std
+             self.data_min = data_min
+             self.data_max = data_max
+             self.classes = classes
+             self.img_size = img_size
+             self.distribution = distribution
+             self.num_classes = num_classes
+             self.ignore_index = ignore_index
+             self.download_url = download_url
+             self.auto_download = auto_download
+
+             self.temp = temp #newly added parameter
+             # Initialize file lists or data structures here
+
+         def __len__(self):
+             # Return the total number of samples
+             return len(self.file_list)
+
+         def __getitem__(self, index):
+             # Load your data and labels here
+             image = ...  # Load image
+             target = ...  # Load target label or mask
+
+             # Convert to tensors
+             image = torch.tensor(image, dtype=torch.float32)
+             target = torch.tensor(target, dtype=torch.long)
+
+             return {
+                 'image': {'optical': image},
+                 'target': target,
+                 'metadata': {}
+             }
+
+         @staticmethod
+         def download(dataset_config, silent=False):
+             # Implement if your dataset requires downloading
+             pass
+     ```
+2. **Create a Dataset Configuration File**:
 
    - Navigate to `configs/datasets/` and create a new YAML file named after your dataset (e.g., `my_dataset.yaml`).
-   - Define all necessary dataset parameters such as `dataset_name`, `root_path`, `img_size`, `bands`, `data_mean`, `data_std`, `num_classes`, and class labels.
+   - Define all necessary dataset parameters such as `dataset_name`, `root_path`, `img_size`, `bands`, `data_mean`, `data_std`, `num_classes`, and class labels. Check `GeoFMDataset` class, in `geofm_bench/datasets/base.py`
+     
    - **Example**:
 
      ```yaml
@@ -215,63 +379,26 @@ We have designed the repo to allow for using your own datasets with minimal effo
          - 0.229
          - 0.224
          - 0.225
+     
+     data_min:
+       optical:
+         - 0.
+         - 0.
+         - 0.
+
+     data_max:
+       optical:
+         - 1.
+         - 1.
+         - 1.
      ```
 
-2. **Implement a Dataset Class**:
-
-   - In the `datasets/` directory, create a new Python file named after your dataset (e.g., `my_dataset.py`).
-   - Implement a class that inherits from `torch.utils.data.Dataset`.
-   - Register your dataset with the `@DATASET_REGISTRY.register()` decorator.
-   - Implement the required methods: `__init__`, `__len__`, `__getitem__`, `get_splits`, and `download` (if applicable).
-   - **Example**:
-
-     ```python
-     import torch
-     from utils.registry import DATASET_REGISTRY
-
-     @DATASET_REGISTRY.register()
-     class MyDataset(torch.utils.data.Dataset):
-         def __init__(self, cfg, split):
-             self.root_path = cfg['root_path']
-             self.split = split
-             # Initialize file lists or data structures here
-
-         def __len__(self):
-             # Return the total number of samples
-             return len(self.file_list)
-
-         def __getitem__(self, index):
-             # Load your data and labels here
-             image = ...  # Load image
-             target = ...  # Load target label or mask
-
-             # Convert to tensors
-             image = torch.tensor(image, dtype=torch.float32)
-             target = torch.tensor(target, dtype=torch.long)
-
-             return {
-                 'image': {'optical': image},
-                 'target': target,
-                 'metadata': {}
-             }
-
-         @staticmethod
-         def get_splits(dataset_config):
-             train_dataset = MyDataset(cfg=dataset_config, split="train")
-             val_dataset = MyDataset(cfg=dataset_config, split="val")
-             test_dataset = MyDataset(cfg=dataset_config, split="test")
-             return train_dataset, val_dataset, test_dataset
-
-         @staticmethod
-         def download(dataset_config, silent=False):
-             # Implement if your dataset requires downloading
-             pass
-     ```
 
 3. **Adjust the Augmentation Pipeline**:
 
-   - If your dataset requires specific preprocessing or augmentation, create or modify an augmentation configuration file in `configs/augmentations/`.
+   - If your dataset requires specific preprocessing or augmentation, create or modify an augmentation configuration file in `configs/preprocessing/`.
    - Ensure that all preprocessing steps (e.g., normalization, resizing) match your dataset's requirements.
+   - If your specific preprocessing or augmentation are not implemented, please implement them in `geofm_bench/engine/data_preprocessor.py`
 
 4. **Run Training**:
 
@@ -279,13 +406,14 @@ We have designed the repo to allow for using your own datasets with minimal effo
    - **Example Command**:
 
      ```bash
-     torchrun --nnodes=1 --nproc_per_node=1 run.py \
-     --config configs/run/default.yaml \
-     --encoder_config configs/foundation_models/prithvi.yaml \
-     --dataset_config configs/datasets/my_dataset.yaml \
-     --segmentor_config configs/segmentors/upernet.yaml \
-     --augmentation_config configs/augmentations/segmentation_default.yaml \
-     --num_workers 4 --eval_interval 1 --use_wandb
+      torchrun --nnodes=1 --nproc_per_node=1 geofm_bench/run.py \
+      --config-name=train \
+      dataset=my_dataset \
+      encoder=remoteclip \
+      decoder=upernet\
+      preprocessing=default \
+      criterion=cross_entropy \
+      task=segmentation
      ```
 
 ### Using Your Own Model
@@ -378,12 +506,12 @@ To benchmark your own foundation model, follow these steps:
 
      ```bash
      torchrun --nnodes=1 --nproc_per_node=1 run.py \
-     --config configs/run/default.yaml \
-     --encoder_config configs/foundation_models/my_model.yaml \
-     --dataset_config configs/datasets/mados.yaml \
-     --segmentor_config configs/segmentors/upernet.yaml \
-     --augmentation_config configs/augmentations/segmentation_default.yaml \
-     --num_workers 4 --eval_interval 1 --use_wandb
+       --config configs/run/default.yaml \
+       --encoder_config configs/foundation_models/my_model.yaml \
+       --dataset_config configs/datasets/mados.yaml \
+       --segmentor_config configs/segmentors/upernet.yaml \
+       --augmentation_config configs/augmentations/segmentation_default.yaml \
+       --num_workers 4 --eval_interval 1 --use_wandb
      ```
 
 ## 🏃 Evaluation 
