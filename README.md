@@ -46,7 +46,7 @@ The repository supports the following **tasks** using geospatial (foundation) mo
  - [single temporal regression](#single-temporal-regression)
  - [multi-temporal regression](#multi-temporal-regression)
 
-It is also possible to train some [supervised baselines](#-fully-supervised-training), based on UNet.
+It is also possible to train some [supervised baselines](#-fully-supervised-baseline), based on UNet.
 
 ## 🗺️ Datasets details
 Please refer to [**Dataset Guide**](DATASET_GUIDE.md) to understand the processing requirements and commands specific to each dataset.
@@ -86,6 +86,9 @@ We provide several ways to install the dependencies.
     source ${GFMBENCH_PATH}/bin/activate
 
     pip install -r requirements.txt
+    
+    # install the code repo as a package
+    pip install -e .
     ```
 
 ## 🏋️ Training
