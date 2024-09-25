@@ -14,6 +14,31 @@ from geofm_bench.encoders.base import Encoder
 
 
 class SpectralGPT_Encoder(Encoder):
+    """
+    Paper: https://arxiv.org/abs/2311.07113
+    Attributes:
+        output_layers (int | list[int]): The layers from which to extract the output.
+        num_frames (int): Number of frames, set to 1.
+        patch_embed (PatchEmbed): Patch embedding layer.
+        patchemb_input_size (tuple): Input size after patch embedding.
+        cls_embed (bool): Whether to use class embedding.
+        sep_pos_embed (bool): Whether to use separate positional embeddings for spatial and temporal dimensions.
+        patch_size (int): Size of the patches.
+        cls_token (nn.Parameter): Class token parameter.
+        pos_embed_spatial (nn.Parameter): Spatial positional embedding parameter.
+        pos_embed_temporal (nn.Parameter): Temporal positional embedding parameter.
+        pos_embed_class (nn.Parameter): Class positional embedding parameter.
+        pos_embed (nn.Parameter): Positional embedding parameter.
+        blocks (nn.ModuleList): List of transformer blocks.
+    Methods:
+        __init__(self, encoder_weights: str | Path, input_size: int, input_bands: dict[str, list[str]], output_layers: int | list[int], in_chans: int = 3, t_patch_size: int = 3, patch_size: int = 16, output_dim: int = 768, embed_dim: int = 768, depth: int = 12, num_heads: int = 12, mlp_ratio: float = 4.0, no_qkv_bias: bool = False, drop_path_rate: float = 0.5, norm_layer=nn.LayerNorm, sep_pos_embed=True, cls_embed=False):
+            Initializes the SpectralGPT_Encoder with the given parameters.
+        load_encoder_weights(self, logger: Logger) -> None:
+            Loads the encoder weights from a pretrained model and handles any missing or incompatible shapes.
+        forward(self, image):
+            Forward pass of the encoder. Processes the input image and returns the output from the specified layers.
+    """
+
     def __init__(
         self, 
         encoder_weights: str | Path,

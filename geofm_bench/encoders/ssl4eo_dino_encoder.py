@@ -161,7 +161,35 @@ class PatchEmbed(nn.Module):
 
 
 class SSL4EO_DINO_Encoder(Encoder):
-    """ Vision Transformer """
+    """
+    Paper: https://arxiv.org/abs/2211.07044
+    SSL4EO_DINO_Encoder is a class that implements an encoder for DINO.
+    Attributes:
+        num_features (int): Number of features in the embedding dimension.
+        output_layers (int | list[int]): Layers from which to extract the output.
+        img_size (int): Size of the input image.
+        patch_size (int): Size of the patches to be extracted from the input image.
+        patch_embed (PatchEmbed): Module to embed patches.
+        cls_token (nn.Parameter): Class token parameter.
+        pos_embed (nn.Parameter): Positional embedding parameter.
+        pos_drop (nn.Dropout): Dropout layer for positional embeddings.
+        blocks (nn.ModuleList): List of transformer blocks.
+        norm (nn.LayerNorm): Normalization layer.
+    Methods:
+        __init__(self, encoder_weights: str | Path, input_size: int, input_bands: dict[str, list[str]], output_layers: int | list[int], in_chans: int = 3, patch_size: int = 16, embed_dim: int = 768, depth: int = 12, num_heads: int = 12, mlp_ratio: float = 4.0, qkv_bias=False, qk_scale=None, drop_rate=0., attn_drop_rate=0., drop_path_rate=0., norm_layer=partial(nn.LayerNorm, eps=1e-6), **kwargs):
+            Initializes the SSL4EO_DINO_Encoder with the given parameters.
+        _init_weights(self, m):
+            Initializes the weights of the model.
+        interpolate_pos_encoding(self, x, w, h):
+            Interpolates the positional encoding to match the input dimensions.
+        prepare_tokens(self, x):
+            Prepares the tokens by embedding patches and adding positional encodings.
+        forward(self, images):
+            Forward pass of the encoder. Processes the input images and returns the output from specified layers.
+        load_encoder_weights(self, logger: Logger) -> None:
+            Loads the encoder weights from a checkpoint and handles any mismatches in parameter shapes.
+    """
+    
     def __init__(
         self, 
         encoder_weights: str | Path,

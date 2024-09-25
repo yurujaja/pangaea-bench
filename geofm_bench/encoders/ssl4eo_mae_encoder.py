@@ -13,8 +13,32 @@ from geofm_bench.encoders.base import Encoder
 
 
 class SSL4EO_MAE_OPTICAL_Encoder(Encoder):
-    """ Masked Autoencoder with VisionTransformer backbone
     """
+    Paper: https://arxiv.org/abs/2211.07044
+    SSL4EO_MAE_OPTICAL_Encoder is a class for MAE trained on optical data.
+    Args:
+        encoder_weights (str | Path): Path to the encoder weights file.
+        input_size (int): Size of the input image.
+        input_bands (dict[str, list[str]]): Dictionary specifying the input bands.
+        output_layers (int | list[int]): Layers from which to extract the output.
+        embed_dim (int, optional): Dimension of the embedding. Default is 1024.
+        patch_size (int, optional): Size of the patches. Default is 16.
+        in_chans (int, optional): Number of input channels. Default is 3.
+        depth (int, optional): Depth of the transformer. Default is 12.
+        num_heads (int, optional): Number of attention heads. Default is 16.
+        mlp_ratio (float, optional): Ratio of MLP hidden dimension to embedding dimension. Default is 4.0.
+        norm_layer (callable, optional): Normalization layer. Default is partial(nn.LayerNorm, eps=1e-6).
+    Methods:
+        initialize_weights():
+            Initializes the weights of the model.
+        _init_weights(m):
+            Initializes the weights of a given module.
+        forward(image):
+            Forward pass of the encoder.
+        load_encoder_weights(logger: Logger):
+            Loads the encoder weights from a checkpoint and logs any missing or incompatible parameters.
+    """
+
     def __init__(
         self, 
         encoder_weights: str | Path,
@@ -125,8 +149,24 @@ class SSL4EO_MAE_OPTICAL_Encoder(Encoder):
 
 
 class SSL4EO_MAE_SAR_Encoder(SSL4EO_MAE_OPTICAL_Encoder):
-    """ Masked Autoencoder with VisionTransformer backbone
     """
+    Paper: https://arxiv.org/abs/2211.07044
+    SSL4EO_MAE_SAR_Encoder is a class for MAE trained SAR data.
+    Attributes:
+        model_name (str): Name of the model.
+        multi_temporal (bool): Indicates if the model handles multi-temporal data.
+        output_dim (int): Dimension of the output embeddings.
+    Methods:
+        __init__(encoder_weights: str | Path, input_size: int, input_bands: dict[str, list[str]], output_layers: int | list[int], embed_dim: int = 1024, patch_size: int = 16, in_chans: int = 3, depth: int = 12, num_heads: int = 16, mlp_ratio: float = 4.0, norm_layer=partial(nn.LayerNorm, eps=1e-6)):
+            Initializes the SSL4EO_MAE_SAR_Encoder with the given parameters.
+        forward(image):
+            Forward pass of the encoder.
+            Args:
+                image (dict): Dictionary containing SAR image data with key 'sar'.
+            Returns:
+                list: List of output feature maps from specified layers.
+    """
+
    
     def __init__(
         self, 

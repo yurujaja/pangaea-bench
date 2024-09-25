@@ -25,7 +25,6 @@ class UNet(Encoder):
             input_size: int,
             topology: Sequence[int]
         ):
-        print("UNET_INPUTBANDS", input_bands)
         super().__init__(
             model_name="unet_encoder",
             encoder_weights=None,  # no pre-trained weights, train from scratch
@@ -54,6 +53,13 @@ class UNet(Encoder):
 
 
 class UNet_Encoder(nn.Module):
+    """
+    UNet Encoder class that defines the architecture of the encoder part of the UNet.
+    
+    Args:
+        topology (Sequence[int]): A sequence of integers defining the number of channels 
+                                  at each layer of the encoder.
+    """
     def __init__(self, topology: Sequence[int]):
         super(UNet_Encoder, self).__init__()
 

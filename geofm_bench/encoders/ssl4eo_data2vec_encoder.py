@@ -238,6 +238,39 @@ class RelativePositionBias(nn.Module):
 
 
 class SSL4EO_Data2Vec_Encoder(Encoder):
+    """
+    Paper: https://arxiv.org/abs/2211.07044
+    SSL4EO_Data2Vec_Encoder is a class that implements an encoder for the Data2Vec model.
+    Attributes:
+        output_layers (int | list[int]): The layers from which to extract the output features.
+        num_features (int): The number of features in the embedding dimension.
+        embed_dim (int): The embedding dimension.
+        patch_embed (PatchEmbed): The patch embedding layer.
+        img_size (int): The size of the input image.
+        patch_size (int): The size of each patch.
+        cls_token (nn.Parameter): The class token parameter.
+        mask_token (nn.Parameter): The mask token parameter.
+        pos_embed (nn.Parameter): The positional embedding parameter.
+        pos_drop (nn.Dropout): The dropout layer for positional embeddings.
+        rel_pos_bias (RelativePositionBias): The relative position bias layer.
+        blocks (nn.ModuleList): The list of transformer blocks.
+        norm (nn.LayerNorm): The normalization layer.
+        init_std (float): The standard deviation for weight initialization.
+    Methods:
+        __init__(self, encoder_weights: str | Path, input_size: int, input_bands: dict[str, list[str]], output_layers: int | list[int], in_chans: int = 3, patch_size: int = 16, embed_dim: int = 768, depth: int = 12, num_heads: int = 12, mlp_ratio: float = 4.0, qkv_bias=True, qk_scale=None, drop_rate=0.0, attn_drop_rate=0.0, drop_path_rate=0.0, norm_layer=partial(nn.LayerNorm, eps=1e-6), init_values=None, attn_head_dim=None, use_abs_pos_emb=True, use_rel_pos_bias=False, use_shared_rel_pos_bias=False, init_std=0.02):
+            Initializes the SSL4EO_Data2Vec_Encoder class.
+        fix_init_weight(self):
+            Fixes the initialization weights by rescaling them.
+        _init_weights(self, m):
+            Initializes the weights of the model.
+        no_weight_decay(self):
+            Specifies the parameters that should not have weight decay.
+        forward(self, images):
+            Defines the forward pass of the encoder.
+        load_encoder_weights(self, logger: Logger) -> None:
+            Loads the encoder weights from a checkpoint.
+    """
+
     def __init__(
         self,
         encoder_weights: str | Path,

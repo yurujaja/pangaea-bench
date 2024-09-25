@@ -285,6 +285,32 @@ class Transformer(nn.Module):
 
 
 class RemoteCLIP_Encoder(Encoder):
+
+    """
+    Paper: https://arxiv.org/pdf/2306.11029
+    Attributes:
+        output_layers (int | list[int]): The layers from which to extract the output.
+        image_size (tuple[int, int]): The size of the input image.
+        patch_size (tuple[int, int]): The size of the patches extracted from the input image.
+        grid_size (tuple[int, int]): The size of the grid formed by the patches.
+        width (int): The width of the convolutional layer.
+        conv1 (nn.Conv2d): The first convolutional layer.
+        class_embedding (nn.Parameter): The class embedding parameter.
+        positional_embedding (nn.Parameter): The positional embedding parameter.
+        patch_dropout (nn.Module): The patch dropout layer.
+        ln_pre (nn.Module): The layer normalization layer.
+        transformer (Transformer): The transformer module.
+    Methods:
+        __init__(self, encoder_weights: str | Path, input_bands: dict[str, list[str]], input_size: int, embed_dim: int, patch_size: int, width: int, head_width: int, layers: int, mlp_ratio: float, output_layers: int | list[int], ls_init_value: float = None, patch_dropout: float = 0., no_ln_pre: bool = False, pos_embed_type: str = 'learnable', act_layer: Callable = nn.GELU, norm_layer: Callable = LayerNorm):
+            Initializes the RemoteCLIP_Encoder with the given parameters.
+        freeze(self):
+            Freezes the parameters of the encoder to prevent them from being updated during training.
+        load_encoder_weights(self, logger: Logger) -> None:
+            Loads the encoder weights from a pre-trained model and logs any missing or incompatible parameters.
+        forward(self, image):
+            Performs a forward pass through the encoder with the given input image.
+    """
+
     def __init__(
             self,
             encoder_weights: str | Path,

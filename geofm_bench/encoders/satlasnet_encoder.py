@@ -373,6 +373,30 @@ class AggregationBackbone(torch.nn.Module):
 
 
 class SatlasNet_Encoder(Encoder):
+    """
+    Paper: https://arxiv.org/pdf/2211.15660
+    Attributes:
+        model_identifier (str): Identifier for the model, used to fetch pretrained weights.
+        weights_url (str): URL to download the pretrained weights.
+        in_chans (int): Number of input channels for the model.
+        multi_image (bool): Indicates if the model is for multi-image input.
+        backbone_arch (str): Architecture of the backbone model.
+        out_dim (int): Output dimension of the encoder.
+        backbone (nn.Module): Backbone model initialized based on the architecture.
+        embed_dim (int): Embedding dimension of the backbone model.
+        fpn (FPN, optional): Feature Pyramid Network, if enabled.
+        upsample (Upsample, optional): Upsample module for the FPN, if enabled.
+    Methods:
+        __init__(self, input_bands: dict[str, list[str]], input_size: int, output_dim: int, model_identifier: str, fpn=False):
+            Initializes the SatlasNet_Encoder with the given parameters.
+        _initialize_backbone(self, num_channels, backbone_arch, multi_image):
+            Initializes the backbone model based on the specified architecture.
+        load_encoder_weights(self, logger: Logger) -> None:
+            Downloads and loads pretrained weights for the encoder and optionally for the FPN.
+        forward(self, imgs):
+            Defines the forward pass of the encoder model.
+    """
+
     def __init__(
         self,
         input_bands: dict[str, list[str]],

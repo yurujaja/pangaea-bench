@@ -25,6 +25,28 @@ class PatchEmbedUnSafe(PatchEmbed):
 
 
 class ScaleMAE_Encoder(Encoder):
+    """
+    Paper: https://arxiv.org/pdf/2212.14532
+    Attributes:
+        output_layers (int | list[int]): The layers from which to output features.
+        img_size (int): The size of the input image.
+        patch_size (int): The size of the patches to divide the image into.
+        input_res (torch.Tensor): The input resolution.
+        patch_embed (PatchEmbedUnSafe): The patch embedding layer.
+        cls_token (nn.Parameter): The class token parameter.
+        blocks (nn.ModuleList): The list of transformer blocks.
+    Methods:
+        __init__(encoder_weights: str | Path, input_size: int, input_bands: dict[str, list[str]], output_layers: int | list[int], embed_dim: int = 1024, patch_size: int = 16, in_chans: int = 3, depth: int = 24, num_heads: int = 16, mlp_ratio: float = 4., qkv_bias: bool = True, input_res: float = 1.0, norm_layer=partial(nn.LayerNorm, eps=1e-6)):
+            Initializes the ScaleMAE_Encoder with the given parameters.
+        initialize_weights():
+            Initializes the weights of the model.
+        _init_weights(m):
+            Initializes the weights of the given module.
+        load_encoder_weights(logger: Logger) -> None:
+            Loads the encoder weights from a pretrained model.
+        forward(image):
+            Forward pass of the encoder.
+    """
 
     def __init__(
         self,

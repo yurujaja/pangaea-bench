@@ -14,8 +14,33 @@ from geofm_bench.encoders.base import Encoder
 
 
 class Prithvi_Encoder(Encoder):
-    """ Masked Autoencoder with VisionTransformer backbone
     """
+    Paper: https://arxiv.org/pdf/2310.18660
+    Attributes:
+        output_layers (int | list[int]): The layers from which to extract the output.
+        img_size (int): The size of the input image.
+        num_frames (int): The number of frames in the input data.
+        patch_size (int): The size of each patch.
+        in_chans (int): The number of input channels.
+        patch_embed (PatchEmbed): The patch embedding layer.
+        cls_token (nn.Parameter): The class token parameter.
+        pos_embed (nn.Parameter): The positional embedding parameter.
+        blocks (nn.ModuleList): The list of Transformer blocks.
+    Methods:
+        __init__(self, encoder_weights: str | Path, input_bands: dict[str, list[str]], input_size: int, output_layers: int | list[int], patch_size=16, tubelet_size=1, in_chans=3, embed_dim=1024, depth=24, num_heads=16, mlp_ratio=4., norm_layer=nn.LayerNorm, num_frames=1):
+            Initializes the Prithvi_Encoder with the given parameters.
+        load_encoder_weights(self, logger: Logger) -> None:
+            Loads the encoder weights from a pretrained model and handles any missing or incompatible shapes.
+        freeze(self):
+            Freezes the parameters of the encoder to prevent them from being updated during training.
+        initialize_weights(self):
+            Initializes the weights of the encoder, including the positional embeddings and patch embeddings.
+        _init_weights(self, m):
+            Initializes the weights of the given module using Xavier uniform initialization for Linear layers and constant initialization for LayerNorm layers.
+        forward(self, image):
+            Performs the forward pass of the encoder, embedding the input patches, adding positional embeddings, and applying the Transformer blocks.
+    """
+
     def __init__(
         self, 
         encoder_weights: str | Path,

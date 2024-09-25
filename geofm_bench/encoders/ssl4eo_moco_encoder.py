@@ -10,8 +10,31 @@ from timm.models.vision_transformer import PatchEmbed, Block
 from geofm_bench.encoders.base import Encoder
 
 class SSL4EO_MOCO_Encoder(Encoder):
-    """ Masked Autoencoder with VisionTransformer backbone
+    
     """
+    Paper: https://arxiv.org/abs/2211.07044
+    SSL4EO_MOCO_Encoder is a class for MoCo trained on optical data.
+    Attributes:
+        output_layers (int | list[int]): Layers from which to extract the output.
+        img_size (int): Size of the input image.
+        patch_size (int): Size of the patches to be extracted from the input image.
+        patch_embed (PatchEmbed): Patch embedding layer.
+        cls_token (nn.Parameter): Class token parameter.
+        blocks (nn.ModuleList): List of transformer blocks.
+        pos_drop (nn.Dropout): Dropout layer for positional embeddings.
+        pos_embed (nn.Parameter): Positional embedding parameter.
+    Methods:
+        __init__(encoder_weights: str | Path, input_size: int, input_bands: dict[str, list[str]], output_layers: int | list[int], embed_dim: int = 1024, patch_size: int = 16, in_chans: int = 3, depth: int = 12, num_heads: int = 16, mlp_ratio: float = 4.0, norm_layer=partial(nn.LayerNorm, eps=1e-6), drop_rate=0.0, qkv_bias=True, **kwargs):
+            Initializes the SSL4EO_MOCO_Encoder with the given parameters.
+        build_2d_sincos_position_embedding(temperature: float = 10000.):
+            Builds a 2D sin-cos positional embedding.
+        load_encoder_weights(logger: Logger) -> None:
+            Loads the encoder weights from a checkpoint and handles any missing or incompatible shapes.
+        forward(image):
+            Forward pass of the encoder. Takes an image as input and returns the output from the specified layers.
+     Masked Autoencoder with VisionTransformer backbone
+    """
+
     def __init__(
         self, 
         encoder_weights: str | Path,

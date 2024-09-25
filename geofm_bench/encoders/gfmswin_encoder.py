@@ -457,9 +457,11 @@ class PatchEmbed(nn.Module):
 
 
 class GFMSwin_Encoder(Encoder):
-    """ Swin Transformer
-        A PyTorch impl of : `Swin Transformer: Hierarchical Vision Transformer using Shifted Windows`  -
-          https://arxiv.org/pdf/2103.14030
+    """ 
+    Paper: https://arxiv.org/pdf/2302.04476
+
+    Based on an implementation of Swin Transformer
+        (https://arxiv.org/pdf/2103.14030)
 
     Args:
         img_size (int | tuple(int)): Input image size. Default 224

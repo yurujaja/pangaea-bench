@@ -13,6 +13,30 @@ from geofm_bench.encoders.base import Encoder
 
 
 class CROMA_OPTICAL_Encoder(Encoder):
+    """
+    Paper: https://arxiv.org/pdf/2311.00566
+    CROMA_OPTICAL_Encoder is a class for extracting features from optical images using CROMA.
+    Attributes:
+        output_layers (int | list[int]): The layers of the encoder to output.
+        img_size (int): The size of the input image.
+        embed_dim (int): The embedding dimension of the encoder.
+        encoder_depth (int): The depth of the encoder.
+        num_heads (int): The number of attention heads in the encoder.
+        patch_size (int): The size of the patches to divide the image into.
+        output_dim (int): The output dimension of the encoder.
+        num_patches (int): The number of patches the image is divided into.
+        s2_channels (int): The number of multispectral optical channels.
+        attn_bias (Tensor): The attention bias for the encoder.
+        s2_encoder (ViT): The Vision Transformer model for encoding the optical images.
+    Methods:
+        __init__(encoder_weights: str | Path, input_size: int, input_bands: dict[str, list[str]], output_layers: int | list[int], size="base"):
+            Initializes the CROMA_OPTICAL_Encoder with the given parameters.
+        forward(image):
+            Performs a forward pass of the encoder on the given image.
+        load_encoder_weights(logger: Logger) -> None:
+            Loads the pretrained weights into the encoder and logs any missing or incompatible parameters.
+    """
+
     def __init__(
         self,
         encoder_weights: str | Path,
@@ -99,6 +123,30 @@ class CROMA_OPTICAL_Encoder(Encoder):
 
 
 class CROMA_SAR_Encoder(Encoder):
+    """
+    Paper: https://arxiv.org/pdf/2311.00566
+    CROMA_SAR_Encoder is a class for extracting features from SAR images using CROMA.
+    Attributes:
+        output_layers (int | list[int]): The layers of the encoder to output.
+        img_size (int): The size of the input image.
+        embed_dim (int): The embedding dimension of the encoder.
+        encoder_depth (int): The depth of the encoder.
+        num_heads (int): The number of attention heads in the encoder.
+        patch_size (int): The size of the patches to divide the image into.
+        output_dim (int): The output dimension of the encoder.
+        num_patches (int): The number of patches the image is divided into.
+        s1_channels (int): The number of SAR backscatter channels (fixed at 2).
+        attn_bias (Tensor): The attention bias for the encoder.
+        s1_encoder (ViT): The Vision Transformer encoder for SAR images.
+    Methods:
+        __init__(encoder_weights: str | Path, input_size: int, input_bands: dict[str, list[str]], output_layers: int | list[int], size="base"):
+            Initializes the CROMA_SAR_Encoder with the given parameters.
+        forward(image: dict) -> list[Tensor]:
+            Forward pass of the encoder. Processes the input SAR image and returns the encoded output.
+        load_encoder_weights(logger: Logger) -> None:
+            Loads the pretrained weights into the encoder and logs any missing or incompatible parameters.
+    """
+
     def __init__(
         self,
         encoder_weights: str | Path,
@@ -189,6 +237,33 @@ class CROMA_SAR_Encoder(Encoder):
 
 
 class CROMA_JOINT_Encoder(Encoder):
+    """
+    Paper: https://arxiv.org/pdf/2311.00566
+    CROMA_JOINT_Encoder is a class for extracting features from optical and SAR images using CROMA.
+    Attributes:
+        output_layers (int | list[int]): The layers from which to extract the output.
+        img_size (int): The size of the input image.
+        embed_dim (int): The embedding dimension of the encoder.
+        encoder_depth (int): The depth of the encoder.
+        num_heads (int): The number of attention heads.
+        patch_size (int): The size of the patches.
+        output_dim (int): The output dimension of the encoder.
+        num_patches (int): The number of patches in the image.
+        s1_channels (int): The number of channels in the SAR image (fixed at 2).
+        s2_channels (int): The number of channels in the optical image (fixed at 12).
+        attn_bias (Tensor): The attention bias for the 2D attention mechanism.
+        s1_encoder (ViT): The Vision Transformer encoder for SAR images.
+        s2_encoder (ViT): The Vision Transformer encoder for optical images.
+        cross_encoder (BaseTransformerCrossAttn): The cross-attention encoder.
+    Methods:
+        __init__(encoder_weights: str | Path, input_size: int, input_bands: dict[str, list[str]], output_layers: int | list[int], size="base"):
+            Initializes the CROMA_JOINT_Encoder with the given parameters.
+        forward(image: dict[str, Tensor]) -> list[Tensor]:
+            Forward pass of the encoder. Takes a dictionary with SAR and optical images and returns the encoded output.
+        load_encoder_weights(logger: Logger) -> None:
+            Loads the pretrained weights for the encoder and logs any missing or incompatible parameters.
+    """
+
     def __init__(
         self,
         encoder_weights: str | Path,
