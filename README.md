@@ -154,7 +154,7 @@ torchrun --nnodes=1 --nproc_per_node=1 geofm_bench/run.py \
    decoder=upernet_mt_ltae \
    preprocessing=mt_resize \
    criterion=cross_entropy \
-   task=segmentation\
+   task=segmentation
 ```
 
 To overwrite parameters, please check the Single Temporal Semantic Segmentation example
@@ -172,7 +172,7 @@ torchrun --nnodes=1 --nproc_per_node=1 geofm_bench/run.py \
    decoder=siamdiffupernet \
    preprocessing=default \
    criterion=cross_entropy \
-   task=segmentation\
+   task=segmentation
 ```
 
 To overwrite parameters, please check the Single Temporal Semantic Segmentation example
@@ -190,7 +190,7 @@ torchrun --nnodes=1 --nproc_per_node=1 geofm_bench/run.py \
    decoder=reg_upernet \
    preprocessing=default \
    criterion=cross_entropy \
-   task=regression\
+   task=regression
 ```
 
 To overwrite parameters, please check the Single Temporal Semantic Segmentation example
@@ -208,7 +208,7 @@ torchrun --nnodes=1 --nproc_per_node=1 geofm_bench/run.py \
    decoder=reg_upernet_mt \
    preprocessing=default \
    criterion=cross_entropy \
-   task=regression\
+   task=regression
 ```
 
 To overwrite parameters, please check the Single Temporal Semantic Segmentation example
@@ -287,9 +287,7 @@ A pre-print is coming soon... Stay tuned!
 | Prithvi | Sen1Floods11  | 80     | 87.217 |
 | Prithvi | AI4SmallFarms | 80     | 33.796 |
 
-Please note: #add different conditions 
-
-## 📝 Citing
+## 📝 Citation
 
 If you use this software in your work, please cite:
 
