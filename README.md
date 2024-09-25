@@ -31,7 +31,7 @@ And the following **datasets**:
 |        [MADOS](https://www.sciencedirect.com/science/article/pii/S0924271624000625)        |  [link](https://marine-pollution.github.io/index.html)        |  Marine      |  Semantic Segmentation    |    S2   | Global   |
 |        [PASTIS-HD](https://arxiv.org/abs/2404.08351)       |    [link](https://huggingface.co/datasets/IGNF/PASTIS-HD)       |   Agriculture     |  Semantic Segmentation    |    S1, S2, SPOT-6  | France   |
 |     [Sen1Floods11](http://openaccess.thecvf.com/content_CVPRW_2020/html/w11/Bonafilia_Sen1Floods11_A_Georeferenced_Dataset_to_Train_and_Test_Deep_Learning_CVPRW_2020_paper.html)    | [link](https://github.com/cloudtostreet/Sen1Floods11) |  Flood |Semantic Segmentation  | S1, S2 | Global |
-|        [xView2](https://openaccess.thecvf.com/content_CVPRW_2019/html/cv4gc/Gupta_Creating_xBD_A_Dataset_for_Assessing_Building_Damage_from_Satellite_CVPRW_2019_paper.html)       | [link](https://xview2.org/dataset) | HADR | Semantic Segmentation | Maxar | Global   |
+|        [xView2](https://openaccess.thecvf.com/content_CVPRW_2019/html/cv4gc/Gupta_Creating_xBD_A_Dataset_for_Assessing_Building_Damage_from_Satellite_CVPRW_2019_paper.html)       | [link](https://xview2.org/dataset) | HADR | Change Detection | Maxar | Global   |
 | [Five Billion Pixels](https://www.sciencedirect.com/science/article/pii/S0924271622003264) |  [original version](https://x-ytong.github.io/project/Five-Billion-Pixels.html) <br> (custom version coming soon)        |  (Urban) Land Cover     |  Semantic Segmentation    |    Gaofen-2     | China    |
 |   [DynamicEarthNet](https://arxiv.org/pdf/2203.12560)   |   [link](https://mediatum.ub.tum.de/1650201)        |    (Urban) Land Cover    |   Semantic Segmentation   |   PlanetFusion      | Global   |
 |   [CropTypeMapping](https://openaccess.thecvf.com/content_CVPRW_2019/papers/cv4gc/Rustowicz_Semantic_Segmentation_of_Crop_Type_in_Africa_A_Novel_Dataset_CVPRW_2019_paper.pdf) |   [link](https://sustainlab-group.github.io/sustainbench/docs/datasets/sdg2/crop_type_mapping_ghana-ss.html#download) | Agriculture |Semantic Segmentation |S1, S2, Planet|South Sudan|
@@ -93,20 +93,21 @@ To run experiments, please refer to `configs/train.yaml`. In it, in addition to 
 - `decoder`: Downstream task decoder fine-tuning related parameters, like the type of architecture (e.g. UPerNet), which multi-temporal strategy to use, and other related hparams (e.g. nr of channels)
 - `encoder`: GFM encoder related parameters. `output_layers` is used for which layers are used for Upernet decoder.  
 - `preprocessing`: Both preprocessing and augmentations steps required for the dataset, such as bands adaptation, normalization, resize/crop.
-- `task`: Information about the trainer and evaluator. Most of the parameters are overwritten in run. Trainer and evaluator can be used for segmentation (`SegTrainer`) or regression (`RegTrainer`)
-  
+- `task`: Information about the trainer and evaluator. Most of the parameters are overwritten in run. Trainer and evaluator can be used for segmentation (`SegTrainer`) or regression (`RegTrainer`). Different parameter like precision training (`precision`) can be set in it.
+
+
 Other 3 configs are used to set other training parameters:
 - `criterion`: in which you can choose the loss for the training. Consider that if you want to add a custom loss, you should add to `geofm_bench/utils/losses.py`. Currently, we support `cross_entropy`, `weigthed_cross_entropy` and `dice_loss`.
 - `lr_scheduler`: in which you can choose the scheduler. Consider that if you want to add a custom one, you should add to `geofm_bench/utils/schedulers.py`. 
 - `optimizer`: in which you can choose the optimizer. Consider that if you want to add a custom one, you should add to `geofm_bench/utils/optimizers.py`.
 
-We provide several examples of command lines to initilize different training tasks on single GPU.
+
+We provide several examples of command lines to initialize different training tasks on single GPU.
 
 Please note:
- - The repo adopts `hydra`, so you can easily log your experiments and overwrite parameters from the command line. More examples are provided later.
+ - The repo adopts [hydra](https://github.com/facebookresearch/hydra), so you can easily log your experiments and overwrite parameters from the command line. More examples are provided later.
  - To use more gpus or nodes, set `--nnodes` and `--nproc_per_node` correspondingly, see:
 https://pytorch.org/docs/stable/elastic/run.html
- - To use mixed precision training, specify either `--fp16` for float16 and or `--bf16` for bfloat16
 
 ### 💻 Decoder Finetuning
 #### Single Temporal Semantic Segmentation
@@ -140,7 +141,7 @@ torchrun --nnodes=1 --nproc_per_node=1 geofm_bench/run.py \
 
 #### Multi-Temporal Semantic Segmentation
 
-Multi-temporal model `configs/decoder/upernet_mt.yaml` should be used. e.g. Prithvi encoder on CropTypeMapping
+Multi-temporal decoder config (e.g. `configs/decoder/upernet_mt_ltae.yaml` if you want to use `ltae` as a strategy to combine multi-temporal info) should be used. e.g. Prithvi encoder on CropTypeMapping
 In addition, in the dataset config, indicate the number of time frames, e.g., `multi_temporal: 6`
 
 ```
@@ -148,7 +149,7 @@ torchrun --nnodes=1 --nproc_per_node=1 geofm_bench/run.py \
    --config-name=train \
    dataset=croptypemapping \
    encoder=prithvi \
-   decoder=upernet_mt \
+   decoder=upernet_mt_ltae \
    preprocessing=mt_resize \
    criterion=cross_entropy \
    task=segmentation\
@@ -194,7 +195,7 @@ To overwrite parameter, please check the Single Temporal Semantic Segmentation e
 
 #### Multi-Temporal Regression
 
-The multi-temporal regression decoder (e.g. `configs/decoder/reg_upernet.yaml`) and the regression task (e.g. `configs/task/regression.yaml`) configs should be used. 
+The multi-temporal regression decoder (e.g. `configs/decoder/reg_upernet_mt.yaml`) and the regression task (e.g. `configs/task/regression.yaml`) configs should be used. 
 e.g. Prithvi encoder on BioMassters
 
 ```
@@ -227,22 +228,28 @@ torchrun --nnodes=1 --nproc_per_node=1 geofm_bench/run.py \
    finetune=True
 ```
 
-### 💻 Fully Supervised Training 
-MISSING
-#### Single Temporal Semantic Segmentation
+### 💻 Fully Supervised Baseline 
+
+The repo supports also training fully supervised baselines (e.g. UNet). If you want to run them, follow the same rules of other command lines. 
+An example for single temporal semantic segmentation is provided (Sen1Floods11 dataset):
 ```
-torchrun ...
+torchrun --nnodes=1 --nproc_per_node=1 geofm_bench/run.py \
+   --config-name=train \
+   dataset=sen1floods11 \
+   encoder=unet_encoder \
+   decoder=unet \
+   preprocessing=default \
+   criterion=cross_entropy \
+   task=segmentation \
+   finetune=True
 ```
-In general
+For the moment, there is no multi-temporal baseline supported.
 
 ## 🔧 Customization
 
 ### Using Your Own Dataset
 
 We have designed the repo to allow for using your own datasets with minimal effort. Follow the steps below to integrate your dataset:
-
-1. **Implement a Dataset Class**:
-   - Refer to the 
 
 1. **Implement a Dataset Class**:
 
