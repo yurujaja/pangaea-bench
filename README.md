@@ -35,14 +35,11 @@ And the following **datasets**:
 | [Five Billion Pixels](https://www.sciencedirect.com/science/article/pii/S0924271622003264) |  [original version](https://x-ytong.github.io/project/Five-Billion-Pixels.html) <br> (custom version coming soon)        |  (Urban) Land Cover     |  Semantic Segmentation    |    Gaofen-2     | China    |
 |   [DynamicEarthNet](https://arxiv.org/pdf/2203.12560)   |   [link](https://mediatum.ub.tum.de/1650201)        |    (Urban) Land Cover    |   Semantic Segmentation   |   PlanetFusion      | Global   |
 |   [CropTypeMapping](https://openaccess.thecvf.com/content_CVPRW_2019/papers/cv4gc/Rustowicz_Semantic_Segmentation_of_Crop_Type_in_Africa_A_Novel_Dataset_CVPRW_2019_paper.pdf) |   [link](https://sustainlab-group.github.io/sustainbench/docs/datasets/sdg2/crop_type_mapping_ghana-ss.html#download) | Agriculture |Semantic Segmentation |S1, S2, Planet|South Sudan|
-|      [SpaceNet 7](https://openaccess.thecvf.com/content/CVPR2021/papers/Van_Etten_The_Multi-Temporal_Urban_Development_SpaceNet_Dataset_CVPR_2021_paper.pdf)      |    [link](https://spacenet.ai/sn7-challenge/)      |    Urban    |   Change detection   |     Planet    | Global   |
+|      [SpaceNet 7](https://openaccess.thecvf.com/content/CVPR2021/papers/Van_Etten_The_Multi-Temporal_Urban_Development_SpaceNet_Dataset_CVPR_2021_paper.pdf)      |    [link](https://spacenet.ai/sn7-challenge/)      |    Urban    |   Change detection/ <br> Semantic Segmentation   |     Planet    | Global   |
 |    [AI4SmallFarms](https://ieeexplore.ieee.org/document/10278130)  | [link](https://doi.org/10.17026/dans-xy6-ngg6)  |  Agriculture     |  Semantic segmentation  |   S2   | Cambodia/Vietnam |
 |     [BioMassters](https://papers.nips.cc/paper_files/paper/2023/file/40daf2a00278c4bea1b26cd4c8a654f8-Paper-Datasets_and_Benchmarks.pdf)     |   [link](https://huggingface.co/datasets/nascetti-a/BioMassters)       | Forest       | Regression   |  S1, S2 | Finland   |
 
-
-Please refer to [**Dataset Guide**](DATASET_GUIDE.md) to understand the processing requirements and commands specific to each dataset.
-
-The repository supports the following **tasks** using GFMs:
+The repository supports the following **tasks** using geospatial (foundation) models:
  - [single temporal semantic segmentation](#single-temporal-semantic-segmentation)
  - [multi-temporal semantic segmentation](#multi-temporal-semantic-segmentation)
  - [change detection](#change-detection)
@@ -50,6 +47,9 @@ The repository supports the following **tasks** using GFMs:
  - [multi-temporal regression](#multi-temporal-regression)
 
 It is also possible to train some [supervised baselines](#-fully-supervised-training), based on UNet.
+
+## 🗺️ Datasets details
+Please refer to [**Dataset Guide**](DATASET_GUIDE.md) to understand the processing requirements and commands specific to each dataset.
 
 ## 🛠️ Setup
 Clone the repository:
@@ -155,7 +155,7 @@ torchrun --nnodes=1 --nproc_per_node=1 geofm_bench/run.py \
    task=segmentation\
 ```
 
-To overwrite parameter, please check the Single Temporal Semantic Segmentation example
+To overwrite parameters, please check the Single Temporal Semantic Segmentation example
 
 #### Change Detection
 
@@ -173,7 +173,7 @@ torchrun --nnodes=1 --nproc_per_node=1 geofm_bench/run.py \
    task=segmentation\
 ```
 
-To overwrite parameter, please check the Single Temporal Semantic Segmentation example
+To overwrite parameters, please check the Single Temporal Semantic Segmentation example
 
 #### Single Temporal Regression
 
@@ -191,7 +191,7 @@ torchrun --nnodes=1 --nproc_per_node=1 geofm_bench/run.py \
    task=regression\
 ```
 
-To overwrite parameter, please check the Single Temporal Semantic Segmentation example
+To overwrite parameters, please check the Single Temporal Semantic Segmentation example
 
 #### Multi-Temporal Regression
 
@@ -209,7 +209,7 @@ torchrun --nnodes=1 --nproc_per_node=1 geofm_bench/run.py \
    task=regression\
 ```
 
-To overwrite parameter, please check the Single Temporal Semantic Segmentation example
+To overwrite parameters, please check the Single Temporal Semantic Segmentation example
 
 ### 💻 End-to-end Finetuning
 
@@ -249,278 +249,11 @@ For the moment, there is no multi-temporal baseline supported.
 
 ### Using Your Own Dataset
 
-We have designed the repo to allow for using your own datasets with minimal effort. Follow the steps below to integrate your dataset:
-
-1. **Implement a Dataset Class**:
-
-   - In the `datasets/` directory, create a new Python file named after your dataset (e.g., `my_dataset.py`).
-   - Implement a class that inherits from `GeoFMDataset`. You can check it in `geofm_bench/datasets/base.py`.
-   - Be sure that your dataset is inited with all the required parameters from the `GeoFMDataset`. You can also newly added parameters.
-   - Implement the required methods: `__init__`, `__len__`, `__getitem__`, and `download` (if applicable, otherwise a `NotImplementedError is raised`).
-   - **Example**:
-
-     ```python
-     import torch
-     from geofm_bench.datasets.base import GeoFMDataset
-
-     class MyDataset(GeoFMDataset):
-          def __init__(
-             self,
-             split: str,
-             dataset_name: str,
-             multi_modal: bool,
-             multi_temporal: int,
-             root_path: str,
-             classes: list,
-             num_classes: int,
-             ignore_index: int,
-             img_size: int,
-             bands: dict[str, list[str]],
-             distribution: list[int],
-             data_mean: dict[str, list[str]],
-             data_std: dict[str, list[str]],
-             data_min: dict[str, list[str]],
-             data_max: dict[str, list[str]],
-             download_url: str,
-             auto_download: bool,
-             temp: int, #newly added parameter
-         ):
-             super(MyDataset, self).__init__(
-                 split=split,
-                 dataset_name=dataset_name,
-                 multi_modal=multi_modal,
-                 multi_temporal=multi_temporal,
-                 root_path=root_path,
-                 classes=classes,
-                 num_classes=num_classes,
-                 ignore_index=ignore_index,
-                 img_size=img_size,
-                 bands=bands,
-                 distribution=distribution,
-                 data_mean=data_mean,
-                 data_std=data_std,
-                 data_min=data_min,
-                 data_max=data_max,
-                 download_url=download_url,
-                 auto_download=auto_download,
-             )
-
-             self.temp = temp #newly added parameter
-             # Initialize file lists or data structures here
-
-         def __len__(self):
-             # Return the total number of samples
-             return len(self.file_list)
-
-         def __getitem__(self, index):
-             # Load your data and labels here
-             image = ...  # Load image
-             target = ...  # Load target label or mask
-
-             # Convert to tensors
-             image = torch.tensor(image, dtype=torch.float32)
-             target = torch.tensor(target, dtype=torch.long)
-
-             return {
-                 'image': {'optical': image},
-                 'target': target,
-                 'metadata': {}
-             }
-
-         @staticmethod
-         def download(dataset_config, silent=False):
-             # Implement if your dataset requires downloading
-             pass
-     ```
-2. **Create a Dataset Configuration File**:
-
-   - Navigate to `configs/datasets/` and create a new YAML file named after your dataset (e.g., `my_dataset.yaml`).
-   - Define all necessary dataset parameters such as `dataset_name`, `root_path`, `img_size`, `bands`, `data_mean`, `data_std`, `num_classes`, and class labels. Check `GeoFMDataset` class, in `geofm_bench/datasets/base.py`
-     
-   - **Example**:
-
-     ```yaml
-     dataset_name: MyDataset
-     root_path: ./data/my_dataset
-     auto_download: False
-
-     img_size: 256
-     multi_temporal: False
-     multi_modal: False
-
-     ignore_index: -1
-     num_classes: 3
-     classes:
-       - Class1
-       - Class2
-       - Class3
-
-     bands:
-       optical:
-         - B1
-         - B2
-         - B3
-
-     data_mean:
-       optical:
-         - 0.485
-         - 0.456
-         - 0.406
-
-     data_std:
-       optical:
-         - 0.229
-         - 0.224
-         - 0.225
-     
-     data_min:
-       optical:
-         - 0.
-         - 0.
-         - 0.
-
-     data_max:
-       optical:
-         - 1.
-         - 1.
-         - 1.
-     ```
-
-
-3. **Adjust the Augmentation Pipeline**:
-
-   - If your dataset requires specific preprocessing or augmentation, create or modify an augmentation configuration file in `configs/preprocessing/`.
-   - Ensure that all preprocessing steps (e.g., normalization, resizing) match your dataset's requirements.
-   - If your specific preprocessing or augmentation are not implemented, please implement them in `geofm_bench/engine/data_preprocessor.py`
-
-4. **Run Training**:
-
-   - Use the `run.py` script with your dataset and augmentation configurations.
-   - **Example Command**:
-
-     ```bash
-      torchrun --nnodes=1 --nproc_per_node=1 geofm_bench/run.py \
-      --config-name=train \
-      dataset=my_dataset \
-      encoder=remoteclip \
-      decoder=upernet\
-      preprocessing=default \
-      criterion=cross_entropy \
-      task=segmentation
-     ```
+Refer to: [Adding a new downstream dataset](.github/CONTRIBUTING.md#adding-a-new-downstream-dataset)
 
 ### Using Your Own Model
 
-To benchmark your own model, follow these steps:
-
-1. **Implement an Encoder Class**:
-
-   - In `encoder/`, create a new Python file named after your model (e.g., `my_model_encoder.py`).
-   - Implement a class that inherits from `Encoder`. You can check it in `geofm_bench/encoders/base.py`.
-   - Be sure that your dataset is inited with all the required parameters from the `Encoder`. You can also newly added parameters or fix some parameters from the `Encoder` that are not changing in your model (e.g. `multi_temporal`).
-   - Implement the required methods: `__init__`, `load_encoder_weights`, and `forward`.
-   - **Example**:
-
-     ```python
-     import torch.nn as nn
-
-     class MyModel_Encoder(Encoder):
-         def __init__(
-             self,
-             encoder_weights: str | Path,
-             input_size: int,
-             input_bands: dict[str, list[str]],
-             output_layers: int | list[int],
-             in_chans: int,              #newly added parameter
-         ):
-             super().__init__(
-                 model_name="croma_optical",
-                 encoder_weights=encoder_weights,
-                 input_bands=input_bands,
-                 input_size=input_size,
-                 embed_dim=768,        #fixed parameters
-                 output_dim=768,       #fixed parameters
-                 multi_temporal=False, #fixed parameters
-             )
-     
-            self.in_chans = in_chans    #newly added parameter
-
-             # Initialize your model architecture here
-             # For example:
-             self.backbone = nn.Sequential(
-                 nn.Conv2d(in_chans, 64, kernel_size=3, padding=1),
-                 nn.ReLU(),
-                 # Add more layers as needed
-             )
-             # Specify output layers if applicable
-
-         def load_encoder_weights(self, pretrained_path):
-             # Load pretrained weights
-             state_dict = torch.load(pretrained_path, map_location='cpu')
-             self.load_state_dict(state_dict, strict=False)
-             print(f"Loaded encoder weights from {pretrained_path}")
-
-         def forward(self, image):
-             x = image['optical']
-             outputs = []
-             # Forward pass through the model
-             for idx, layer in enumerate(self.backbone):
-                 x = layer(x)
-                 if idx in self.output_layers:
-                     outputs.append(x)
-             return outputs
-     ```
-
-2. **Create an Encoder Configuration File**:
-
-   - In `configs/foundation_models/`, create a new YAML file named after your model (e.g., `my_model.yaml`).
-   - Define model-specific parameters, including `encoder_name`, `foundation_model_name`, `encoder_weights`, `input_bands`, and any model architecture arguments.
-   - **Example**:
-
-     ```yaml
-     encoder_name: MyModel_Encoder
-     foundation_model_name: MyModel
-     encoder_weights: ./pretrained_models/my_model_weights.pth
-     download_url: https://path.to.your.model/weights.pth
-     temporal_input: False
-
-     encoder_model_args:
-       img_size: 224
-       in_chans: 3
-       embed_dim: 768
-       patch_size: 16
-       num_heads: 12
-       depth: 12
-       mlp_ratio: 4
-
-     input_bands:
-       optical:
-         - B1
-         - B2
-         - B3
-
-     output_layers:
-       - 3
-       - 5
-       - 7
-       - 11
-     ```
-     
-3. **Run Training with Your Model**:
-
-   - Use the `run.py` script with your encoder configuration.
-   - **Example Command**:
-
-     ```bash
-      torchrun --nnodes=1 --nproc_per_node=1 geofm_bench/run.py \
-      --config-name=train \
-      dataset=hlsburnscars \
-      encoder=my_model \
-      decoder=upernet\
-      preprocessing=default \
-      criterion=cross_entropy \
-      task=segmentation
-     ```
+Refer to: [Adding a new geospatial foundation model](.github/CONTRIBUTING.md#adding-a-new-geospatial-foundation-model)
 
 ## 🏃 Evaluation 
 
