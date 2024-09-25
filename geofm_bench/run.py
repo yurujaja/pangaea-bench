@@ -115,7 +115,6 @@ def main(cfg: DictConfig) -> None:
     test_dataset: Dataset = instantiate(cfg.dataset, split="test")
     logger.info("Built {} dataset.".format(cfg.dataset.dataset_name))
 
-    # TODO: refactor download model
     download_model(cfg.encoder.download_url, cfg.encoder.encoder_weights)
     del cfg.encoder.download_url 
     encoder: Encoder = instantiate(cfg.encoder)
