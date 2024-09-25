@@ -1,5 +1,5 @@
 train: 
-  - _target_: geofm_bench.engine.data_preprocessor.RegPreprocessor
+  - _target_: geofm_bench.engine.data_preprocessor.SegPreprocessor
     # overwritten in run
     dataset: null
     encoder: null
@@ -17,7 +17,7 @@ train:
     encoder: null
 
 test: 
-  - _target_: geofm_bench.engine.data_preprocessor.RegPreprocessor
+  - _target_: geofm_bench.engine.data_preprocessor.SegPreprocessor
     # overwritten in run
     dataset: null
     encoder: null
