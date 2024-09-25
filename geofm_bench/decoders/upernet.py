@@ -175,10 +175,6 @@ class SegUPerNet(Decoder):
 
     def forward(self, img, output_shape=None):
         """Forward function."""
-        # if self.freezed_backbone:
-        #     with torch.no_grad():
-        #         feat = self.backbone(img)
-        # else:
         if not self.finetune:
             with torch.no_grad():
                 feat = self.encoder(img)
@@ -207,7 +203,7 @@ class SegMTUPerNet(SegUPerNet):
         finetune: bool,
         channels: int,
         multi_temporal: int,
-        multi_temporal_strategy: str,
+        multi_temporal_strategy: str | None,
         pool_scales: list[int] = [1, 2, 3, 6],
         feature_multiplier: int = 1,
     ) -> None:
@@ -222,8 +218,6 @@ class SegMTUPerNet(SegUPerNet):
 
         self.multi_temporal = multi_temporal
         self.multi_temporal_strategy = multi_temporal_strategy
-        if self.encoder.model_name in ["satlas_pretrain"]:
-            self.multi_temporal_strategy = None
         if self.multi_temporal_strategy == "ltae":
             self.tmap = LTAE2d(
                 positional_encoding=False,
@@ -421,8 +415,6 @@ class RegUPerNet(Decoder):
             finetune=finetune,
         )
 
-        self.model_name = "RegUPerNet"
-
         if not self.finetune:
             for param in self.encoder.parameters():
                 param.requires_grad = False
@@ -570,7 +562,7 @@ class RegMTUPerNet(RegUPerNet):
         finetune: bool,
         channels: int,
         multi_temporal: bool | int,
-        multi_temporal_strategy: str,
+        multi_temporal_strategy: str | None,
         pool_scales=(1, 2, 3, 6),
     ):
         super().__init__(
@@ -580,13 +572,9 @@ class RegMTUPerNet(RegUPerNet):
             pool_scales=pool_scales,
         )
 
-        self.model_name = "RegUPerNet_MT"
-
         self.multi_temporal = multi_temporal
         self.multi_temporal_strategy = multi_temporal_strategy
 
-        if self.encoder.model_name in ["satlas_pretrain"]:
-            self.multi_temporal_strategy = None
         if self.multi_temporal_strategy == "ltae":
             self.tmap = LTAE2d(
                 positional_encoding=False,
@@ -602,7 +590,8 @@ class RegMTUPerNet(RegUPerNet):
     def forward(
         self, img: dict[str, torch.Tensor], output_shape: torch.Size | None = None
     ) -> torch.Tensor:
-        if self.encoder.model_name in ["Prithvi", "satlas_pretrain"]:
+        # If the encoder handles multi_temporal we feed it with the input
+        if self.encoder.multi_temporal:
             if not self.finetune:
                 with torch.no_grad():
                     feats = self.encoder(img)
@@ -611,32 +600,15 @@ class RegMTUPerNet(RegUPerNet):
         else:
             feats = []
             for i in range(self.multi_temporal):
-                # WARNING: ALL THIS PART (shape differences) SHOULD BE TACKLED INSIDE FM FORWARD
                 if not self.finetune:
                     with torch.no_grad():
-                        if self.encoder.model_name in ["SpectralGPT"]:
-                            feats.append(
-                                self.encoder(
-                                    {k: v[:, :, [i], :, :] for k, v in img.items()}
-                                )
-                            )
-                        else:
-                            feats.append(
-                                self.encoder(
-                                    {k: v[:, :, i, :, :] for k, v in img.items()}
-                                )
-                            )
-                else:
-                    if self.encoder.model_name in ["SpectralGPT"]:
-                        feats.append(
-                            self.encoder(
-                                {k: v[:, :, [i], :, :] for k, v in img.items()}
-                            )
-                        )
-                    else:
                         feats.append(
                             self.encoder({k: v[:, :, i, :, :] for k, v in img.items()})
                         )
+                else:
+                    feats.append(
+                        self.encoder({k: v[:, :, i, :, :] for k, v in img.items()})
+                    )
 
             feats = [list(i) for i in zip(*feats)]
             feats = [torch.stack(feat_layers, dim=2) for feat_layers in feats]
