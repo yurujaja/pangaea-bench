@@ -529,7 +529,7 @@ An evaluation step is always run after the training.
 If you want to just run an evaluation, indicate the `eval_dir` where the checkpoints and configurations are stored.
 
 ```
-torchrun --nnodes=1 --nproc_per_node=1 run.py --batch_size 1 --eval_dir work-dir/the-folder-where-your-exp-is-saved
+torchrun geofm_bench/run.py --config-name=test ckpt_dir=path_to_ckpt_dir
 ```
 
 ## ✏️ Contributing
