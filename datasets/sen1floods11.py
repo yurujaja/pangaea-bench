@@ -4,7 +4,7 @@ import os
 import geopandas
 import numpy as np
 import pandas as pd
-import rasterio 
+import tifffile
 import torch
 
 from .utils import download_bucket_concurrently
@@ -59,16 +59,12 @@ class Sen1Floods11(torch.utils.data.Dataset):
         return date_np
 
     def __getitem__(self, index):
-        with rasterio.open(self.s2_image_list[index]) as src:
-            s2_image = src.read()
+        s2_image = tifffile.imread(self.s2_image_list[index])
 
-        with rasterio.open(self.s1_image_list[index]) as src:
-            s1_image = src.read()
-            # Convert the missing values (clouds etc.)
-            s1_image = np.nan_to_num(s1_image)
+        s1_image = tifffile.imread(self.s1_image_list[index])
+        s1_image = np.nan_to_num(s1_image)
 
-        with rasterio.open(self.target_list[index]) as src:
-            target = src.read(1)
+        target = tifffile.imread(self.target_list[index], key=0)
         
         timestamp = self._get_date(index)
 
