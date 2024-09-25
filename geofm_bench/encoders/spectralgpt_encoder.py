@@ -1,16 +1,16 @@
 # Obtained from: https://github.com/danfenghong/IEEE_TPAMI_SpectralGPT
 
 from functools import partial
-from pathlib import Path
 from logging import Logger
+from pathlib import Path
+
 import torch
 import torch.nn as nn
-
-from timm.models.vision_transformer import DropPath, Mlp
 from timm.layers import to_2tuple
+from timm.models.vision_transformer import DropPath, Mlp
 
-from geofm_bench.encoders.pos_embed import interpolate_pos_embed
 from geofm_bench.encoders.base import Encoder
+from geofm_bench.encoders.pos_embed import interpolate_pos_embed
 
 
 class SpectralGPT_Encoder(Encoder):
@@ -40,7 +40,7 @@ class SpectralGPT_Encoder(Encoder):
     """
 
     def __init__(
-        self, 
+        self,
         encoder_weights: str | Path,
         input_size: int,
         input_bands: dict[str, list[str]],
@@ -57,9 +57,8 @@ class SpectralGPT_Encoder(Encoder):
         drop_path_rate: float = 0.5,
         norm_layer=nn.LayerNorm,
         sep_pos_embed=True,
-        cls_embed=False
+        cls_embed=False,
     ):
-        
         super().__init__(
             model_name="SpectralGPT",
             encoder_weights=encoder_weights,
@@ -71,28 +70,36 @@ class SpectralGPT_Encoder(Encoder):
         )
 
         self.output_layers = output_layers
-        
+
         # refer to: https://github.com/danfenghong/IEEE_TPAMI_SpectralGPT/blob/ab6b965eb20c0e7ec373eb48ec99a67f711d4906/models_mae_spectral.py#L477
         self.num_frames = 1
 
         self.patch_embed = PatchEmbed(
-            self.input_size, patch_size, self.num_frames, embed_dim, in_chans, t_patch_size) 
-        
+            self.input_size,
+            patch_size,
+            self.num_frames,
+            embed_dim,
+            in_chans,
+            t_patch_size,
+        )
+
         num_patches = self.patch_embed.num_patches
 
         self.patchemb_input_size = self.patch_embed.input_size
-   
 
         self.cls_embed = cls_embed
         self.sep_pos_embed = sep_pos_embed
         self.patch_size = patch_size
-        
 
         if self.cls_embed:
             self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
         if self.sep_pos_embed:
             self.pos_embed_spatial = nn.Parameter(
-                torch.zeros(1, self.patchemb_input_size[1] * self.patchemb_input_size[2], embed_dim)
+                torch.zeros(
+                    1,
+                    self.patchemb_input_size[1] * self.patchemb_input_size[2],
+                    embed_dim,
+                )
             )
             self.pos_embed_temporal = nn.Parameter(
                 torch.zeros(1, self.patchemb_input_size[0], embed_dim)
@@ -107,8 +114,8 @@ class SpectralGPT_Encoder(Encoder):
 
             self.pos_embed = nn.Parameter(
                 torch.zeros(1, _num_patches, embed_dim), requires_grad=True
-            )  
-            
+            )
+
         dpr = [
             x.item() for x in torch.linspace(0, drop_path_rate, depth)
         ]  # stochastic depth decay rule
@@ -131,8 +138,7 @@ class SpectralGPT_Encoder(Encoder):
                 for i in range(depth)
             ]
         )
-        
-    
+
     def load_encoder_weights(self, logger: Logger) -> None:
         pretrained_model = torch.load(self.encoder_weights, map_location="cpu")
         pretrained_model = pretrained_model["model"]
@@ -153,9 +159,11 @@ class SpectralGPT_Encoder(Encoder):
         self.load_state_dict(pretrained_encoder, strict=False)
         self.parameters_warning(missing, incompatible_shape, logger)
 
+    def forward(self, image: dict[str, torch.Tensor]) -> list[torch.Tensor]:
+        # input image of shape B C H W
+        x = image["optical"].unsqueeze(-3)  # B C H W -> B C 1 H W
 
-    def forward(self, image):
-        x = image['optical'].permute(0, 2, 1, 3, 4)  # for this model: B, T, C, H, W 
+        x = x.permute(0, 2, 1, 3, 4)  # for this model: B, T, C, H, W
         x = self.patch_embed(x)
         N, T, L, C = x.shape  # T: number of bands; L: spatial
 
@@ -189,27 +197,35 @@ class SpectralGPT_Encoder(Encoder):
 
         # reshape to [N, T, L, C] or [N, T*L, C]
         requires_t_shape = (
-                len(self.blocks) > 0  # support empty decoder
-                and hasattr(self.blocks[0].attn, "requires_t_shape")
-                and self.blocks[0].attn.requires_t_shape
+            len(self.blocks) > 0  # support empty decoder
+            and hasattr(self.blocks[0].attn, "requires_t_shape")
+            and self.blocks[0].attn.requires_t_shape
         )
         if requires_t_shape:
             x = x.view([N, T, L, C])
-  
+
         output = []
         for i, blk in enumerate(self.blocks):
             x = blk(x)
             if i in self.output_layers:
                 if self.cls_embed:
                     x = x[:, 1:]
-                out = x.permute(0, 2, 1).view(x.shape[0], -1, self.input_size // self.patch_size, self.input_size // self.patch_size).contiguous()
+                out = (
+                    x.permute(0, 2, 1)
+                    .view(
+                        x.shape[0],
+                        -1,
+                        self.input_size // self.patch_size,
+                        self.input_size // self.patch_size,
+                    )
+                    .contiguous()
+                )
                 output.append(out)
 
         return output
 
 
 class PatchEmbed(nn.Module):
-
     """Image to Patch Embedding"""
 
     def __init__(
@@ -365,4 +381,3 @@ class Block(nn.Module):
         x = x + self.drop_path(self.attn(self.norm1(x)))
         x = x + self.drop_path(self.mlp(self.norm2(x)))
         return x
-

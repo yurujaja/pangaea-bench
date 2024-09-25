@@ -239,41 +239,27 @@ class SegMTUPerNet(SegUPerNet):
     def forward(
         self, img: dict[str, torch.Tensor], output_shape: torch.Size | None = None
     ) -> torch.Tensor:
-        if self.encoder.model_name in ["Prithvi", "satlas_pretrain"]:     
+        # If the encoder handles multi_temporal we feed it with the input
+        if self.encoder.multi_temporal:
             if not self.finetune:
                 with torch.no_grad():
                     feats = self.encoder(img)
             else:
                 feats = self.encoder(img)
+
+        # If the encoder handles only single temporal data, we apply multi_temporal_strategy
         else:
             feats = []
             for i in range(self.multi_temporal):
-                # WARNING: ALL THIS PART (shape differences) SHOULD BE TACKLED INSIDE FM FORWARD
                 if not self.finetune:
                     with torch.no_grad():
-                        if self.encoder.model_name in ["SpectralGPT"]:
-                            feats.append(
-                                self.encoder(
-                                    {k: v[:, :, [i], :, :] for k, v in img.items()}
-                                )
-                            )
-                        else:
-                            feats.append(
-                                self.encoder(
-                                    {k: v[:, :, i, :, :] for k, v in img.items()}
-                                )
-                            )
-                else:
-                    if self.encoder.model_name in ["SpectralGPT"]:
-                        feats.append(
-                            self.encoder(
-                                {k: v[:, :, [i], :, :] for k, v in img.items()}
-                            )
-                        )
-                    else:
                         feats.append(
                             self.encoder({k: v[:, :, i, :, :] for k, v in img.items()})
                         )
+                else:
+                    feats.append(
+                        self.encoder({k: v[:, :, i, :, :] for k, v in img.items()})
+                    )
 
             feats = [list(i) for i in zip(*feats)]
             feats = [torch.stack(feat_layers, dim=2) for feat_layers in feats]
@@ -427,25 +413,23 @@ class RegUPerNet(Decoder):
     """
 
     def __init__(
-            self, 
-            encoder: Encoder,
-            finetune: bool,
-            channels: int,
-            pool_scales=(1, 2, 3, 6)):
-
+        self, encoder: Encoder, finetune: bool, channels: int, pool_scales=(1, 2, 3, 6)
+    ):
         super().__init__(
             encoder=encoder,
             num_classes=1,
             finetune=finetune,
         )
 
-        self.model_name = 'RegUPerNet'
+        self.model_name = "RegUPerNet"
 
         if not self.finetune:
             for param in self.encoder.parameters():
                 param.requires_grad = False
 
-        self.neck = Feature2Pyramid(embed_dim=encoder.output_dim, rescales=[4, 2, 1, 0.5])
+        self.neck = Feature2Pyramid(
+            embed_dim=encoder.output_dim, rescales=[4, 2, 1, 0.5]
+        )
 
         self.align_corners = False
 
@@ -458,15 +442,18 @@ class RegUPerNet(Decoder):
             pool_scales,
             self.in_channels[-1],
             self.channels,
-            align_corners=self.align_corners)
+            align_corners=self.align_corners,
+        )
 
         self.bottleneck = nn.Sequential(
-            nn.Conv2d(in_channels=self.in_channels[-1] + len(pool_scales) * self.channels,
-                      out_channels=self.channels,
-                      kernel_size=3,
-                      padding=1),
+            nn.Conv2d(
+                in_channels=self.in_channels[-1] + len(pool_scales) * self.channels,
+                out_channels=self.channels,
+                kernel_size=3,
+                padding=1,
+            ),
             nn.SyncBatchNorm(self.channels),
-            nn.ReLU(inplace=True)
+            nn.ReLU(inplace=True),
         )
 
         # FPN Module
@@ -474,40 +461,44 @@ class RegUPerNet(Decoder):
         self.fpn_convs = nn.ModuleList()
         for in_channels in self.in_channels[:-1]:  # skip the top layer
             l_conv = nn.Sequential(
-                nn.Conv2d(in_channels=in_channels,
-                          out_channels=self.channels,
-                          kernel_size=1,
-                          padding=0),
+                nn.Conv2d(
+                    in_channels=in_channels,
+                    out_channels=self.channels,
+                    kernel_size=1,
+                    padding=0,
+                ),
                 nn.SyncBatchNorm(self.channels),
-                nn.ReLU(inplace=False)
+                nn.ReLU(inplace=False),
             )
             fpn_conv = nn.Sequential(
-                nn.Conv2d(in_channels=self.channels,
-                          out_channels=self.channels,
-                          kernel_size=3,
-                          padding=1),
+                nn.Conv2d(
+                    in_channels=self.channels,
+                    out_channels=self.channels,
+                    kernel_size=3,
+                    padding=1,
+                ),
                 nn.SyncBatchNorm(self.channels),
-                nn.ReLU(inplace=False)
+                nn.ReLU(inplace=False),
             )
 
             self.lateral_convs.append(l_conv)
             self.fpn_convs.append(fpn_conv)
 
-
         self.fpn_bottleneck = nn.Sequential(
-                nn.Conv2d(in_channels=len(self.in_channels) * self.channels,
-                          out_channels=self.channels,
-                          kernel_size=3,
-                          padding=1),
-                nn.SyncBatchNorm(self.channels),
-                nn.ReLU(inplace=True)
+            nn.Conv2d(
+                in_channels=len(self.in_channels) * self.channels,
+                out_channels=self.channels,
+                kernel_size=3,
+                padding=1,
+            ),
+            nn.SyncBatchNorm(self.channels),
+            nn.ReLU(inplace=True),
         )
-        
+
         self.conv_reg = nn.Conv2d(self.channels, 1, kernel_size=1)
         self.dropout = nn.Dropout2d(0.1)
 
     def psp_forward(self, inputs):
-
         x = inputs[-1]
         psp_outs = [x]
         psp_outs.extend(self.psp_modules(x))
@@ -517,10 +508,8 @@ class RegUPerNet(Decoder):
         return output
 
     def _forward_feature(self, inputs):
-
         laterals = [
-            lateral_conv(inputs[i])
-            for i, lateral_conv in enumerate(self.lateral_convs)
+            lateral_conv(inputs[i]) for i, lateral_conv in enumerate(self.lateral_convs)
         ]
 
         laterals.append(self.psp_forward(inputs))
@@ -532,13 +521,13 @@ class RegUPerNet(Decoder):
             laterals[i - 1] = laterals[i - 1] + F.interpolate(
                 laterals[i],
                 size=prev_shape,
-                mode='bilinear',
-                align_corners=self.align_corners)
+                mode="bilinear",
+                align_corners=self.align_corners,
+            )
 
         # build outputs
         fpn_outs = [
-            self.fpn_convs[i](laterals[i])
-            for i in range(used_backbone_levels - 1)
+            self.fpn_convs[i](laterals[i]) for i in range(used_backbone_levels - 1)
         ]
         # append psp feature
         fpn_outs.append(laterals[-1])
@@ -547,14 +536,14 @@ class RegUPerNet(Decoder):
             fpn_outs[i] = F.interpolate(
                 fpn_outs[i],
                 size=fpn_outs[0].shape[2:],
-                mode='bilinear',
-                align_corners=self.align_corners)
+                mode="bilinear",
+                align_corners=self.align_corners,
+            )
         fpn_outs = torch.cat(fpn_outs, dim=1)
         feats = self.fpn_bottleneck(fpn_outs)
         return feats
-    
+
     def forward(self, img, output_shape=None):
-        
         if not self.finetune:
             with torch.no_grad():
                 feat = self.encoder(img)
@@ -569,21 +558,21 @@ class RegUPerNet(Decoder):
 
         if output_shape is None:
             output_shape = img[list(img.keys())[0]].shape[-2:]
-        output = F.interpolate(output, size=output_shape, mode='bilinear')
+        output = F.interpolate(output, size=output_shape, mode="bilinear")
 
         return output
 
 
 class RegMTUPerNet(RegUPerNet):
     def __init__(
-            self, 
-            encoder: Encoder,
-            finetune: bool,
-            channels: int,
-            multi_temporal: bool | int,
-            multi_temporal_strategy: str,
-            pool_scales=(1, 2, 3, 6)):
-        
+        self,
+        encoder: Encoder,
+        finetune: bool,
+        channels: int,
+        multi_temporal: bool | int,
+        multi_temporal_strategy: str,
+        pool_scales=(1, 2, 3, 6),
+    ):
         super().__init__(
             encoder=encoder,
             finetune=finetune,
@@ -591,20 +580,19 @@ class RegMTUPerNet(RegUPerNet):
             pool_scales=pool_scales,
         )
 
-        self.model_name = 'RegUPerNet_MT'
-
+        self.model_name = "RegUPerNet_MT"
 
         self.multi_temporal = multi_temporal
         self.multi_temporal_strategy = multi_temporal_strategy
-        
+
         if self.encoder.model_name in ["satlas_pretrain"]:
             self.multi_temporal_strategy = None
         if self.multi_temporal_strategy == "ltae":
             self.tmap = LTAE2d(
-                positional_encoding=False, 
+                positional_encoding=False,
                 in_channels=encoder.output_dim,
-                mlp=[encoder.output_dim, encoder.output_dim], 
-                d_model=encoder.output_dim
+                mlp=[encoder.output_dim, encoder.output_dim],
+                d_model=encoder.output_dim,
             )
         elif self.multi_temporal_strategy == "linear":
             self.tmap = nn.Linear(self.multi_temporal, 1)
@@ -614,7 +602,6 @@ class RegMTUPerNet(RegUPerNet):
     def forward(
         self, img: dict[str, torch.Tensor], output_shape: torch.Size | None = None
     ) -> torch.Tensor:
-        
         if self.encoder.model_name in ["Prithvi", "satlas_pretrain"]:
             if not self.finetune:
                 with torch.no_grad():
@@ -661,7 +648,6 @@ class RegMTUPerNet(RegUPerNet):
                 elif self.multi_temporal_strategy == "linear":
                     feats[i] = self.tmap(feats[i].permute(0, 1, 3, 4, 2)).squeeze(-1)
 
-        
         feat = self.neck(feats)
         feat = self._forward_feature(feat)
         feat = self.dropout(feat)
@@ -670,10 +656,9 @@ class RegMTUPerNet(RegUPerNet):
 
         if output_shape is None:
             output_shape = img[list(img.keys())[0]].shape[-2:]
-        output = F.interpolate(output, size=output_shape, mode='bilinear')
+        output = F.interpolate(output, size=output_shape, mode="bilinear")
 
         return output
-
 
 
 class PPM(nn.ModuleList):
