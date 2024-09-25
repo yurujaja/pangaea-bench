@@ -418,9 +418,74 @@ We have designed the repo to allow for using your own datasets with minimal effo
 
 ### Using Your Own Model
 
-To benchmark your own foundation model, follow these steps:
+To benchmark your own model, follow these steps:
 
-1. **Create an Encoder Configuration File**:
+1. **Implement an Encoder Class**:
+
+   - In `encoder/`, create a new Python file named after your model (e.g., `my_model_encoder.py`).
+   - Implement a class that inherits from `Encoder`. You can check it in `geofm_bench/encoders/base.py`.
+   - Be sure that your dataset is inited with all the required parameters from the `Encoder`. You can also newly added parameters or fix some parameters from the `Encoder` that are not changing in your model (e.g. `multi_temporal`).
+   - Implement the required methods: `__init__`, `load_encoder_weights`, and `forward`.
+   - **Example**:
+
+     ```python
+     import torch.nn as nn
+
+     class MyModel_Encoder(Encoder):
+         def __init__(
+             self,
+             encoder_weights: str | Path,
+             input_size: int,
+             input_bands: dict[str, list[str]],
+             output_layers: int | list[int],
+             in_chans: int,              #newly added parameter
+         ):
+             super().__init__(
+                 model_name="croma_optical",
+                 encoder_weights=encoder_weights,
+                 input_bands=input_bands,
+                 input_size=input_size,
+                 embed_dim=768,        #fixed parameters
+                 output_dim=768,       #fixed parameters
+                 multi_temporal=False, #fixed parameters
+             )
+     
+            self.model_name = model_name
+            self.input_bands = input_bands
+            self.input_size = input_size
+            self.embed_dim = embed_dim
+            self.output_dim = output_dim
+            self.encoder_weights = encoder_weights
+            self.multi_temporal = multi_temporal
+            self.in_chans = in_chans    #newly added parameter
+
+             # Initialize your model architecture here
+             # For example:
+             self.backbone = nn.Sequential(
+                 nn.Conv2d(in_chans, 64, kernel_size=3, padding=1),
+                 nn.ReLU(),
+                 # Add more layers as needed
+             )
+             # Specify output layers if applicable
+
+         def load_encoder_weights(self, pretrained_path):
+             # Load pretrained weights
+             state_dict = torch.load(pretrained_path, map_location='cpu')
+             self.load_state_dict(state_dict, strict=False)
+             print(f"Loaded encoder weights from {pretrained_path}")
+
+         def forward(self, image):
+             x = image['optical']
+             outputs = []
+             # Forward pass through the model
+             for idx, layer in enumerate(self.backbone):
+                 x = layer(x)
+                 if idx in self.output_layers:
+                     outputs.append(x)
+             return outputs
+     ```
+
+2. **Create an Encoder Configuration File**:
 
    - In `configs/foundation_models/`, create a new YAML file named after your model (e.g., `my_model.yaml`).
    - Define model-specific parameters, including `encoder_name`, `foundation_model_name`, `encoder_weights`, `input_bands`, and any model architecture arguments.
@@ -454,68 +519,28 @@ To benchmark your own foundation model, follow these steps:
        - 7
        - 11
      ```
-
-2. **Implement an Encoder Class**:
-
-   - In `foundation_models/`, create a new Python file named after your model (e.g., `my_model_encoder.py`).
-   - Implement a class that inherits from `nn.Module`.
-   - Register your encoder with the `@ENCODER_REGISTRY.register()` decorator.
-   - Implement the required methods: `__init__`, `load_encoder_weights`, and `forward`.
-   - **Example**:
-
-     ```python
-     import torch.nn as nn
-     from utils.registry import ENCODER_REGISTRY
-
-     @ENCODER_REGISTRY.register()
-     class MyModel_Encoder(nn.Module):
-         def __init__(self, cfg, **kwargs):
-             super().__init__()
-             self.model_name = 'MyModel'
-             # Initialize your model architecture here
-             # For example:
-             self.backbone = nn.Sequential(
-                 nn.Conv2d(cfg.encoder_model_args['in_chans'], 64, kernel_size=3, padding=1),
-                 nn.ReLU(),
-                 # Add more layers as needed
-             )
-             # Specify output layers if applicable
-             self.output_layers = cfg['output_layers']
-
-         def load_encoder_weights(self, pretrained_path):
-             # Load pretrained weights
-             state_dict = torch.load(pretrained_path, map_location='cpu')
-             self.load_state_dict(state_dict, strict=False)
-             print(f"Loaded encoder weights from {pretrained_path}")
-
-         def forward(self, image):
-             x = image['optical']
-             outputs = []
-             # Forward pass through the model
-             for idx, layer in enumerate(self.backbone):
-                 x = layer(x)
-                 if idx in self.output_layers:
-                     outputs.append(x)
-             return outputs
-     ```
-
+     
 3. **Run Training with Your Model**:
 
    - Use the `run.py` script with your encoder configuration.
    - **Example Command**:
 
      ```bash
-     torchrun --nnodes=1 --nproc_per_node=1 run.py \
-       --config configs/run/default.yaml \
-       --encoder_config configs/foundation_models/my_model.yaml \
-       --dataset_config configs/datasets/mados.yaml \
-       --segmentor_config configs/segmentors/upernet.yaml \
-       --augmentation_config configs/augmentations/segmentation_default.yaml \
-       --num_workers 4 --eval_interval 1 --use_wandb
+      torchrun --nnodes=1 --nproc_per_node=1 geofm_bench/run.py \
+      --config-name=train \
+      dataset=hlsburnscars \
+      encoder=my_model \
+      decoder=upernet\
+      preprocessing=default \
+      criterion=cross_entropy \
+      task=segmentation
      ```
 
 ## 🏃 Evaluation 
-Indicate the `eval_dir` where the checkpoints and configurations are stored.
+
+An evaluation step is always run after the training.
+
+If you want to just run an evaluation, indicate the `eval_dir` where the checkpoints and configurations are stored.
 
 ```
 torchrun --nnodes=1 --nproc_per_node=1 run.py --batch_size 1 --eval_dir work-dir/the-folder-where-your-exp-is-saved
