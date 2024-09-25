@@ -1,5 +1,6 @@
 
 _target_: geofm_bench.encoders.satlasnet_encoder.SatlasNet_Encoder
+encoder_weights: null
 download_url: null
 model_identifier: Sentinel2_SwinB_MI_MS #Sentinel2_SwinB_SI_RGB   #
 fpn: False

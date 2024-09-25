@@ -23,11 +23,12 @@ class UNet(Encoder):
             self, 
             input_bands: dict[str, list[str]],
             input_size: int,
-            topology: Sequence[int]
+            topology: Sequence[int],
+            encoder_weights: str = None,
         ):
         super().__init__(
             model_name="unet_encoder",
-            encoder_weights=None,  # no pre-trained weights, train from scratch
+            encoder_weights=encoder_weights,  # no pre-trained weights, train from scratch
             input_bands=input_bands,
             input_size=input_size,
             embed_dim=0,
