@@ -1,0 +1,17 @@
+_target_: geofm_bench.decoders.upernet.RegMTUPerNet
+
+
+binary: False
+
+
+time_frames: 12
+
+
+# overwritten in run
+encoder: null
+multi_temporal: ${dataset.multi_temporal}
+finetune: ${finetune}
+
+# to adapt
+channels: 512
+multi_temporal_strategy: linear

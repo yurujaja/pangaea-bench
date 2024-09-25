@@ -654,12 +654,10 @@ class NormalizeMinMax(BaseAugment):
 
         data = self.dataset[index]
         for modality in self.encoder.input_bands:
-            data["image"][modality] = (
-                (data["image"][modality] - self.data_min_tensors[modality])
-                * (self.max - self.min)
-                - self.min
-            ) / self.data_max_tensors[modality]
+            data["image"][modality] = (data["image"][modality] - self.data_min_tensors[modality]) / (self.data_max_tensors[modality]- self.data_min_tensors[modality])
+        
         return data
+    
 
 
 class ColorAugmentation(BaseAugment):
@@ -806,7 +804,7 @@ class Resize(BaseAugment):
         data = self.dataset[index]
         for k, v in data["image"].items():
             if k in self.encoder.input_bands:
-                data["image"][k] = T.Resize(self.size)(v)
+                data["image"][k] = T.Resize(self.size, interpolation=T.InterpolationMode.BILINEAR, antialias=True)(v)
 
         if data["target"].ndim == 2:
             data["target"] = data["target"].unsqueeze(0)

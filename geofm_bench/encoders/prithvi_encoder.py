@@ -59,7 +59,7 @@ class Prithvi_Encoder(Encoder):
     ):
         
         super().__init__(
-            model_name="prithvi_encoder",
+            model_name="Prithvi",
             encoder_weights=encoder_weights,
             input_bands=input_bands,
             input_size=input_size,
