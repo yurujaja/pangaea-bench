@@ -86,7 +86,6 @@ class Pastis(GeoFMDataset):
         auto_download: bool,
     ):
         """Initialize the PASTIS dataset.
-        Link: https://marine-pollution.github.io/index.html
 
         Args:
             split (str): split of the dataset (train, val, test).
@@ -197,6 +196,8 @@ class Pastis(GeoFMDataset):
                 os.path.join(self.path, "ANNOTATIONS/TARGET_" + str(name) + ".npy")
             )[0].astype(np.int32)
         )
+        # remove void class
+        label[label == 19] = self.ignore_index
         # label = label[1:-1]  # remove Background and Void classes
         output = {"label": label, "name": name}
 

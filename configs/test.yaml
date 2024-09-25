@@ -10,7 +10,7 @@ batch_size: 8
 
 # EXPERIMENT
 finetune: false
-ckpt_dir: /share/DEEPLEARNING/lebellig/scripts/geofm-bench/20240923_113641-croma_optical-upernet_mt-pastis/
+ckpt_dir: /share/DEEPLEARNING/lebellig/scripts/geofm-bench/20240925_004442-croma_optical-upernet_mt_ltae-pastis/ 
 # limited_label: 1
 # n_epochs: 80
 
