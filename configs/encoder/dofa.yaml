@@ -1,8 +1,6 @@
 _target_: geofm_bench.encoders.dofa_encoder.DOFA_Encoder
 encoder_weights: ./pretrained_models/DOFA_ViT_base_e100.pth
-# download_url: https://huggingface.co/XShadow/DOFA/resolve/main/DOFA_ViT_base_e100.pth
-# temporal_input: False
-
+download_url: https://huggingface.co/XShadow/DOFA/resolve/main/DOFA_ViT_base_e100.pth
 
 embed_dim: 768
 input_size: 224

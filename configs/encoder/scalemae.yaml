@@ -1,7 +1,6 @@
 _target_: geofm_bench.encoders.scalemae_encoder.ScaleMAE_Encoder
-encoder_weights: ./pretrained_models/scalemae-vitlarge-800.pth
-# download_url: https://github.com/bair-climate-initiative/scale-mae/releases/download/base-800/scalemae-vitlarge-800.pth
-# temporal_input: True
+encoder_weights:  ./pretrained_models/scalemae-vitlarge-800.pth
+download_url: https://github.com/bair-climate-initiative/scale-mae/releases/download/base-800/scalemae-vitlarge-800.pth
 
 embed_dim: 1024
 input_size: 224

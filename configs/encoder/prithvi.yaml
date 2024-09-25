@@ -1,7 +1,6 @@
 _target_: geofm_bench.encoders.prithvi_encoder.Prithvi_Encoder
 encoder_weights: ./pretrained_models/Prithvi_100M.pt
-# download_url: https://huggingface.co/ibm-nasa-geospatial/Prithvi-100M/resolve/main/Prithvi_100M.pt?download=true
-# temporal_input: True
+download_url: https://huggingface.co/ibm-nasa-geospatial/Prithvi-100M/resolve/main/Prithvi_100M.pt?download=true
 
 embed_dim: 768
 input_size: 224

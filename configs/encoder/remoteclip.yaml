@@ -1,7 +1,6 @@
 _target_: geofm_bench.encoders.remoteclip_encoder.RemoteCLIP_Encoder
 encoder_weights: ./pretrained_models/RemoteCLIP-ViT-B-32.pt
-# download_url: https://huggingface.co/chendelong/RemoteCLIP/resolve/main/RemoteCLIP-ViT-B-32.pt
-# temporal_input: False
+download_url: https://huggingface.co/chendelong/RemoteCLIP/resolve/main/RemoteCLIP-ViT-B-32.pt
 
 embed_dim: 768
 input_size: 224

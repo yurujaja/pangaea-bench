@@ -34,23 +34,23 @@ class DownloadProgressBar:
             self.pbar = None
 
 
-def download_model(model_config):
-    if "download_url" in model_config and model_config["download_url"]:
-        if not os.path.isfile(model_config["encoder_weights"]):
+def download_model(download_url=False, encoder_weights=False):
+    if download_url:
+        if not os.path.isfile(encoder_weights):
             os.makedirs("pretrained_models", exist_ok=True)
 
-            pbar = DownloadProgressBar(f"Downloading {model_config['encoder_weights']}")
+            pbar = DownloadProgressBar(f"Downloading {encoder_weights}")
 
-            if model_config["download_url"].startswith("https://drive.google.com/"):
+            if download_url.startswith("https://drive.google.com/"):
                 # Google drive needs some extra stuff compared to a simple file download
                 gdown.download(
-                    model_config["download_url"], model_config["encoder_weights"]
+                    download_url, encoder_weights
                 )
             else:
                 try:
                     urllib.request.urlretrieve(
-                        model_config["download_url"],
-                        model_config["encoder_weights"],
+                        download_url,
+                        encoder_weights,
                         pbar,
                     )
                 except urllib.error.HTTPError as e:

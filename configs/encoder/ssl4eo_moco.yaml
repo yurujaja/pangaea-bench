@@ -1,7 +1,6 @@
 _target_:  geofm_bench.encoders.ssl4eo_moco_encoder.SSL4EO_MOCO_Encoder
 encoder_weights: ./pretrained_models/B13_vits16_moco_0099.pth
-# download_url: https://drive.google.com/uc?id=1LREGuI6w7Gq6Xm0jFQdxxtp8QkmLvJWk&export=download&confirm=yes
-# temporal_input: False
+download_url: https://drive.google.com/uc?id=1LREGuI6w7Gq6Xm0jFQdxxtp8QkmLvJWk&export=download&confirm=yes
 
 embed_dim: 384
 input_size: 224

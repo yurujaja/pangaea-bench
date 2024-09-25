@@ -1,7 +1,6 @@
 _target_: geofm_bench.encoders.gfmswin_encoder.GFMSwin_Encoder
 encoder_weights: ./pretrained_models/gfm.pth
-# download_url: 
-# temporal_input: False
+download_url: null
 
 input_size: 192
 in_chans: 3  
