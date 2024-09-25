@@ -184,23 +184,26 @@ class SegEvaluator(Evaluator):
         self.logger.info(recall_str)
         self.logger.info(macc_str)
 
-        # TODO: REMOVE THIS
-        # if self.use_wandb and self.args.rank == 0:
-        # WARNING: add rank zero only
         if self.use_wandb:
             self.wandb.log(
                 {
-                    "val_mIoU": metrics["mIoU"],
-                    "val_mF1": metrics["mF1"],
-                    "val_mAcc": metrics["mAcc"],
-                    **{f"val_IoU_{c}": v for c, v in zip(self.classes, metrics["IoU"])},
-                    **{f"val_F1_{c}": v for c, v in zip(self.classes, metrics["F1"])},
+                    f"{self.split}_mIoU": metrics["mIoU"],
+                    f"{self.split}_mF1": metrics["mF1"],
+                    f"{self.split}_mAcc": metrics["mAcc"],
                     **{
-                        f"val_Precision_{c}": v
+                        f"{self.split}_IoU_{c}": v
+                        for c, v in zip(self.classes, metrics["IoU"])
+                    },
+                    **{
+                        f"{self.split}_F1_{c}": v
+                        for c, v in zip(self.classes, metrics["F1"])
+                    },
+                    **{
+                        f"{self.split}_Precision_{c}": v
                         for c, v in zip(self.classes, metrics["Precision"])
                     },
                     **{
-                        f"val_Recall_{c}": v
+                        f"{self.split}_Recall_{c}": v
                         for c, v in zip(self.classes, metrics["Recall"])
                     },
                 }
