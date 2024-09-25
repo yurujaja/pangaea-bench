@@ -21,7 +21,6 @@ class Evaluator:
         self.logger = logging.getLogger()
         self.exp_dir = exp_dir
         self.device = device
-        # self.cls_name
         self.classes = self.val_loader.dataset.classes
         self.split = self.val_loader.dataset.split
         self.ignore_index = self.val_loader.dataset.ignore_index
@@ -75,7 +74,7 @@ class SegEvaluator(Evaluator):
             else:
                 model.module.load_state_dict(model_dict)
 
-            self.logger.info(f"Loaded model from {type(model).__name__} for evaluation")
+            self.logger.info(f"Loaded {model_name} for evaluation")
         model.eval()
 
         tag = f"Evaluating {model_name} on {self.split} set"

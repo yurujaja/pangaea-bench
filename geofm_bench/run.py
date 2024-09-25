@@ -226,7 +226,7 @@ def main(cfg: DictConfig) -> None:
             cfg.task.evaluator, val_loader=test_loader, exp_dir=exp_dir, device=device
         )
         best_model_ckpt_path = get_best_model_ckpt_path(exp_dir)
-        test_evaluator.evaluate(decoder, best_model_ckpt_path)
+        test_evaluator.evaluate(decoder, "best_model", best_model_ckpt_path)
 
     if cfg.use_wandb and rank == 0:
         wandb.finish()
