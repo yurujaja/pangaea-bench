@@ -142,23 +142,22 @@ class Trainer:
             ):
                 logits = self.model(image, output_shape=target.shape[-2:])
                 loss = self.compute_loss(logits, target)
-                self.compute_logging_metrics(
-                    logits.detach().clone(), target.detach().clone()
-                )
 
             self.optimizer.zero_grad()
 
-            self.scaler.scale(loss).backward()
-            self.scaler.step(self.optimizer)
-            self.scaler.update()
-            self.lr_scheduler.step()
+            if not torch.isnan(loss):
+                self.scaler.scale(loss).backward()
+                self.scaler.step(self.optimizer)
+                self.scaler.update()
+                self.training_stats['loss'].update(loss.item())
+                with torch.no_grad():
+                    self.compute_logging_metrics(logits, target)
+                if (batch_idx + 1) % self.log_interval == 0:
+                    self.log(batch_idx + 1, epoch)
+            else:
+                self.logger.warning("Skip batch {} because of nan loss".format(batch_idx + 1))
 
-            self.training_stats["loss"].update(loss.item())
-            if (batch_idx + 1) % self.log_interval == 0:
-                self.log(batch_idx + 1, epoch)
-            self.training_stats["batch_time"].update(time.time() - end_time)
-            # print(self.training_stats['batch_time'].val, self.training_stats['batch_time'].avg)
-            end_time = time.time()
+            self.lr_scheduler.step()
 
             if self.use_wandb and self.rank == 0:
                 self.wandb.log(
@@ -173,6 +172,9 @@ class Trainer:
                     },
                     step=epoch * len(self.train_loader) + batch_idx,
                 )
+
+            self.training_stats["batch_time"].update(time.time() - end_time)
+            end_time = time.time()
 
     def get_checkpoint(self, epoch: int) -> dict[str, dict | int]:
         """Create a checkpoint dictionary.

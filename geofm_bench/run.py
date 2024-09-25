@@ -80,7 +80,7 @@ def main(cfg: DictConfig) -> None:
                 name=exp_name,
                 config=wandb_cfg,
             )
-        cfg["wandb_run_id"] = wandb.run.id
+            cfg["wandb_run_id"] = wandb.run.id
         OmegaConf.save(cfg, config_log_dir / "config.yaml")
 
     else:
