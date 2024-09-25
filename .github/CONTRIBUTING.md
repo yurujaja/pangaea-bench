@@ -51,9 +51,9 @@ We have designed the repo to allow for benchmarking your own model with minimal 
 
 1. **Implement an Encoder Class**:
 
-   - In `encoder/`, create a new Python file named after your model (e.g., `my_model_encoder.py`).
+   - In `encoders/`, create a new Python file named after your model (e.g., `my_model_encoder.py`).
    - Implement a class that inherits from `Encoder`. You can check it in `geofm_bench/encoders/base.py`.
-   - Be sure that your dataset is inited with all the required parameters from the `Encoder`. You can also newly added parameters or fix some parameters from the `Encoder` that are not changing in your model (e.g. `multi_temporal`).
+   - Be sure that your dataset is instantiated with all the required parameters from the `Encoder`. You can also add new parameters or fix some parameters from the `Encoder` that are not changing in your model (e.g. `multi_temporal`).
    - Implement the required methods: `__init__`, `load_encoder_weights`, and `forward`.
    - **Example**:
 
@@ -168,7 +168,7 @@ We have designed the repo to allow for using your own datasets with minimal effo
 
    - In the `datasets/` directory, create a new Python file named after your dataset (e.g., `my_dataset.py`).
    - Implement a class that inherits from `GeoFMDataset`. You can check it in `geofm_bench/datasets/base.py`.
-   - Be sure that your dataset is inited with all the required parameters from the `GeoFMDataset`. You can also newly added parameters.
+   - Be sure that your dataset is instantiated with all the required parameters from the `GeoFMDataset`. You can also add new parameters.
    - Implement the required methods: `__init__`, `__len__`, `__getitem__`, and `download` (if applicable, otherwise a `NotImplementedError is raised`).
    - **Example**:
 
