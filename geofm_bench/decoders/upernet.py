@@ -175,12 +175,22 @@ class SegUPerNet(Decoder):
 
     def forward(self, img, output_shape=None):
         """Forward function."""
-        if not self.finetune:
-            with torch.no_grad():
+
+        # img[modality] of shape [B C T=1 H W]
+        if self.encoder.multi_temporal:
+            if not self.finetune:
+                with torch.no_grad():
+                    feat = self.encoder(img)
+            else:
                 feat = self.encoder(img)
         else:
-            feat = self.encoder(img)
-        # print(feat)
+            # remove the temporal dim
+            # [B C T=1 H W] -> [B C H W]
+            if not self.finetune:
+                with torch.no_grad():
+                    feat = self.encoder({k: v[:, :, 0, :, :] for k, v in img.items()})
+            else:
+                feat = self.encoder({k: v[:, :, 0, :, :] for k, v in img.items()})
 
         feat = self.neck(feat)
         feat = self._forward_feature(feat)
