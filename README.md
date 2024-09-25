@@ -254,6 +254,7 @@ We have designed the repo to allow for using your own datasets with minimal effo
 
      ```python
      import torch
+     from geofm_bench.datasets.base import GeoFMDataset
 
      class MyDataset(GeoFMDataset):
           def __init__(
@@ -296,21 +297,6 @@ We have designed the repo to allow for using your own datasets with minimal effo
                  download_url=download_url,
                  auto_download=auto_download,
              )
-             
-             self.root_path = root_path
-             self.multi_temporal = multi_temporal
-             self.split = split
-             self.data_mean = data_mean
-             self.data_std = data_std
-             self.data_min = data_min
-             self.data_max = data_max
-             self.classes = classes
-             self.img_size = img_size
-             self.distribution = distribution
-             self.num_classes = num_classes
-             self.ignore_index = ignore_index
-             self.download_url = download_url
-             self.auto_download = auto_download
 
              self.temp = temp #newly added parameter
              # Initialize file lists or data structures here
@@ -450,13 +436,6 @@ To benchmark your own model, follow these steps:
                  multi_temporal=False, #fixed parameters
              )
      
-            self.model_name = model_name
-            self.input_bands = input_bands
-            self.input_size = input_size
-            self.embed_dim = embed_dim
-            self.output_dim = output_dim
-            self.encoder_weights = encoder_weights
-            self.multi_temporal = multi_temporal
             self.in_chans = in_chans    #newly added parameter
 
              # Initialize your model architecture here
