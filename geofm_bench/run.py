@@ -206,27 +206,26 @@ def main(cfg: DictConfig) -> None:
         trainer.train()
 
     # Evaluation
-    else:
-        for preprocess in cfg.preprocessing.test:
-            test_dataset: Dataset = instantiate(
-                preprocess, dataset=test_dataset, encoder=encoder
-            )
+    for preprocess in cfg.preprocessing.test:
+        test_dataset: Dataset = instantiate(
+            preprocess, dataset=test_dataset, encoder=encoder
+        )
 
-        test_loader = DataLoader(
-            test_dataset,
-            sampler=DistributedSampler(test_dataset),
-            batch_size=cfg.batch_size,
-            num_workers=cfg.num_workers,
-            pin_memory=True,
-            persistent_workers=False,
-            drop_last=False,
-            collate_fn=collate_fn,
-        )
-        test_evaluator: Evaluator = instantiate(
-            cfg.task.evaluator, val_loader=test_loader, exp_dir=exp_dir, device=device
-        )
-        best_model_ckpt_path = get_best_model_ckpt_path(exp_dir)
-        test_evaluator.evaluate(decoder, "best_model", best_model_ckpt_path)
+    test_loader = DataLoader(
+        test_dataset,
+        sampler=DistributedSampler(test_dataset),
+        batch_size=cfg.batch_size,
+        num_workers=cfg.num_workers,
+        pin_memory=True,
+        persistent_workers=False,
+        drop_last=False,
+        collate_fn=collate_fn,
+    )
+    test_evaluator: Evaluator = instantiate(
+        cfg.task.evaluator, val_loader=test_loader, exp_dir=exp_dir, device=device
+    )
+    best_model_ckpt_path = get_best_model_ckpt_path(exp_dir)
+    test_evaluator.evaluate(decoder, "best_model", best_model_ckpt_path)
 
     if cfg.use_wandb and rank == 0:
         wandb.finish()
