@@ -51,6 +51,8 @@ It is also possible to train some [supervised baselines](#-fully-supervised-trai
 ## 🗺️ Datasets details
 Please refer to [**Dataset Guide**](DATASET_GUIDE.md) to understand the processing requirements and commands specific to each dataset.
 
+If you want to fast-prototype your model, maybe you want to run fast experiments on smaller datasets. We suggest to start with MADOS, HLSBurnScars, SpaceNet7 and Sen1Floods11 and AI4SmallFarms. They offer good diversity in satellites and domains. Later on, we will release a stratified subset for each dataset, so to let fast-prototyping with all the datasets.
+
 ## 🛠️ Setup
 Clone the repository:
 ```
