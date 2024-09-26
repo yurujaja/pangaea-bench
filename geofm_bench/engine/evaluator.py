@@ -10,6 +10,33 @@ from tqdm import tqdm
 
 
 class Evaluator:
+    """
+    Evaluator class for evaluating the models.
+    Attributes:
+        val_loader (DataLoader): DataLoader for the validation dataset.
+        exp_dir (str | Path): Directory for experiment outputs.
+        device (torch.device): Device to run the evaluation on (e.g., CPU or GPU).
+        use_wandb (bool): Flag to indicate if Weights and Biases (wandb) is used for logging.
+        logger (logging.Logger): Logger for logging information.
+        classes (list): List of class names in the dataset.
+        split (str): Dataset split (e.g., 'train', 'val', 'test').
+        ignore_index (int): Index to ignore in the dataset.
+        num_classes (int): Number of classes in the dataset.
+        max_name_len (int): Maximum length of class names.
+        wandb (module): Weights and Biases module for logging (if use_wandb is True).
+    Methods:
+        __init__(val_loader: DataLoader, exp_dir: str | Path, device: torch.device, use_wandb: bool) -> None:
+            Initializes the Evaluator with the given parameters.
+        evaluate(model: torch.nn.Module, model_name: str, model_ckpt_path: str | Path | None = None) -> None:
+            Evaluates the given model. This method should be implemented by subclasses.
+        __call__(model: torch.nn.Module) -> None:
+            Calls the evaluator on the given model.
+        compute_metrics() -> None:
+            Computes evaluation metrics. This method should be implemented by subclasses.
+        log_metrics(metrics: dict) -> None:
+            Logs the computed metrics. This method should be implemented by subclasses.
+    """
+
     def __init__(
         self,
         val_loader: DataLoader,
@@ -52,6 +79,26 @@ class Evaluator:
 
 
 class SegEvaluator(Evaluator):
+    """
+    SegEvaluator is a class for evaluating segmentation models. It extends the Evaluator class and provides methods
+    to evaluate a model, compute metrics, and log the results.
+    Attributes:
+        val_loader (DataLoader): DataLoader for the validation dataset.
+        exp_dir (str | Path): Directory for saving experiment results.
+        device (torch.device): Device to run the evaluation on.
+        use_wandb (bool): Flag to indicate whether to use Weights and Biases for logging.
+    Methods:
+        evaluate(model, model_name='model', model_ckpt_path=None):
+            Evaluates the given model on the validation dataset and computes metrics.
+        __call__(model, model_name, model_ckpt_path=None):
+            Calls the evaluate method. This allows the object to be used as a function.
+        compute_metrics(confusion_matrix):
+            Computes various metrics such as IoU, precision, recall, F1-score, mean IoU, mean F1-score, and mean accuracy
+            from the given confusion matrix.
+        log_metrics(metrics):
+            Logs the computed metrics. If use_wandb is True, logs the metrics to Weights and Biases.
+    """
+
     def __init__(
         self,
         val_loader: DataLoader,
@@ -210,6 +257,22 @@ class SegEvaluator(Evaluator):
 
 
 class RegEvaluator(Evaluator):
+    """
+    RegEvaluator is a subclass of Evaluator designed for regression tasks. It evaluates a given model on a validation dataset and computes metrics such as Mean Squared Error (MSE) and Root Mean Squared Error (RMSE).
+    Attributes:
+        val_loader (DataLoader): DataLoader for the validation dataset.
+        exp_dir (str | Path): Directory for saving experiment results.
+        device (torch.device): Device to run the evaluation on (e.g., CPU or GPU).
+        use_wandb (bool): Flag to indicate whether to log metrics to Weights and Biases (wandb).
+    Methods:
+        evaluate(model, model_name='model', model_ckpt_path=None):
+            Evaluates the model on the validation dataset and computes MSE and RMSE.
+        __call__(model, model_name='model', model_ckpt_path=None):
+            Calls the evaluate method. This allows the object to be used as a function.
+        log_metrics(metrics):
+            Logs the computed metrics (MSE and RMSE) to the logger and optionally to wandb.
+    """
+
     def __init__(
         self,
         val_loader: DataLoader,
