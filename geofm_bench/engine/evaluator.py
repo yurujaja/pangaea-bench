@@ -262,5 +262,5 @@ class RegEvaluator(Evaluator):
         rmse = "-------------------\n" + 'RMSE \t{:>7}'.format('%.3f' % metrics['RMSE'])
         self.logger.info(header+mse+rmse)
 
-        if self.args.use_wandb and self.args.rank == 0:
+        if self.use_wandb:
             self.wandb.log({f"{self.split}_MSE": metrics["MSE"], f"{self.split}_RMSE": metrics["RMSE"]})
