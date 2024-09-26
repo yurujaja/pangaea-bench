@@ -1,13 +1,15 @@
 import os
 import pathlib
-import torch
-import numpy as np
 from glob import glob
-from pyDataverse.api import NativeApi, DataAccessApi
-from tifffile import imread
+
+import numpy as np
 import requests
+import torch
+from pyDataverse.api import DataAccessApi, NativeApi
+from tifffile import imread
 
 from pangaea.datasets.base import GeoFMDataset
+
 
 class AI4SmallFarms(GeoFMDataset):
     def __init__(
@@ -42,10 +44,10 @@ class AI4SmallFarms(GeoFMDataset):
             classes (list): classes of the dataset.
             num_classes (int): number of classes.
             ignore_index (int): index to ignore for metrics and loss.
-            img_size (int): size of the image. 
+            img_size (int): size of the image.
             bands (dict[str, list[str]]): bands of the dataset.
             distribution (list[int]): class distribution.
-            data_mean (dict[str, list[str]]): mean for each band for each modality. 
+            data_mean (dict[str, list[str]]): mean for each band for each modality.
             Dictionary with keys as the modality and values as the list of means.
             e.g. {"s2": [b1_mean, ..., bn_mean], "s1": [b1_mean, ..., bn_mean]}
             data_std (dict[str, list[str]]): str for each band for each modality.
@@ -80,14 +82,13 @@ class AI4SmallFarms(GeoFMDataset):
             auto_download=auto_download,
         )
 
-
         self.root_path = pathlib.Path(root_path)
         self.split = split
         self.image_dir = self.root_path.joinpath(f"sentinel-2-asia/{split}/images")
         self.mask_dir = self.root_path.joinpath(f"sentinel-2-asia/{split}/masks")
         self.image_list = sorted(glob(str(self.image_dir.joinpath("*.tif"))))
         self.mask_list = sorted(glob(str(self.mask_dir.joinpath("*.tif"))))
-        
+
         self.data_mean = data_mean
         self.data_std = data_std
         self.data_min = data_min
@@ -105,7 +106,9 @@ class AI4SmallFarms(GeoFMDataset):
 
     def __getitem__(self, index):
         image = imread(pathlib.Path(self.image_list[index]))
-        target = imread(pathlib.Path(self.mask_list[index]))  # Assuming target is a single band
+        target = imread(
+            pathlib.Path(self.mask_list[index])
+        )  # Assuming target is a single band
 
         # Convert the image and target to supported types
         image = image.astype(np.float32)  # Convert to float32
@@ -122,11 +125,11 @@ class AI4SmallFarms(GeoFMDataset):
         target = target.bool()
 
         return {
-            'image': {
-                'optical': image,
+            "image": {
+                "optical": image,
             },
-            'target': target,
-            'metadata': {}
+            "target": target,
+            "metadata": {},
         }
 
     @staticmethod
@@ -151,7 +154,7 @@ class AI4SmallFarms(GeoFMDataset):
         # Fetch dataset files using NativeAPI
         try:
             dataset = api.get_dataset(DOI)
-            files_list = dataset.json()['data']['latestVersion']['files']
+            files_list = dataset.json()["data"]["latestVersion"]["files"]
         except Exception as e:
             if not silent:
                 print(f"Error retrieving dataset metadata: {e}")
@@ -187,28 +190,38 @@ class AI4SmallFarms(GeoFMDataset):
             except requests.exceptions.HTTPError as err:
                 if err.response.status_code == 404:
                     if not silent:
-                        print(f"File {filename} with id {file_id} not found (404). Skipping.")
+                        print(
+                            f"File {filename} with id {file_id} not found (404). Skipping."
+                        )
                 else:
                     if not silent:
-                        print(f"Error downloading file {filename} with id {file_id}: {err}")
+                        print(
+                            f"Error downloading file {filename} with id {file_id}: {err}"
+                        )
                     raise
 
         # **Cleanup: Remove unwanted files and directories**
         unwanted_paths = [
-            os.path.join(dataset_config["root_path"], 'easy-migration.zip'),
-            os.path.join(dataset_config["root_path"], 'readme.md'),
-            os.path.join(dataset_config["root_path"], 'sentinel-2-asia', 'benchmark.qgz'),
-            os.path.join(dataset_config["root_path"], 'sentinel-2-asia', 'tiles_asia.gpkg'),
-            os.path.join(dataset_config["root_path"], 'sentinel-2-asia', 'reference'),
-            os.path.join(dataset_config["root_path"], 'sentinel-2-asia', 'test', 'output'),
-            os.path.join(dataset_config["root_path"], 'sentinel-2-nl'),
+            os.path.join(dataset_config["root_path"], "easy-migration.zip"),
+            os.path.join(dataset_config["root_path"], "readme.md"),
+            os.path.join(
+                dataset_config["root_path"], "sentinel-2-asia", "benchmark.qgz"
+            ),
+            os.path.join(
+                dataset_config["root_path"], "sentinel-2-asia", "tiles_asia.gpkg"
+            ),
+            os.path.join(dataset_config["root_path"], "sentinel-2-asia", "reference"),
+            os.path.join(
+                dataset_config["root_path"], "sentinel-2-asia", "test", "output"
+            ),
+            os.path.join(dataset_config["root_path"], "sentinel-2-nl"),
         ]
 
         # Remove unwanted files and directories
         for path in unwanted_paths:
             if os.path.exists(path):
                 if os.path.isdir(path):
-                    os.system(f'rm -rf {path}')  # Remove directories
+                    os.system(f"rm -rf {path}")  # Remove directories
                 else:
                     os.remove(path)  # Remove files
                 if not silent:
