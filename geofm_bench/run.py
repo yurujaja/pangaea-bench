@@ -15,7 +15,6 @@ from torch.utils.data.distributed import DistributedSampler
 
 from geofm_bench.decoders.base import Decoder
 from geofm_bench.encoders.base import Encoder
-from geofm_bench.encoders.utils import download_model
 from geofm_bench.engine.evaluator import Evaluator
 from geofm_bench.engine.trainer import Trainer
 from geofm_bench.utils.collate_fn import get_collate_fn
@@ -115,7 +114,6 @@ def main(cfg: DictConfig) -> None:
     test_dataset: Dataset = instantiate(cfg.dataset, split="test")
     logger.info("Built {} dataset.".format(cfg.dataset.dataset_name))
 
-    download_model(cfg.encoder.download_url, cfg.encoder.encoder_weights)
     encoder: Encoder = instantiate(cfg.encoder)
     encoder.load_encoder_weights(logger)
     logger.info("Built {}.".format(encoder.model_name))
