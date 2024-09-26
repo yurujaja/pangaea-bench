@@ -10,7 +10,7 @@ from torch.nn import functional as F
 from torch.optim.lr_scheduler import LRScheduler
 from torch.optim.optimizer import Optimizer
 from torch.utils.data import DataLoader
-from utils.logger import RunningAverageMeter, sec_to_hm
+from pangaea.utils.logger import RunningAverageMeter, sec_to_hm
 
 
 class Trainer:
@@ -549,32 +549,7 @@ class RegTrainer(Trainer):
             logits (torch.Tensor): logits from the decoder.
             target (torch.Tensor): target tensor.
         """
-        # logits = F.interpolate(logits, size=target.shape[1:], mode='bilinear')
-        # print(logits.shape)
-        # print(target.shape)
 
-        mse = F.mse_loss(logits.squeeze(dim=1), target)
-
-        # pred = torch.argmax(logits, dim=1, keepdim=True)
-        # target = target.unsqueeze(1)
-        # ignore_mask = target == -1
-        # target[ignore_mask] = 0
-        # ignore_mask = ignore_mask.expand(-1, logits.shape[1], -1, -1)
-
-        # binary_pred = torch.zeros(logits.shape, dtype=bool, device=self.device)
-        # binary_target = torch.zeros(logits.shape, dtype=bool, device=self.device)
-        # binary_pred.scatter_(dim=1, index=pred, src=torch.ones_like(binary_pred))
-        # binary_target.scatter_(dim=1, index=target, src=torch.ones_like(binary_target))
-        # binary_pred[ignore_mask] = 0
-        # binary_target[ignore_mask] = 0
-
-        # intersection = torch.logical_and(binary_pred, binary_target)
-        # union = torch.logical_or(binary_pred, binary_target)
-
-        # acc = intersection.sum() / binary_target.sum() * 100
-        # macc = torch.nanmean(intersection.sum(dim=(0, 2, 3)) / binary_target.sum(dim=(0, 2, 3))) * 100
-        # miou = torch.nanmean(intersection.sum(dim=(0, 2, 3)) / union.sum(dim=(0, 2, 3))) * 100
-
+        mse = F.mse_loss(logits.squeeze(dim=1), target)  
         self.training_metrics["MSE"].update(mse.item())
-        # self.training_metrics['mAcc'].update(macc.item())
-        # self.training_metrics['mIoU'].update(miou.item())
+
