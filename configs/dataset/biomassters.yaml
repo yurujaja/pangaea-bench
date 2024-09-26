@@ -1,0 +1,58 @@
+_target_: pangaea.datasets.biomassters.BioMassters
+dataset_name: BioMassters
+root_path: ./data/Biomassters
+# download_url: #https://huggingface.co/datasets/ibm-nasa-geospatial/hls_burn_scars/resolve/main/hls_burn_scars.tar.gz?download=true
+auto_download: False
+img_size: 256
+temporal: 6 #6 (summer month use if multi_temp is 1)
+multi_temporal: 12
+multi_modal: True
+
+# classes
+ignore_index: -1
+num_classes: 1
+classes:
+  - regression
+distribution:
+  - 1.
+#   - 0.2
+#   - 0.2
+#   - 0.2
+#   - 0.2
+#   - 0.2
+
+bands:
+  optical:
+    - B2
+    - B3
+    - B4
+    - B5
+    - B6
+    - B7
+    - B8
+    - B8A
+    - B11
+    - B12
+    - CLP
+  sar:
+    - ASC_VV
+    - ASC_VH
+    - DSC_VV
+    - DSC_VH
+
+# TODO: fix the normalization 
+data_mean:
+  optical: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  sar: [0, 0, 0, 0]
+
+data_std:
+  optical: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  sar: [0, 0, 0, 0]
+ 
+data_min:
+  optical: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  sar: [-25, -62, -25, -60]
+
+data_max:
+  optical: [19616., 18400., 17536., 17097., 16928., 16768., 16593., 16492., 15401., 15226.,   255.]
+  sar: [29,  28,  30,  22]

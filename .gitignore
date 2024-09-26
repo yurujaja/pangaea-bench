@@ -1,5 +1,7 @@
 **/__pycache__/
+*.egg-info
 
+outputs/
 old_files/
 pretrained/
 pretrained_models/

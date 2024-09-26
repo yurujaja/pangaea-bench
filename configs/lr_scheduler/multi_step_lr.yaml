@@ -1,0 +1,5 @@
+_target_: pangaea.utils.schedulers.MultiStepLR
+optimizer: null
+total_iters: null
+lr_milestones: [0.6, 0.9]
+

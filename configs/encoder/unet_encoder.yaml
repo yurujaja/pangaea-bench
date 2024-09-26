@@ -1,0 +1,8 @@
+_target_:  pangaea.encoders.unet_encoder.UNet
+encoder_weights: null
+download_url: null
+input_size: ${dataset.img_size}
+topology: [64, 128, 256, 512,]
+
+input_bands: ${dataset.bands}
+

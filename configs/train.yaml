@@ -1,0 +1,26 @@
+train: true
+work_dir: ""
+seed: 234
+use_wandb: false
+wandb_run_id: null
+
+# TRAINING
+num_workers: 1
+batch_size: 32
+
+
+# EXPERIMENT
+finetune: false
+ckpt_dir: null
+limited_label: 1
+
+defaults:
+  - task: ???
+  - dataset: ???
+  - encoder: ???
+  - decoder: ???
+  - preprocessing: ???
+  - criterion: ???
+  - lr_scheduler: multi_step_lr
+  - optimizer: adamw
+  - _self_ 
