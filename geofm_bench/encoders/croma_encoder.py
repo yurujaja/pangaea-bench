@@ -155,6 +155,7 @@ class CROMA_SAR_Encoder(Encoder):
         input_size: int,
         input_bands: dict[str, list[str]],
         output_layers: int | list[int],
+        download_url: str,
         size="base",
     ):
         super().__init__(
@@ -165,6 +166,7 @@ class CROMA_SAR_Encoder(Encoder):
             embed_dim=768,
             output_dim=768,
             multi_temporal=False,
+            download_url=download_url,
         )
 
         self.output_layers = output_layers
@@ -273,6 +275,7 @@ class CROMA_JOINT_Encoder(Encoder):
         input_size: int,
         input_bands: dict[str, list[str]],
         output_layers: int | list[int],
+        download_url: str,
         size="base",
     ):
         super().__init__(
@@ -283,6 +286,7 @@ class CROMA_JOINT_Encoder(Encoder):
             embed_dim=768,
             output_dim=768,
             multi_temporal=False,
+            download_url=download_url,
         )
 
         self.output_layers = output_layers
