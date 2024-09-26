@@ -1,4 +1,4 @@
-name: geofm-bench
+name: pangaea-bench
 channels:
   - pytorch
   - nvidia
@@ -31,3 +31,4 @@ dependencies:
   - yacs
   - wandb
   - hydra-core
+
