@@ -9,7 +9,7 @@ setup(
     name="pangaea",
     version=version,
     description="Benchmark for Geospatial Foundation Models",
-    author="GeoFM Bench Team",
+    author="Pangaea Bench Team",
     author_email="",
     url="https://github.com/yurujaja/geofm-bench",
     license="MIT",
