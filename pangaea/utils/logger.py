@@ -1,4 +1,3 @@
-import os
 import logging
 from datetime import timedelta
 import time
@@ -110,7 +109,6 @@ def init_logger(filepath, rank):
     logger.reset_time = reset_time
 
     return logger
-
 
 def sec_to_hm(t):
     """Convert time in seconds to time in hours, minutes and seconds
