@@ -14,8 +14,8 @@ import cv2
 import urllib
 import tarfile
 
-from geofm_bench.datasets.utils import DownloadProgressBar
-from geofm_bench.datasets.base import GeoFMDataset
+from pangaea.datasets.utils import DownloadProgressBar
+from pangaea.datasets.base import GeoFMDataset
 
 
 class xView2(GeoFMDataset):

@@ -9,7 +9,7 @@ import torch
 from einops import rearrange
 from torch import einsum, nn
 
-from geofm_bench.encoders.base import Encoder
+from pangaea.encoders.base import Encoder
 
 
 class CROMA_OPTICAL_Encoder(Encoder):

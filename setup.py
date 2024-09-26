@@ -2,11 +2,11 @@ import os
 
 from setuptools import find_packages, setup
 
-version_py = os.path.join(os.path.dirname(__file__), "geofm_bench", "version.py")
+version_py = os.path.join(os.path.dirname(__file__), "pangaea", "version.py")
 version = open(version_py).read().strip().split("=")[-1].replace('"', "").strip()
 read_me = open("README.md", encoding="utf8").read()
 setup(
-    name="geofm_bench",
+    name="pangaea",
     version=version,
     description="Benchmark for Geospatial Foundation Models",
     author="GeoFM Bench Team",

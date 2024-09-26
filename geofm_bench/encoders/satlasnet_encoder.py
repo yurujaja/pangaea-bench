@@ -11,7 +11,7 @@ import torch
 import torch.nn
 import torchvision
 
-from geofm_bench.encoders.base import Encoder
+from pangaea.encoders.base import Encoder
 
 
 class Backbone(Enum):

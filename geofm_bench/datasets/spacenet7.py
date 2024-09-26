@@ -22,8 +22,8 @@ import torchvision.transforms as T
 
 from abc import abstractmethod
 
-from geofm_bench.datasets.utils import DownloadProgressBar
-from geofm_bench.datasets.base import GeoFMDataset
+from pangaea.datasets.utils import DownloadProgressBar
+from pangaea.datasets.base import GeoFMDataset
 # from utils.registry import DATASET_REGISTRY
 
 # train/val/test split from https://doi.org/10.3390/rs15215135

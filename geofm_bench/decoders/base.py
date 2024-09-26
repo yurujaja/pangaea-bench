@@ -1,6 +1,6 @@
 import torch.nn as nn
 
-from geofm_bench.encoders.base import Encoder
+from pangaea.encoders.base import Encoder
 
 
 class Decoder(nn.Module):

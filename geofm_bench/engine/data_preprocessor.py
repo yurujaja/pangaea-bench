@@ -7,8 +7,8 @@ import torch
 import torchvision.transforms as T
 from torch.utils.data import Dataset
 
-from geofm_bench.datasets.base import GeoFMDataset
-from geofm_bench.encoders.base import Encoder
+from pangaea.datasets.base import GeoFMDataset
+from pangaea.encoders.base import Encoder
 
 
 class RichDataset(Dataset):

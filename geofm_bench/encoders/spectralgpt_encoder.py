@@ -9,8 +9,8 @@ import torch.nn as nn
 from timm.layers import to_2tuple
 from timm.models.vision_transformer import DropPath, Mlp
 
-from geofm_bench.encoders.base import Encoder
-from geofm_bench.encoders.pos_embed import interpolate_pos_embed
+from pangaea.encoders.base import Encoder
+from pangaea.encoders.pos_embed import interpolate_pos_embed
 
 
 class SpectralGPT_Encoder(Encoder):

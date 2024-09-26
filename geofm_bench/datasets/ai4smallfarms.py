@@ -7,7 +7,7 @@ from pyDataverse.api import NativeApi, DataAccessApi
 from tifffile import imread
 import requests
 
-from geofm_bench.datasets.base import GeoFMDataset
+from pangaea.datasets.base import GeoFMDataset
 
 class AI4SmallFarms(GeoFMDataset):
     def __init__(

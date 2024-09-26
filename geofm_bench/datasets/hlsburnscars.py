@@ -17,8 +17,8 @@ import urllib
 import tarfile
 
 # from utils.registry import DATASET_REGISTRY
-from geofm_bench.datasets.utils import DownloadProgressBar
-from geofm_bench.datasets.base import GeoFMDataset
+from pangaea.datasets.utils import DownloadProgressBar
+from pangaea.datasets.base import GeoFMDataset
 
 # @DATASET_REGISTRY.register()
 class HLSBurnScars(GeoFMDataset):

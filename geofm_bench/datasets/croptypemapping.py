@@ -12,7 +12,7 @@ import pandas as pd
 
 import torch
 
-from geofm_bench.datasets.base import GeoFMDataset
+from pangaea.datasets.base import GeoFMDataset
 # from utils.registry import DATASET_REGISTRY
 
 

@@ -10,8 +10,8 @@ import torch.nn.functional as F
 import torch.nn.init as init
 from timm.models.vision_transformer import Block
 
-from geofm_bench.encoders.base import Encoder
-from geofm_bench.encoders.pos_embed import get_1d_sincos_pos_embed_from_grid_torch
+from pangaea.encoders.base import Encoder
+from pangaea.encoders.pos_embed import get_1d_sincos_pos_embed_from_grid_torch
 
 
 class TransformerWeightGenerator(nn.Module):

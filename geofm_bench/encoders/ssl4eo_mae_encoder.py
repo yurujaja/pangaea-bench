@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 from timm.models.vision_transformer import Block, PatchEmbed
 
-from geofm_bench.encoders.base import Encoder
+from pangaea.encoders.base import Encoder
 
 from .pos_embed import get_2d_sincos_pos_embed
 

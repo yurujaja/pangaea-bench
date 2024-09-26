@@ -9,7 +9,7 @@ from pathlib import Path
 import torch
 import torch.nn as nn
 
-from geofm_bench.encoders.base import Encoder
+from pangaea.encoders.base import Encoder
 
 
 def _no_grad_trunc_normal_(tensor, mean, std, a, b):

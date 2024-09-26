@@ -8,7 +8,7 @@ import torch.utils.checkpoint as checkpoint
 from scipy.interpolate import RegularGridInterpolator
 from timm.layers import DropPath, to_2tuple, trunc_normal_
 
-from geofm_bench.encoders.base import Encoder
+from pangaea.encoders.base import Encoder
 
 
 class Mlp(nn.Module):

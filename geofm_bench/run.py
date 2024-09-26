@@ -13,13 +13,13 @@ from omegaconf import DictConfig, OmegaConf
 from torch.utils.data import DataLoader, Dataset, Subset
 from torch.utils.data.distributed import DistributedSampler
 
-from geofm_bench.decoders.base import Decoder
-from geofm_bench.encoders.base import Encoder
-from geofm_bench.engine.evaluator import Evaluator
-from geofm_bench.engine.trainer import Trainer
-from geofm_bench.utils.collate_fn import get_collate_fn
-from geofm_bench.utils.logger import init_logger
-from geofm_bench.utils.utils import (
+from pangaea.decoders.base import Decoder
+from pangaea.encoders.base import Encoder
+from pangaea.engine.evaluator import Evaluator
+from pangaea.engine.trainer import Trainer
+from pangaea.utils.collate_fn import get_collate_fn
+from pangaea.utils.logger import init_logger
+from pangaea.utils.utils import (
     fix_seed,
     get_best_model_ckpt_path,
     get_generator,

@@ -11,7 +11,7 @@ import torch.nn.functional as F
 from timm.layers import drop_path, to_2tuple, trunc_normal_
 from timm.layers import trunc_normal_ as __call_trunc_normal_
 
-from geofm_bench.encoders.base import Encoder
+from pangaea.encoders.base import Encoder
 
 
 def trunc_normal_(tensor, mean=0.0, std=1.0):

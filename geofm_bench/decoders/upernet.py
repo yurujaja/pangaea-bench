@@ -2,9 +2,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from geofm_bench.decoders.base import Decoder
-from geofm_bench.decoders.ltae import LTAE2d
-from geofm_bench.encoders.base import Encoder
+from pangaea.decoders.base import Decoder
+from pangaea.decoders.ltae import LTAE2d
+from pangaea.encoders.base import Encoder
 
 
 class SegUPerNet(Decoder):
@@ -349,6 +349,9 @@ class SiamUPerNet(SegUPerNet):
                 feat1, feat2 = self.encoder_forward(img)
         else:
             feat1, feat2 = self.encoder_forward(img)
+
+        print("LEN ", len(feat1))
+        print("SHHAPE ", feat1[0].shape)
 
         if self.strategy == "diff":
             feat = [f2 - f1 for f1, f2 in zip(feat1, feat2)]

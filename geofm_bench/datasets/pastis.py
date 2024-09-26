@@ -14,7 +14,7 @@ import rasterio
 import torch
 from einops import rearrange
 
-from geofm_bench.datasets.base import GeoFMDataset
+from pangaea.datasets.base import GeoFMDataset
 
 
 def prepare_dates(date_dict, reference_date):

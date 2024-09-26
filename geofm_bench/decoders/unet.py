@@ -4,8 +4,8 @@ import torch.nn as nn
 
 from collections import OrderedDict
 from typing import Sequence
-from geofm_bench.decoders.base import Decoder
-from geofm_bench.encoders.base import Encoder
+from pangaea.decoders.base import Decoder
+from pangaea.encoders.base import Encoder
 
 
 class UNet(Decoder):

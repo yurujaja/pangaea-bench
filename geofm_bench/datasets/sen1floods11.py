@@ -7,8 +7,8 @@ import pandas as pd
 import rasterio 
 import torch
 
-from geofm_bench.datasets.utils import download_bucket_concurrently
-from geofm_bench.datasets.base import GeoFMDataset
+from pangaea.datasets.utils import download_bucket_concurrently
+from pangaea.datasets.base import GeoFMDataset
 
 # @DATASET_REGISTRY.register()
 class Sen1Floods11(GeoFMDataset):

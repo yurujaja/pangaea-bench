@@ -6,8 +6,8 @@ import rasterio
 from tifffile import imread
 from os.path import join as opj
 
-from geofm_bench.datasets.utils import read_tif
-from geofm_bench.datasets.base import GeoFMDataset
+from pangaea.datasets.utils import read_tif
+from pangaea.datasets.base import GeoFMDataset
 
 def read_imgs(multi_temporal, temp , fname, data_dir, img_size):
     imgs_s1, imgs_s2, mask = [], [], []

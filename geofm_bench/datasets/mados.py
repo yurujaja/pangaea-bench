@@ -17,8 +17,8 @@ import torch
 import torchvision.transforms.functional as TF
 import torchvision.transforms as T
 
-from geofm_bench.datasets.utils import DownloadProgressBar
-from geofm_bench.datasets.base import GeoFMDataset
+from pangaea.datasets.utils import DownloadProgressBar
+from pangaea.datasets.base import GeoFMDataset
 
 ###############################################################
 # MADOS DATASET                                               #

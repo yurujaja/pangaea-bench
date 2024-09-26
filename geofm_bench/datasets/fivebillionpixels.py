@@ -17,9 +17,9 @@ import torchvision.transforms as T
 import pathlib
 import urllib
 import tarfile
-from geofm_bench.datasets.utils import DownloadProgressBar
+from pangaea.datasets.utils import DownloadProgressBar
 
-from geofm_bench.datasets.base import GeoFMDataset
+from pangaea.datasets.base import GeoFMDataset
 # from utils.registry import DATASET_REGISTRY
 
 # @DATASET_REGISTRY.register()
