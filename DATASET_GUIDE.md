@@ -13,8 +13,8 @@ This document provides a detailed overview of the datasets used in this reposito
    --config-name=train \
    dataset=hlsburnscars \
    encoder=remoteclip \
-   decoder=upernet\
-   preprocessing=default \
+   decoder=seg_upernet\
+   preprocessing=seg_default \
    criterion=cross_entropy \
    task=segmentation
   ```
@@ -30,8 +30,8 @@ This document provides a detailed overview of the datasets used in this reposito
    --config-name=train \
    dataset=mados \
    encoder=remoteclip \
-   decoder=upernet\
-   preprocessing=default \
+   decoder=seg_upernet\
+   preprocessing=seg_default \
    criterion=cross_entropy \
    task=segmentation
   ```
@@ -40,16 +40,16 @@ This document provides a detailed overview of the datasets used in this reposito
 
 - The code supports automatic downloading of the dataset into `./data` folder.
 - SPOT-6 images are available for single-temporal semantic segmentation, otherwise the basic experimental setup for this dataset is a multi-temporal multi-modal semantic segmentation task.
-- Images are 64x64 patches, so a resize is needed to match input_size requirements of the encoders.
-- For models that don't support multi-temporal data, each time frame is processed separately for feature extraction and then mapped into a single representation. This setup requires the configuration file `configs/decoder/upernet_mt.yaml`. Additionally, in the dataset configuration, specify the number of time frames, for example, `multi_temporal: 6`, where the latest six images are selected for both optical and SAR data. Below is a CLI example for running the experiment using the RemoteCLIP pretrained encoder and multi-temporal UPerNet with L-TAE processing of temporal information:
+- Images are 128x128 patches, so a resize is needed to match input_size requirements of the encoders.
+- For models that don't support multi-temporal data, each time frame is processed separately for feature extraction and then mapped into a single representation. This setup requires the configuration file `configs/decoder/seg_upernet_mt_ltae.yaml`. Additionally, in the dataset configuration, specify the number of time frames, for example, `multi_temporal: 6`. Below is a CLI example for running the experiment using the RemoteCLIP pretrained encoder and multi-temporal UPerNet with L-TAE processing of temporal information:
 
   ```
   torchrun --nnodes=1 --nproc_per_node=1 geofm_bench/run.py \
    --config-name=train \
    dataset=pastis \
    encoder=remoteclip \
-   decoder=upernet_mt_ltae \
-   preprocessing=mt_resize \
+   decoder=seg_upernet_mt_ltae \
+   preprocessing=seg_resize \
    criterion=cross_entropy \
    task=segmentation
   ```
@@ -65,8 +65,8 @@ This document provides a detailed overview of the datasets used in this reposito
    --config-name=train \
    dataset=sen1floods11 \
    encoder=remoteclip \
-   decoder=upernet\
-   preprocessing=default \
+   decoder=seg_upernet\
+   preprocessing=seg_default \
    criterion=cross_entropy \
    task=segmentation
   ```
@@ -85,10 +85,10 @@ This document provides a detailed overview of the datasets used in this reposito
    --config-name=train \
    dataset=xview2 \
    encoder=prithvi \
-   decoder=siamdiffupernet \
-   preprocessing=default \
+   decoder=seg_siamupernet_conc \
+   preprocessing=seg_default \
    criterion=cross_entropy \
-   task=segmentation
+   task=change_detection
    ```
 
 ### FiveBillionPixels
@@ -104,8 +104,8 @@ This document provides a detailed overview of the datasets used in this reposito
    --config-name=train \
    dataset=fivebillionpixels \
    encoder=remoteclip \
-   decoder=upernet\
-   preprocessing=default \
+   decoder=seg_upernet\
+   preprocessing=seg_default \
    criterion=cross_entropy \
    task=segmentation
   ```
@@ -113,15 +113,15 @@ This document provides a detailed overview of the datasets used in this reposito
 ### DynamicEarthNet
 
 - The code supports automatic downloading of the dataset into `./data` folder.
-- The basic experimental setup for this dataset is a multi-temporal semantic segmentation task. For models that don't support multi-temporal data, each time frame is processed separately for feature extraction and then mapped into a single representation. This setup requires the configuration file `configs/decoder/upernet_mt.yaml`. Additionally, in the dataset configuration, specify the number of time frames, for example, `multi_temporal: 6`, where the latest six images are selected. Below is a CLI example for running the experiment using the RemoteCLIP pretrained encoder and multi-temporal UPerNet with L-TAE processing of temporal information:
+- The basic experimental setup for this dataset is a multi-temporal semantic segmentation task. For models that don't support multi-temporal data, each time frame is processed separately for feature extraction and then mapped into a single representation. This setup requires the configuration file `configs/decoder/seg_upernet_mt_ltae.yaml` or `configs/decoder/seg_upernet_mt_linear.yaml`. Additionally, in the dataset configuration, specify the number of time frames, for example, `multi_temporal: 6`. Below is a CLI example for running the experiment using the RemoteCLIP pretrained encoder and multi-temporal UPerNet with L-TAE processing of temporal information:
 
   ```
   torchrun --nnodes=1 --nproc_per_node=1 geofm_bench/run.py \
    --config-name=train \
    dataset=dynamicearthnet \
    encoder=remoteclip \
-   decoder=upernet_mt_ltae \
-   preprocessing=mt_resize \
+   decoder=seg_upernet_mt_ltae \
+   preprocessing=seg_default \
    criterion=cross_entropy \
    task=segmentation
   ```
@@ -131,15 +131,15 @@ This document provides a detailed overview of the datasets used in this reposito
 - The code supports automatic downloading of the dataset into `./data` folder.
 - Images are 64x64 patches, so a resize is needed to match input_size requirements of the encoders.
 - The original dataset contains corrupted files, which are skipped during the experiment. We follow the dataset paper to use the most frequent 4 classes and the others are ignored.
-- The basic experimental setup for this dataset is a multi-temporal multi-modal semantic segmentation task. For models that don't support multi-temporal data, each time frame is processed separately for feature extraction and then mapped into a single representation. This setup requires the configuration file `configs/decoder/upernet_mt.yaml`. Additionally, in the dataset configuration, specify the number of time frames, for example, `multi_temporal: 6`, where the latest six images are selected for both optical and SAR data. Below is a CLI example for running the experiment using the RemoteCLIP pretrained encoder and multi-temporal UPerNet with L-TAE processing of temporal information:
+- The basic experimental setup for this dataset is a multi-temporal multi-modal semantic segmentation task. For models that don't support multi-temporal data, each time frame is processed separately for feature extraction and then mapped into a single representation. This setup requires the configuration file `configs/decoder/seg_upernet_mt_linear.yaml` or `configs/decoder/seg_upernet_mt_ltae.yaml`. Additionally, in the dataset configuration, specify the number of time frames, for example, `multi_temporal: 6`, where the latest six images are selected for both optical and SAR data. Below is a CLI example for running the experiment using the RemoteCLIP pretrained encoder and multi-temporal UPerNet with L-TAE processing of temporal information:
 
   ```
   torchrun --nnodes=1 --nproc_per_node=1 geofm_bench/run.py \
    --config-name=train \
    dataset=croptypemapping \
    encoder=remoteclip \
-   decoder=upernet_mt_ltae \
-   preprocessing=mt_resize \
+   decoder=seg_upernet_mt_ltae \
+   preprocessing=seg_resize \
    criterion=cross_entropy \
    task=segmentation
   ```
@@ -156,8 +156,8 @@ This document provides a detailed overview of the datasets used in this reposito
    --config-name=train \
    dataset=spacenet7 \
    encoder=remoteclip \
-   decoder=upernet\
-   preprocessing=default \
+   decoder=seg_upernet\
+   preprocessing=seg_default \
    criterion=cross_entropy \
    task=segmentation
   ```
@@ -167,8 +167,8 @@ This document provides a detailed overview of the datasets used in this reposito
    --config-name=train \
    dataset=spacenet7 \
    encoder=remoteclip \
-   decoder=siamdiffupernet\
-   preprocessing=default \
+   decoder=seg_siamupernet_conc\
+   preprocessing=seg_default \
    criterion=cross_entropy \
    task=segmentation
   ```
@@ -184,23 +184,23 @@ This document provides a detailed overview of the datasets used in this reposito
    --config-name=train \
    dataset=ai4smallfarms \
    encoder=remoteclip \
-   decoder=upernet\
-   preprocessing=default \
+   decoder=seg_upernet \
+   preprocessing=seg_default \
    criterion=cross_entropy \
    task=segmentation
   ```
   
 ### BioMassters
 - The code is not supporting the automatic download. It will come soon.
-- The dataset is multi-modal and multi-temporal, so the default command is:
+- The dataset is multi-modal and multi-temporal, so a default command of using DOFA model is:
   ```
    torchrun --nnodes=1 --nproc_per_node=1 geofm_bench/run.py \
    --config-name=train \
    dataset=biomassters \
-   encoder=prithvi \
-   decoder=reg_upernet_mt \
-   preprocessing=default \
-   criterion=cross_entropy \
+   encoder=dofa \
+   decoder=reg_upernet_mt_ltae \
+   preprocessing=reg_default \
+   criterion=mse \
    task=regression
   ```
 - If you want to try single temporal regression, you can use:
@@ -208,10 +208,10 @@ This document provides a detailed overview of the datasets used in this reposito
     torchrun --nnodes=1 --nproc_per_node=1 geofm_bench/run.py \
    --config-name=train \
    dataset=biomassters \
-   encoder=prithvi \
+   encoder=dofa \
    decoder=reg_upernet \
-   preprocessing=default \
-   criterion=cross_entropy \
+   preprocessing=reg_default \
+   criterion=mse \
    task=regression
    ```
   In this case, you can specify in the `temp` parameter which frame you want to use.
