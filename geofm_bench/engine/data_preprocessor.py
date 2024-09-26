@@ -562,7 +562,11 @@ class GammaAugment(BaseAugment):
 
 
 class NormalizeMeanStd(BaseAugment):
-    def __init__(self, dataset: GeoFMDataset, encoder: Encoder) -> None:
+    def __init__(
+            self, 
+            dataset: GeoFMDataset, 
+            encoder: Encoder
+    ) -> None:
         """Initialize the NormalizeMeanStd.
         Args:
             dataset (GeoFMDataset): dataset used.
@@ -613,7 +617,7 @@ class NormalizeMinMax(BaseAugment):
         data_min: torch.Tensor,
         data_max: torch.Tensor,
     ) -> None:
-        """Initialize the NormalizeMinMax.
+        """Apply Min/Max Normalization to scale the data to the range [data_min, data_max].
         Args:
             dataset (GeoFMDataset): dataset used.
             encoder (Encoder): encoder used.
@@ -654,7 +658,11 @@ class NormalizeMinMax(BaseAugment):
 
         data = self.dataset[index]
         for modality in self.encoder.input_bands:
-            data["image"][modality] = (data["image"][modality] - self.data_min_tensors[modality]) / (self.data_max_tensors[modality]- self.data_min_tensors[modality])
+            data["image"][modality] = (
+                (data["image"][modality] - self.data_min_tensors[modality])
+                * (self.max - self.min)
+                - self.min
+            ) / self.data_max_tensors[modality]
         
         return data
     
