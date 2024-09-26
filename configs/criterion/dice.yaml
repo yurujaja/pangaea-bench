@@ -1,0 +1,2 @@
+_target_: pangaea.utils.losses.DICELoss 
+ignore_index: ${dataset.ignore_index}

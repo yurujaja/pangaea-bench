@@ -1,0 +1,3 @@
+_target_: pangaea.utils.losses.WeightedCrossEntropy 
+ignore_index: ${dataset.ignore_index}
+distribution: ${dataset.distribution}

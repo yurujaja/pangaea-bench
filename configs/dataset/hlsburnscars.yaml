@@ -1,0 +1,48 @@
+_target_: pangaea.datasets.hlsburnscars.HLSBurnScars
+dataset_name: HLSBurnScars
+root_path: ./data/hlsburnscars
+download_url: https://huggingface.co/datasets/ibm-nasa-geospatial/hls_burn_scars/resolve/main/hls_burn_scars.tar.gz?download=true
+auto_download: True
+img_size: 512
+multi_temporal: False
+multi_modal: False
+
+# classes
+ignore_index: -1
+num_classes: 2
+classes:
+  - Not burned
+  - Burn scar
+distribution:
+  - 0.88889
+  - 0.11111
+
+bands:
+  optical:
+    - B2
+    - B3
+    - B4
+    - B8A
+    - B11
+    - B12
+data_mean:
+  optical:
+    - 0.033349706741586264
+    - 0.05701185520536176
+    - 0.05889748132001316
+    - 0.2323245113436119
+    - 0.1972854853760658
+    - 0.11944914225186566
+data_std:
+  optical:
+    - 0.02269135568823774
+    - 0.026807560223070237
+    - 0.04004109844362779
+    - 0.07791732423672691
+    - 0.08708738838140137
+    - 0.07241979477437814
+
+data_min:
+  optical: [0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000]
+data_max:
+  optical: [0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000]

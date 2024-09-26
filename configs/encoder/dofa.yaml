@@ -1,0 +1,42 @@
+_target_: pangaea.encoders.dofa_encoder.DOFA_Encoder
+encoder_weights: ./pretrained_models/DOFA_ViT_base_e100.pth
+download_url: https://huggingface.co/XShadow/DOFA/resolve/main/DOFA_ViT_base_e100.pth
+
+embed_dim: 768
+input_size: 224
+patch_size: 16
+depth: 12
+num_heads: 12
+mlp_ratio: 4
+use_norm: False
+
+input_bands: ${dataset.bands}
+
+wave_list:
+  optical:
+    B1: 0.44
+    B2: 0.49
+    B3: 0.56
+    B4: 0.665
+    B5: 0.705
+    B6: 0.74
+    B7: 0.783
+    B8: 0.832
+    B8A: 0.864
+    B9: 0.945
+    B10: 1.373
+    B11: 1.61
+    B12: 2.20
+  sar:
+    VV: 3.75
+    VH: 3.75
+    ASC_VV: 3.75
+    ASC_VH: 3.75
+    DSC_VV: 3.75
+    DSC_VH: 3.75
+  
+output_layers:
+  - 3
+  - 5
+  - 7
+  - 11

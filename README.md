@@ -64,24 +64,7 @@ cd geofm-bench
 
 **Dependencies**
 
-We provide several ways to install the dependencies.
-
-1. **Using either Conda or Mamba**:
-    ```
-    conda env create -f environment.yaml
-    conda activate geofm-bench
-    ```
-
-    Optional: install [Mamba](https://github.com/conda-forge/miniforge/releases/) for faster resolution times
-    ```
-    wget https://github.com/conda-forge/miniforge/releases/download/24.3.0-0/Mambaforge-24.3.0-0-Linux-x86_64.sh
-    sh ./Mambaforge-24.3.0-0-Linux-x86_64.sh
-
-    mamba env create -f environment.yaml
-    mamba activate geofm-bench
-    ```
-
-2. **Using pip**, create a Python native virtual environment and install dependencies into it:
+**Using pip**, create a Python native virtual environment and install dependencies into it:
     ```
     export GFMBENCH_PATH=/path/to/venv/geofm-bench  # change this
     python3 -m venv ${GFMBENCH_PATH}
@@ -92,6 +75,7 @@ We provide several ways to install the dependencies.
     # install the code repo as a package
     pip install -e .
     ```
+
 
 ## 🏋️ Training
 
@@ -289,6 +273,7 @@ A pre-print is coming soon... Stay tuned!
 | Prithvi | HLSBurnScars  | 80     | 86.208 |
 | Prithvi | Sen1Floods11  | 80     | 87.217 |
 | Prithvi | AI4SmallFarms | 80     | 33.796 |
+
 
 ## 📝 Citation
 
