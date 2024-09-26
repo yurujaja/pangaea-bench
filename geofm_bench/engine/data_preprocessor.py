@@ -960,8 +960,10 @@ class ImportanceRandomCrop(BaseAugment):
         data = self.dataset[index]
 
         # dataset needs to provide a weighting layer
-        assert "weight" in data.keys()
-
+        weight = torch.zeros_like(data["target"]).float()
+        for i, freq in enumerate(self.distribution):
+            weight[data["target"] == i] = 1 - freq
+        weight[data["target"] == self.ignore_index] = 1e-6
         # candidates for random crop
         crop_candidates, crop_weights = [], []
         for _ in range(self.n_crops):
@@ -973,10 +975,11 @@ class ImportanceRandomCrop(BaseAugment):
             )
             crop_candidates.append((i, j, h, w))
 
-            crop_weight = T.functional.crop(data["weight"], i, j, h, w)
+            crop_weight = T.functional.crop(weight, i, j, h, w)
             crop_weights.append(torch.sum(crop_weight).item())
 
-        crop_weights = np.array(crop_weights) / sum(crop_weights)
+        crop_weights = np.array(crop_weights) 
+        crop_weights = crop_weights / np.sum(crop_weights)
         crop_idx = np.random.choice(self.n_crops, p=crop_weights)
         i, j, h, w = crop_candidates[crop_idx]
 

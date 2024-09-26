@@ -408,16 +408,16 @@ class SN7MAPPING(AbstractSN7):
 
         image = torch.from_numpy(image)
         target = torch.from_numpy(target)
-        weight = torch.empty(target.shape)
-        for i, freq in enumerate(self.distribution):
-            weight[target == i] = 1 - freq
+        # weight = torch.empty(target.shape)
+        # for i, freq in enumerate(self.distribution):
+        #     weight[target == i] = 1 - freq
 
         output = {
             'image': {
                 'optical': image,
             },
             'target': target,
-            'weight': weight,
+            # 'weight': weight,
             'metadata': {}
         }
 
