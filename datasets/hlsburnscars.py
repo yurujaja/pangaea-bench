@@ -36,6 +36,29 @@ class HLSBurnScars(torch.utils.data.Dataset):
             # T.Resize((self.height, self.height), antialias=False),
             T.Normalize(mean=self.data_mean['optical'], std=self.data_std['optical'])
         ])
+        self.labels = self._generate_image_labels()
+
+    def _generate_image_labels(self):
+        """ Generate image-level labels for stratification based on the median threshold of burned pixels. """
+        burned_ratios = []
+        
+        # Step 1: Calculate the burned ratio for each image
+        for mask_path in self.target_list:
+            with rasterio.open(mask_path) as src:
+                mask = src.read(1)
+                total_pixels = mask.size
+                burned_pixels = np.sum(mask == 1)
+                burned_ratio = burned_pixels / total_pixels
+                burned_ratios.append(burned_ratio)
+        
+        # Step 2: Calculate the median burned ratio
+        median_burned_ratio = np.median(burned_ratios)
+        
+        # Step 3: Generate 0/1 labels based on whether burned ratio is above or below the median
+        labels = [(1 if ratio > median_burned_ratio else 0) for ratio in burned_ratios]
+        
+        return labels
+
 
     def __len__(self):
         return len(self.image_list)

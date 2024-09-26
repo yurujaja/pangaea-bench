@@ -257,7 +257,8 @@ def main():
                 # Use stratified sampling with the limited label
                 stratified_split = StratifiedShuffleSplit(n_splits=1, train_size=cfg.limited_label, random_state=cfg.seed)
                 
-                labels = train_dataset.targets  # Adjust depending on how labels are stored in your dataset
+                labels = train_dataset.labels  # Adjust depending on how labels are stored in your dataset
+                
                 for train_idx, _ in stratified_split.split(torch.zeros(len(labels)), labels):
                     train_dataset = Subset(train_dataset, train_idx)
                 
