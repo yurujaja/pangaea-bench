@@ -1,0 +1,35 @@
+train: 
+  - _target_: geofm_bench.engine.data_preprocessor.RegPreprocessor
+    # overwritten in run
+    dataset: null
+    encoder: null
+
+  - _target_: geofm_bench.engine.data_preprocessor.NormalizeMinMax
+    # overwritten in run
+    dataset: null
+    encoder: null
+    data_min: -1
+    data_max: 1
+
+  - _target_: geofm_bench.engine.data_preprocessor.RandomCropToEncoder
+    # overwritten in run
+    dataset: null
+    encoder: null
+
+test: 
+  - _target_: geofm_bench.engine.data_preprocessor.RegPreprocessor
+    # overwritten in run
+    dataset: null
+    encoder: null
+
+  - _target_: geofm_bench.engine.data_preprocessor.NormalizeMinMax
+    # overwritten in run
+    dataset: null
+    encoder: null
+    data_min: -1
+    data_max: 1
+
+  - _target_: geofm_bench.engine.data_preprocessor.Tile
+    # overwritten in run
+    dataset: null
+    encoder: null

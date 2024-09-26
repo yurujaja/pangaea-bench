@@ -1,0 +1,31 @@
+train: 
+  - _target_: geofm_bench.engine.data_preprocessor.SegPreprocessor
+    # overwritten in run
+    dataset: null
+    encoder: null
+
+  - _target_: geofm_bench.engine.data_preprocessor.NormalizeMeanStd
+    # overwritten in run
+    dataset: null
+    encoder: null
+
+  - _target_: geofm_bench.engine.data_preprocessor.RandomCropToEncoder
+    # overwritten in run
+    dataset: null
+    encoder: null
+
+test: 
+  - _target_: geofm_bench.engine.data_preprocessor.SegPreprocessor
+    # overwritten in run
+    dataset: null
+    encoder: null
+
+  - _target_: geofm_bench.engine.data_preprocessor.NormalizeMeanStd
+    # overwritten in run
+    dataset: null
+    encoder: null
+
+  - _target_: geofm_bench.engine.data_preprocessor.Tile
+    # overwritten in run
+    dataset: null
+    encoder: null
