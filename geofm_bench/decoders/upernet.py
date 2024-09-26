@@ -318,39 +318,37 @@ class SiamUPerNet(SegUPerNet):
             feature_multiplier=feature_multiplier,
         )
 
+    def encoder_forward(
+        self, img: dict[str, torch.Tensor]
+    ) -> list[dict[str, torch.Tensor]]:
+        if self.encoder.multi_temporal:
+            # Retains the temporal dimension
+            img1 = {k: v[:, :, [0], :, :] for k, v in img.items()}
+            img2 = {k: v[:, :, [1], :, :] for k, v in img.items()}
+
+            # multi_temporal encoder returns features (B C T H W)
+            feat1 = self.encoder(img1).squeeze(-3)
+            feat2 = self.encoder(img2).squeeze(-3)
+
+        else:
+            img1 = {k: v[:, :, 0, :, :] for k, v in img.items()}
+            img2 = {k: v[:, :, 1, :, :] for k, v in img.items()}
+
+            feat1 = self.encoder(img1)
+            feat2 = self.encoder(img2)
+
+        return [feat1, feat2]
+
     def forward(
         self, img: dict[str, torch.Tensor], output_shape: torch.Size | None = None
     ) -> torch.Tensor:
         """Forward function for change detection."""
 
-        if self.encoder.model_name != "Prithvi":
-            if self.encoder.model_name == "SpectralGPT":
-                # Retains the temporal dimension
-                img1 = {k: v[:, :, [0], :, :] for k, v in img.items()}
-                img2 = {k: v[:, :, [1], :, :] for k, v in img.items()}
-            else:
-                img1 = {k: v[:, :, 0, :, :] for k, v in img.items()}
-                img2 = {k: v[:, :, 1, :, :] for k, v in img.items()}
-
-            if not self.finetune:
-                with torch.no_grad():
-                    feat1 = self.encoder(img1)
-                    feat2 = self.encoder(img2)
-            else:
-                feat1 = self.encoder(img1)
-                feat2 = self.encoder(img2)
-
+        if not self.finetune:
+            with torch.no_grad():
+                feat1, feat2 = self.encoder_forward(img)
         else:
-            if not self.finetune:
-                with torch.no_grad():
-                    feats = self.encoder(img)
-            else:
-                feats = self.encoder(img)
-
-            feat1, feat2 = [], []
-            for i in range(len(feats)):
-                feat1.append(feats[i][:, :, 0, :, :].squeeze(2))
-                feat2.append(feats[i][:, :, 1, :, :].squeeze(2))
+            feat1, feat2 = self.encoder_forward(img)
 
         if self.strategy == "diff":
             feat = [f2 - f1 for f1, f2 in zip(feat1, feat2)]
