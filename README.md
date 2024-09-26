@@ -1,12 +1,16 @@
 [![Tests](https://github.com/yurujaja/geofm-bench/actions/workflows/python-test.yml/badge.svg)](https://github.com/yurujaja/geofm-bench/actions/workflows/python-test.yml)
 
-# PANGAEA: a diverse benchmark for geospatial foundation models
+# PANGAEA: A Diverse Benchmark for Geospatial Foundation Models
 
 ## 📚 Introduction
 
-While geospatial foundation models (GFMs) have proliferated rapidly, their evaluations remain inconsistent and narrow. Existing works often utilize suboptimal downstream datasets (e.g., EuroSAT) and tasks (e.g., land cover classification), which constrain comparability and real-world usability. Additionally, a lack of diversity in evaluation protocols, including image resolution and sensor types, further complicates the extensive assessments of GFM performance. To bridge this gap, we propose a standardized evaluation protocol that incorporates a wide-ranging selection of datasets, tasks, resolutions, and sensor types, establishing a robust and widely applicable benchmark for GFMs.
+While geospatial foundation models (GFMs) have proliferated rapidly, their evaluations remain inconsistent and narrow. Existing works often utilize suboptimal downstream datasets (e.g., EuroSAT) and tasks (e.g., land cover classification), which constrain comparability and real-world usability. Additionally, a lack of diversity in evaluation protocols, including image resolution and sensor types, further complicates the extensive assessments of GFM performance. 
 
-![PANGAEA: a diverse benchmark for geospatial foundation models](figures/geofmbenchmark.png)
+To bridge this gap, we propose a standardized evaluation protocol that incorporates a wide-ranging selection of datasets, tasks, resolutions, and sensor types, establishing a robust and widely applicable benchmark for GFMs.
+
+
+<img src="figures/geofmbenchmark.png" alt="PANGAEA: a diverse benchmark for geospatial foundation models" width="80%">
+
 
 In this repo, you can find the code to benchmark GFMs. For the moment we included several GFMs that present different approach. We look forward to adding new models and datasets.
 
@@ -58,23 +62,41 @@ If you want to fast-prototype your model, maybe you want to run fast experiments
 ## 🛠️ Setup
 Clone the repository:
 ```
-git clone git@github.com:yurujaja/geofm-bench.git
-cd geofm-bench
+git clone https://github.com/yurujaja/pangaea-bench.git
+cd pangaea-bench
 ```
 
 **Dependencies**
 
-**Using pip**, create a Python native virtual environment and install dependencies into it:
-    ```
-    export GFMBENCH_PATH=/path/to/venv/geofm-bench  # change this
-    python3 -m venv ${GFMBENCH_PATH}
-    source ${GFMBENCH_PATH}/bin/activate
+We provide several ways to install the dependencies.
 
-    pip install -r requirements.txt
-    
-    # install the code repo as a package
-    pip install -e .
+1. **Using either Conda or Mamba**:
     ```
+    conda env create -f environment.yaml
+    conda activate pangaea-bench
+    ```
+
+    Optional: install [Mamba](https://github.com/conda-forge/miniforge/releases/) for faster resolution times
+    ```
+    wget https://github.com/conda-forge/miniforge/releases/download/24.3.0-0/Mambaforge-24.3.0-0-Linux-x86_64.sh
+    sh ./Mambaforge-24.3.0-0-Linux-x86_64.sh
+
+    mamba env create -f environment.yaml
+    mamba activate pangaea-bench
+    ```
+
+2. **Using pip**, create a Python native virtual environment and install dependencies into it:
+   ```
+   export PANGAEA_PATH=/path/to/venv/pangaea-bench # change this
+   python3 -m venv ${PANGAEA_PATH}
+   source ${PANGAEA_PATH}/bin/activate
+   
+   pip install -r requirements.txt
+   ```
+ **Then install the code repository as a package**
+   ```
+   pip install -e .
+   ```
 
 
 ## 🏋️ Training
@@ -88,9 +110,9 @@ To run experiments, please refer to `configs/train.yaml`. In it, in addition to 
 
 
 Other 3 configs are used to set other training parameters:
-- `criterion`: in which you can choose the loss for the training. Consider that if you want to add a custom loss, you should add to `geofm_bench/utils/losses.py`. Currently, we support `cross_entropy`, `weigthed_cross_entropy`, `dice` and `mae` loss functions.
-- `lr_scheduler`: in which you can choose the scheduler. Consider that if you want to add a custom one, you should add to `geofm_bench/utils/schedulers.py`. 
-- `optimizer`: in which you can choose the optimizer. Consider that if you want to add a custom one, you should add to `geofm_bench/utils/optimizers.py`.
+- `criterion`: in which you can choose the loss for the training. Consider that if you want to add a custom loss, you should add to `pangaea/utils/losses.py`. Currently, we support `cross_entropy`, `weigthed_cross_entropy`, `dice` and `mae` loss functions.
+- `lr_scheduler`: in which you can choose the scheduler. Consider that if you want to add a custom one, you should add to `pangaea/utils/schedulers.py`. 
+- `optimizer`: in which you can choose the optimizer. Consider that if you want to add a custom one, you should add to `pangaea/utils/optimizers.py`.
 
 
 We provide several examples of command lines to initialize different training tasks on single GPU.
@@ -104,7 +126,7 @@ Please note:
 
 Take HLSBurnScars dataset, RemoteCLIP Encoder and Upernet Segmentation Decoder as example:
 ```
-torchrun --nnodes=1 --nproc_per_node=1 geofm_bench/run.py \
+torchrun --nnodes=1 --nproc_per_node=1 pangaea/run.py \
    --config-name=train \
    dataset=hlsburnscars \
    encoder=remoteclip \
@@ -116,7 +138,7 @@ torchrun --nnodes=1 --nproc_per_node=1 geofm_bench/run.py \
 
 If you want to overwrite some parameters (e.g. turn off wandbe, and changing batch size and the path to the dataset):
 ```
-torchrun --nnodes=1 --nproc_per_node=1 geofm_bench/run.py \
+torchrun --nnodes=1 --nproc_per_node=1 pangaea/run.py \
    --config-name=train \
    dataset=hlsburnscars \
    encoder=remoteclip \
@@ -135,7 +157,7 @@ Multi-temporal decoder config (e.g. `configs/decoder/seg_upernet_mt_ltae.yaml` i
 In addition, in the dataset config, indicate the number of time frames, e.g., `multi_temporal: 6`
 
 ```
-torchrun --nnodes=1 --nproc_per_node=1 geofm_bench/run.py \
+torchrun --nnodes=1 --nproc_per_node=1 pangaea/run.py \
    --config-name=train \
    dataset=croptypemapping \
    encoder=prithvi \
@@ -152,7 +174,7 @@ To overwrite parameters, please check the Single Temporal Semantic Segmentation 
 One of the change detection decoder should be used: `configs/decoder/seg_siamupernet_conc.yaml` employs feature concatenation strategy while `configs/decoder/seg_siamupernet_diff.yaml` uses feature differencing strategy. For example, Prithvi encoder on xView2:
 
 ```
-torchrun --nnodes=1 --nproc_per_node=1 geofm_bench/run.py \
+torchrun --nnodes=1 --nproc_per_node=1 pangaea/run.py \
    --config-name=train \
    dataset=xview2 \
    encoder=prithvi \
@@ -170,7 +192,7 @@ The regression decoder (e.g. `configs/decoder/reg_upernet.yaml`) and the regress
 e.g. Prithvi encoder on BioMassters
 
 ```
-torchrun --nnodes=1 --nproc_per_node=1 geofm_bench/run.py \
+torchrun --nnodes=1 --nproc_per_node=1 pangaea/run.py \
    --config-name=train \
    dataset=biomassters \
    encoder=prithvi \
@@ -188,7 +210,7 @@ The multi-temporal regression decoder (e.g. `configs/decoder/reg_upernet_mt_ltae
 e.g. Prithvi encoder on BioMassters
 
 ```
-torchrun --nnodes=1 --nproc_per_node=1 geofm_bench/run.py \
+torchrun --nnodes=1 --nproc_per_node=1 pangaea/run.py \
    --config-name=train \
    dataset=biomassters \
    encoder=prithvi \
@@ -206,7 +228,7 @@ It is enough to add `finetune=True` to the command line.
 
 For example, for single-temporal semantic segmentation:
 ```
-torchrun --nnodes=1 --nproc_per_node=1 geofm_bench/run.py \
+torchrun --nnodes=1 --nproc_per_node=1 pangaea/run.py \
    --config-name=train \
    dataset=hlsburnscars \
    encoder=remoteclip \
@@ -222,7 +244,7 @@ torchrun --nnodes=1 --nproc_per_node=1 geofm_bench/run.py \
 The repo supports also training fully supervised baselines (e.g. UNet). To run these, follow the same command line rules as for other models. Keep in mind that setting finetune=True is necessary since this fully supervised approach trains the model from scratch. 
 An example for single temporal semantic segmentation is provided (Sen1Floods11 dataset):
 ```
-torchrun --nnodes=1 --nproc_per_node=1 geofm_bench/run.py \
+torchrun --nnodes=1 --nproc_per_node=1 pangaea/run.py \
    --config-name=train \
    dataset=sen1floods11 \
    encoder=unet_encoder \
@@ -251,11 +273,11 @@ An evaluation step is always run after the training.
 If you want to just run an evaluation, indicate the `ckpt_dir` where the checkpoints and configurations are stored.
 
 ```
-torchrun geofm_bench/run.py --config-name=test ckpt_dir=path_to_ckpt_dir
+torchrun pangaea/run.py --config-name=test ckpt_dir=path_to_ckpt_dir
 ```
 
 ## ✏️ Contributing
-We appreciate all contributions. Please refer to [Contributing Guidelines](.github/CONTRIBUTING.md)
+We appreciate all contributions. Please refer to [Contributing Guidelines](.github/CONTRIBUTING.md).
 
 ## ⚠️ Warnings
 
@@ -286,6 +308,6 @@ If you use this software in your work, please cite:
   year = {2024},
   publisher = {GitHub},
   journal = {GitHub repository},
-  howpublished = {\url{https://github.com/yurujaja/geofm-bench}},
+  howpublished = {\url{https://github.com/yurujaja/pangaea-bench}},
 }
 ```
