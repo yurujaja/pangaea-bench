@@ -1,4 +1,4 @@
-name: geofm-bench
+name: pangaea-bench
 channels:
   - pytorch
   - nvidia
