@@ -307,7 +307,7 @@ We have designed the repo to allow for using your own datasets with minimal effo
       --config-name=train \
       dataset=my_dataset \
       encoder=prithvi \
-      decoder=seg_upernet \
+      decoder=seg_upernet_mt_ltae \
       preprocessing=seg_default \
       criterion=cross_entropy \
       task=segmentation
