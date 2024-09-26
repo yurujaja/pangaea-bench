@@ -20,7 +20,7 @@ Note: For significant modifications or any bugs spotting, please consider openin
 
 ### engine
 In `engine`, basic modules in the training pipeline are defined including `data_preprocessor`, `trainer` and `evaluator`.
-1. `data_preprocessor` selects the bands needed by an encoder and pads unavailable bands with zeros, and different augmentations.
+1. `data_preprocessor` selects the bands needed by an encoder and pads unavailable bands with zeros, and different **augmentations**.
 2. `trainer` supports mixed precision/distributed training and print training stats and metrics in real time.
 3. `evaluator` can be called independently and evaluate a model also in distributed way and compute per class metrics.
 
@@ -40,9 +40,6 @@ In `decoders`, you can find all the supported decoders.
 3. We support UPerNet for unitemporal semantic segmentation, UPerNetCD for change detection and MTUPerNet for multitemporal semantic segmentation
 4. for multi-temporal, L-TAE and linear projection are supported
 
-### augmentations
-1. All the available augmentations are in ```data_preproessor.py```
-
 ## Adding new features
 
 ### Adding a new geospatial foundation model
@@ -51,8 +48,8 @@ We have designed the repo to allow for benchmarking your own model with minimal 
 
 1. **Implement an Encoder Class**:
 
-   - In `encoders/`, create a new Python file named after your model (e.g., `my_model_encoder.py`).
-   - Implement a class that inherits from `Encoder`. You can check it in `geofm_bench/encoders/base.py`.
+   - In `pangaea/encoders/`, create a new Python file named after your model (e.g., `my_model_encoder.py`).
+   - Implement a class that inherits from `Encoder`. You can check it in `pangaea/encoders/base.py`.
    - Be sure that your dataset is instantiated with all the required parameters from the `Encoder`. You can also add new parameters or fix some parameters from the `Encoder` that are not changing in your model (e.g. `multi_temporal`).
    - Implement the required methods: `__init__`, `load_encoder_weights`, and `forward`.
    - **Example**:
@@ -60,9 +57,9 @@ We have designed the repo to allow for benchmarking your own model with minimal 
      ```python
      import torch.nn as nn
      
-     from geofm_bench.encoders.base import Encoder
+     from pangaea.encoders.base import Encoder
      
-     class MyModel_Encoder(Encoder):
+     class MyModel(Encoder):
          def __init__(
              self,
              encoder_weights: str | Path,
@@ -72,13 +69,13 @@ We have designed the repo to allow for benchmarking your own model with minimal 
              in_chans: int,              #newly added parameter
          ):
              super().__init__(
-                 model_name="croma_optical",
+                 model_name="my_model_name",
                  encoder_weights=encoder_weights,
                  input_bands=input_bands,
                  input_size=input_size,
-                 embed_dim=768,        #fixed parameters
-                 output_dim=768,       #fixed parameters
-                 multi_temporal=False, #fixed parameters
+                 embed_dim=768,        # my_model_embed_dim, fixed parameters
+                 output_dim=768,       # my_model_output_dim, fixed parameters
+                 multi_temporal=False, # wether support multi-temporal, fixed parametersfixed parameters
              )
      
             self.in_chans = in_chans    #newly added parameter
@@ -111,41 +108,37 @@ We have designed the repo to allow for benchmarking your own model with minimal 
 
 2. **Create an Encoder Configuration File**:
 
-   - In `configs/foundation_models/`, create a new YAML file named after your model (e.g., `my_model.yaml`).
-   - Define model-specific parameters, including `encoder_name`, `foundation_model_name`, `encoder_weights`, `input_bands`, and any model architecture arguments.
+   - In `configs/encoder/`, create a new YAML file named after your model (e.g., `my_model.yaml`).
+   - Define model-specific parameters, including `encoder_weights`, `input_bands`,`input_size` and any model architecture arguments. Specifically, indicate `_target_` to point out your implemeted model
    - **Example**:
 
      ```yaml
-     encoder_name: MyModel_Encoder
-     foundation_model_name: MyModel
-     encoder_weights: ./pretrained_models/my_model_weights.pth
-     download_url: https://path.to.your.model/weights.pth
-     temporal_input: False
-
-     encoder_model_args:
-       img_size: 224
-       in_chans: 3
-       embed_dim: 768
-       patch_size: 16
-       num_heads: 12
-       depth: 12
-       mlp_ratio: 4
-
-     input_bands:
-       optical:
-         - B1
-         - B2
-         - B3
-
-     output_layers:
-       - 3
-       - 5
-       - 7
-       - 11
+      _target_: pangaea.encoders.my_model_encoder.MyModel
+      encoder_weights: ./pretrained_models/my_model_weights.pth
+      download_url: https://path.to.your.model/weights.pth
+      
+      input_size: 120  
+      in_chans: 3
+      embed_dim: 768
+      patch_size: 16
+      num_heads: 12
+      depth: 12
+      mlp_ratio: 4
+      
+      input_bands:
+        optical:
+          - B2
+          - B3
+          - B4
+      
+      output_layers:
+        - 3
+        - 5
+        - 7
+        - 11
      ```
      
 3. **Run Training with Your Model**:
-
    - Use the `run.py` script with your encoder configuration.
    - **Example Command**:
 
@@ -154,8 +147,8 @@ We have designed the repo to allow for benchmarking your own model with minimal 
       --config-name=train \
       dataset=hlsburnscars \
       encoder=my_model \
-      decoder=upernet\
-      preprocessing=default \
+      decoder=seg_upernet \
+      preprocessing=seg_default \
       criterion=cross_entropy \
       task=segmentation
      ```
@@ -166,15 +159,15 @@ We have designed the repo to allow for using your own datasets with minimal effo
 
 1. **Implement a Dataset Class**:
 
-   - In the `datasets/` directory, create a new Python file named after your dataset (e.g., `my_dataset.py`).
-   - Implement a class that inherits from `GeoFMDataset`. You can check it in `geofm_bench/datasets/base.py`.
+   - In the `pangaea/datasets/` directory, create a new Python file named after your dataset (e.g., `my_dataset.py`).
+   - Implement a class that inherits from `GeoFMDataset`. You can check it in `pangaea/datasets/base.py`.
    - Be sure that your dataset is instantiated with all the required parameters from the `GeoFMDataset`. You can also add new parameters.
    - Implement the required methods: `__init__`, `__len__`, `__getitem__`, and `download` (if applicable, otherwise a `NotImplementedError is raised`).
    - **Example**:
 
      ```python
      import torch
-     from geofm_bench.datasets.base import GeoFMDataset
+     from pangaea.datasets.base import GeoFMDataset
 
      class MyDataset(GeoFMDataset):
           def __init__(
@@ -247,51 +240,51 @@ We have designed the repo to allow for using your own datasets with minimal effo
      ```
 2. **Create a Dataset Configuration File**:
 
-   - Navigate to `configs/datasets/` and create a new YAML file named after your dataset (e.g., `my_dataset.yaml`).
-   - Define all necessary dataset parameters such as `dataset_name`, `root_path`, `img_size`, `bands`, `data_mean`, `data_std`, `num_classes`, and class labels. Check `GeoFMDataset` class, in `geofm_bench/datasets/base.py`
+   - Navigate to `configs/dataset/` and create a new YAML file named after your dataset (e.g., `my_dataset.yaml`).
+   - Indicate your implemented dataset class in `_target_`.
+   - Define all necessary dataset parameters such as `dataset_name`, `root_path`, `img_size`, `bands`, `data_mean`, `data_std`, `num_classes`, and class labels. Check `GeoFMDataset` class for more details in `pangaea/datasets/base.py`.
      
    - **Example**:
 
      ```yaml
+     _target_: pangaea.datasets.utae_dynamicen.DynamicEarthNet
      dataset_name: MyDataset
-     root_path: ./data/my_dataset
+     root_path: ./data/my_data_dir
+     download_url: None
      auto_download: False
-
      img_size: 256
-     multi_temporal: False
+     multi_temporal: 6
      multi_modal: False
-
      ignore_index: -1
      num_classes: 3
      classes:
        - Class1
        - Class2
        - Class3
-
+     distribution:
+       - 0.2
+       - 0.4
+       - 0.4
      bands:
        optical:
          - B1
          - B2
          - B3
-
      data_mean:
        optical:
          - 0.485
          - 0.456
-         - 0.406
-
+         - 0.404
      data_std:
        optical:
          - 0.229
          - 0.224
          - 0.225
-     
      data_min:
        optical:
          - 0.
          - 0.
          - 0.
-
      data_max:
        optical:
          - 1.
@@ -299,15 +292,13 @@ We have designed the repo to allow for using your own datasets with minimal effo
          - 1.
      ```
 
-
 3. **Adjust the Augmentation Pipeline**:
 
    - If your dataset requires specific preprocessing or augmentation, create or modify an augmentation configuration file in `configs/preprocessing/`.
    - Ensure that all preprocessing steps (e.g., normalization, resizing) match your dataset's requirements.
-   - If your specific preprocessing or augmentation are not implemented, please implement them in `geofm_bench/engine/data_preprocessor.py`
+   - If your specific preprocessing or augmentation are not implemented, please implement them in `pangaea/engine/data_preprocessor.py`
 
 4. **Run Training**:
-
    - Use the `run.py` script with your dataset and augmentation configurations.
    - **Example Command**:
 
@@ -315,9 +306,9 @@ We have designed the repo to allow for using your own datasets with minimal effo
       torchrun --nnodes=1 --nproc_per_node=1 geofm_bench/run.py \
       --config-name=train \
       dataset=my_dataset \
-      encoder=remoteclip \
-      decoder=upernet\
-      preprocessing=default \
+      encoder=prithvi \
+      decoder=seg_upernet \
+      preprocessing=seg_default \
       criterion=cross_entropy \
       task=segmentation
      ```
