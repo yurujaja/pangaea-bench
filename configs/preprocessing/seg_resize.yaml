@@ -1,31 +1,31 @@
 train: 
-  - _target_: geofm_bench.engine.data_preprocessor.SegPreprocessor
+  - _target_: pangaea.engine.data_preprocessor.SegPreprocessor
     # overwritten in run
     dataset: null
     encoder: null
 
-  - _target_: geofm_bench.engine.data_preprocessor.NormalizeMeanStd
+  - _target_: pangaea.engine.data_preprocessor.NormalizeMeanStd
     # overwritten in run
     dataset: null
     encoder: null
 
-  - _target_: geofm_bench.engine.data_preprocessor.ResizeToEncoder
+  - _target_: pangaea.engine.data_preprocessor.ResizeToEncoder
     # overwritten in run
     dataset: null
     encoder: null
 
 test: 
-  - _target_: geofm_bench.engine.data_preprocessor.SegPreprocessor
+  - _target_: pangaea.engine.data_preprocessor.SegPreprocessor
     # overwritten in run
     dataset: null
     encoder: null
 
-  - _target_: geofm_bench.engine.data_preprocessor.NormalizeMeanStd
+  - _target_: pangaea.engine.data_preprocessor.NormalizeMeanStd
     # overwritten in run
     dataset: null
     encoder: null
 
-  - _target_: geofm_bench.engine.data_preprocessor.ResizeToEncoder
+  - _target_: pangaea.engine.data_preprocessor.ResizeToEncoder
     # overwritten in run
     dataset: null
     encoder: null

@@ -1,4 +1,4 @@
-_target_: geofm_bench.datasets.utae_dynamicen.DynamicEarthNet
+_target_: pangaea.datasets.utae_dynamicen.DynamicEarthNet
 dataset_name: DynamicEarthNet
 root_path: ./data/DynamicEarthNet
 download_url: None

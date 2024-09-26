@@ -1,4 +1,4 @@
-_target_: geofm_bench.datasets.ai4smallfarms.AI4SmallFarms
+_target_: pangaea.datasets.ai4smallfarms.AI4SmallFarms
 dataset_name: AI4SmallFarms
 root_path: ./data/ai4smallfarms
 dataverse_api_token: 753e72e8-c746-4860-9d0c-3aec872d888a

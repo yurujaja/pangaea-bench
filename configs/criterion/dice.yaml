@@ -1,2 +1,2 @@
-_target_: geofm_bench.utils.losses.DICELoss 
+_target_: pangaea.utils.losses.DICELoss 
 ignore_index: ${dataset.ignore_index}

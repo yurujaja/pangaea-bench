@@ -1,5 +1,5 @@
 trainer:
-  _target_: geofm_bench.engine.trainer.RegTrainer
+  _target_: pangaea.engine.trainer.RegTrainer
   # params overwritten in run
   model: null
   train_loader: null
@@ -19,7 +19,7 @@ trainer:
   use_wandb: ${use_wandb}
 
 evaluator:
-  _target_: geofm_bench.engine.evaluator.RegEvaluator
+  _target_: pangaea.engine.evaluator.RegEvaluator
   # params overwritten in run
   val_loader: null
   exp_dir: null

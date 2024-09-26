@@ -1,4 +1,4 @@
-_target_: geofm_bench.datasets.mados.MADOS
+_target_: pangaea.datasets.mados.MADOS
 dataset_name: MADOS
 root_path: ./data/mados
 download_url: https://zenodo.org/records/10664073/files/MADOS.zip?download=1

@@ -1,4 +1,4 @@
-_target_: geofm_bench.datasets.fivebillionpixels.FiveBillionPixels
+_target_: pangaea.datasets.fivebillionpixels.FiveBillionPixels
 dataset_name: FiveBillionPixels
 root_path: /geomatics/gpuserver-1/vmarsocci/FiveBillionPixels/cropped
 download_url: False 

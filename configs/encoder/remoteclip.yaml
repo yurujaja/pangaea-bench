@@ -1,4 +1,4 @@
-_target_: geofm_bench.encoders.remoteclip_encoder.RemoteCLIP_Encoder
+_target_: pangaea.encoders.remoteclip_encoder.RemoteCLIP_Encoder
 encoder_weights: ./pretrained_models/RemoteCLIP-ViT-B-32.pt
 download_url: https://huggingface.co/chendelong/RemoteCLIP/resolve/main/RemoteCLIP-ViT-B-32.pt
 

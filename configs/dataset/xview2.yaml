@@ -1,4 +1,4 @@
-_target_: geofm_bench.datasets.xview2.xView2
+_target_: pangaea.datasets.xview2.xView2
 dataset_name: xView2
 root_path: ./data/xView2
 download_url: https://the-dataset-is-not-publicly-available.com

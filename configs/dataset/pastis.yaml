@@ -1,4 +1,4 @@
-_target_: geofm_bench.datasets.pastis.Pastis
+_target_: pangaea.datasets.pastis.Pastis
 dataset_name: Pastis
 root_path: /share/DEEPLEARNING/datasets/PASTIS-HD/
 download_url: null

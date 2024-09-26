@@ -1,4 +1,4 @@
-_target_: geofm_bench.datasets.sen1floods11.Sen1Floods11
+_target_: pangaea.datasets.sen1floods11.Sen1Floods11
 dataset_name: Sen1Floods11
 root_path: ./data/sen1floods11_v1.1
 download_url: 

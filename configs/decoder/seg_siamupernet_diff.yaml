@@ -1,4 +1,4 @@
-_target_: geofm_bench.decoders.upernet.SiamDiffUPerNet
+_target_: pangaea.decoders.upernet.SiamDiffUPerNet
 
 channels: 512
 encoder: null

@@ -1,4 +1,4 @@
-_target_: geofm_bench.datasets.spacenet7.SN7MAPPING
+_target_: pangaea.datasets.spacenet7.SN7MAPPING
 dataset_name: SN7MAPPING
 root_path: ./data/spacenet7
 download_url: https://drive.google.com/uc?id=1BADSEjxYKFZZlM-tEkRUfHvHi5XdaVV9

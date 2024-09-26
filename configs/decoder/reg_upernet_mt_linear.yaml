@@ -1,4 +1,4 @@
-_target_: geofm_bench.decoders.upernet.RegMTUPerNet
+_target_: pangaea.decoders.upernet.RegMTUPerNet
 
 
 # overwritten in run

@@ -1,4 +1,4 @@
-_target_: geofm_bench.decoders.upernet.SegMTUPerNet
+_target_: pangaea.decoders.upernet.SegMTUPerNet
 
 # overwritten in run
 encoder: null

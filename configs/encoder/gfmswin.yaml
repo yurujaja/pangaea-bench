@@ -1,4 +1,4 @@
-_target_: geofm_bench.encoders.gfmswin_encoder.GFMSwin_Encoder
+_target_: pangaea.encoders.gfmswin_encoder.GFMSwin_Encoder
 encoder_weights: ./pretrained_models/gfm.pth
 download_url: null
 

@@ -1,4 +1,4 @@
-_target_: geofm_bench.datasets.croptypemapping.CropTypeMappingSouthSudan
+_target_: pangaea.datasets.croptypemapping.CropTypeMappingSouthSudan
 dataset_name: CropTypeMappingSouthSudan
 root_path: ./data/croptypemapping
 download_url: https://drive.google.com/drive/folders/1WhVObtFOzYFiXBsbbrEGy1DUtv7ov7wF?usp=sharing

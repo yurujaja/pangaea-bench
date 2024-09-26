@@ -1,4 +1,4 @@
-_target_: geofm_bench.datasets.biomassters.BioMassters
+_target_: pangaea.datasets.biomassters.BioMassters
 dataset_name: BioMassters
 root_path: ./data/Biomassters
 # download_url: #https://huggingface.co/datasets/ibm-nasa-geospatial/hls_burn_scars/resolve/main/hls_burn_scars.tar.gz?download=true

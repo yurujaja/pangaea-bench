@@ -1,4 +1,4 @@
-_target_: geofm_bench.encoders.croma_encoder.CROMA_SAR_Encoder
+_target_: pangaea.encoders.croma_encoder.CROMA_SAR_Encoder
 encoder_weights: ./pretrained_models/CROMA_large.pt
 download_url: https://huggingface.co/antofuller/CROMA/resolve/main/CROMA_large.pt
 

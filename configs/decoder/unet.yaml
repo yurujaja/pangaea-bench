@@ -1,4 +1,4 @@
-_target_: geofm_bench.decoders.unet.UNet
+_target_: pangaea.decoders.unet.UNet
 
 encoder: null
 num_classes: ${dataset.num_classes}
