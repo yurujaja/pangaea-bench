@@ -1,15 +1,15 @@
 # Adapted from: https://github.com/bair-climate-initiative/scale-mae/
 
-from pathlib import Path
-from logging import Logger
 from functools import partial
-from timm.models.vision_transformer import Block, PatchEmbed
+from logging import Logger
+from pathlib import Path
 
 import torch
 import torch.nn as nn
+from timm.models.vision_transformer import Block, PatchEmbed
 
-from geofm_bench.encoders.pos_embed import get_2d_sincos_pos_embed_with_resolution
 from geofm_bench.encoders.base import Encoder
+from geofm_bench.encoders.pos_embed import get_2d_sincos_pos_embed_with_resolution
 
 
 class PatchEmbedUnSafe(PatchEmbed):
@@ -54,16 +54,16 @@ class ScaleMAE_Encoder(Encoder):
         input_size: int,
         input_bands: dict[str, list[str]],
         output_layers: int | list[int],
+        download_url: str,
         embed_dim: int = 1024,
         patch_size: int = 16,
         in_chans: int = 3,
         depth: int = 24,
         num_heads: int = 16,
-        mlp_ratio: float = 4.,
+        mlp_ratio: float = 4.0,
         qkv_bias: bool = True,
         input_res: float = 1.0,
         norm_layer=partial(nn.LayerNorm, eps=1e-6),
-
     ):
         super().__init__(
             model_name="ScaleMAE",
@@ -73,23 +73,25 @@ class ScaleMAE_Encoder(Encoder):
             embed_dim=embed_dim,
             output_dim=embed_dim,
             multi_temporal=False,
+            download_url=download_url,
         )
 
         self.output_layers = output_layers
 
         self.img_size = input_size
         self.patch_size = patch_size
- 
+
         self.input_res = torch.tensor([input_res]).float().cpu()
 
-        self.patch_embed = PatchEmbedUnSafe(self.img_size, patch_size, in_chans, embed_dim)
-        #num_patches = self.patch_embed.num_patches
-
+        self.patch_embed = PatchEmbedUnSafe(
+            self.img_size, patch_size, in_chans, embed_dim
+        )
+        # num_patches = self.patch_embed.num_patches
 
         self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
-        #self.pos_embed = nn.Parameter(
+        # self.pos_embed = nn.Parameter(
         #    torch.zeros(1, num_patches + 1, embed_dim), requires_grad=False
-        #)  # fixed sin-cos embedding
+        # )  # fixed sin-cos embedding
         self.blocks = nn.ModuleList(
             [
                 Block(
@@ -102,7 +104,7 @@ class ScaleMAE_Encoder(Encoder):
                 for i in range(depth)
             ]
         )
-        #self.norm = norm_layer(embed_dim)
+        # self.norm = norm_layer(embed_dim)
 
         self.initialize_weights()
 
@@ -129,9 +131,8 @@ class ScaleMAE_Encoder(Encoder):
             nn.init.constant_(m.bias, 0)
             nn.init.constant_(m.weight, 1.0)
 
-
     def load_encoder_weights(self, logger: Logger) -> None:
-        pretrained_model = torch.load(self.encoder_weights, map_location="cpu")['model']
+        pretrained_model = torch.load(self.encoder_weights, map_location="cpu")["model"]
         k = pretrained_model.keys()
         pretrained_encoder = {}
         incompatible_shape = {}
@@ -147,16 +148,17 @@ class ScaleMAE_Encoder(Encoder):
         self.load_state_dict(pretrained_encoder, strict=False)
         self.parameters_warning(missing, incompatible_shape, logger)
 
-
     def forward(self, image):
-        x = image['optical'].squeeze(2)
+        x = image["optical"].squeeze(2)
         B, _, h, w = x.shape
         x = self.patch_embed(x)
 
-        num_patches = int((h * w) / (self.patch_embed.patch_size[0] * self.patch_embed.patch_size[1]))
+        num_patches = int(
+            (h * w) / (self.patch_embed.patch_size[0] * self.patch_embed.patch_size[1])
+        )
         pos_embed = get_2d_sincos_pos_embed_with_resolution(
             x.shape[-1],
-            int(num_patches ** 0.5),
+            int(num_patches**0.5),
             self.input_res,
             cls_token=True,
             device=x.device,
@@ -170,8 +172,17 @@ class ScaleMAE_Encoder(Encoder):
         for i, blk in enumerate(self.blocks):
             x = blk(x)
             if i in self.output_layers:
-                out = x[:, 1:].permute(0, 2, 1).view(x.shape[0], -1, self.img_size // self.patch_size,self.img_size // self.patch_size).contiguous()
+                out = (
+                    x[:, 1:]
+                    .permute(0, 2, 1)
+                    .view(
+                        x.shape[0],
+                        -1,
+                        self.img_size // self.patch_size,
+                        self.img_size // self.patch_size,
+                    )
+                    .contiguous()
+                )
                 output.append(out)
 
         return output
-

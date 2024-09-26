@@ -421,6 +421,7 @@ class SatlasNet_Encoder(Encoder):
         output_dim: int,
         model_identifier: str,
         encoder_weights: str | Path,
+        download_url: str,
         fpn=False,
     ):
         """
@@ -434,6 +435,7 @@ class SatlasNet_Encoder(Encoder):
             embed_dim=768,  # will be overwritten by the backbone
             output_dim=output_dim,
             multi_temporal=False if "_SI_" in model_identifier else True,
+            download_url=download_url,
         )
 
         # Validate that the model identifier is supported.

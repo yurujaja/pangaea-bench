@@ -43,6 +43,7 @@ class CROMA_OPTICAL_Encoder(Encoder):
         input_size: int,
         input_bands: dict[str, list[str]],
         output_layers: int | list[int],
+        download_url: str,
         size="base",
     ):
         super().__init__(
@@ -53,6 +54,7 @@ class CROMA_OPTICAL_Encoder(Encoder):
             embed_dim=768,
             output_dim=768,
             multi_temporal=False,
+            download_url=download_url,
         )
 
         self.output_layers = output_layers
@@ -69,7 +71,7 @@ class CROMA_OPTICAL_Encoder(Encoder):
             self.encoder_depth = 24
             self.num_heads = 16
             self.patch_size = 8
-        
+
         self.output_dim = self.embed_dim
         self.num_patches = int((self.img_size / 8) ** 2)
         self.s2_channels = 12  # fixed at 12 multispectral optical channels
@@ -163,7 +165,6 @@ class CROMA_SAR_Encoder(Encoder):
             embed_dim=768,
             output_dim=768,
             multi_temporal=False,
-            
         )
 
         self.output_layers = output_layers
@@ -219,7 +220,9 @@ class CROMA_SAR_Encoder(Encoder):
         return output
 
     def load_encoder_weights(self, logger: Logger) -> None:
-        pretrained_model = torch.load(self.encoder_weights, map_location="cpu")["s1_encoder"]
+        pretrained_model = torch.load(self.encoder_weights, map_location="cpu")[
+            "s1_encoder"
+        ]
         k = pretrained_model.keys()
         pretrained_encoder = {}
         incompatible_shape = {}
@@ -279,7 +282,7 @@ class CROMA_JOINT_Encoder(Encoder):
             input_size=input_size,
             embed_dim=768,
             output_dim=768,
-            multi_temporal=False,      
+            multi_temporal=False,
         )
 
         self.output_layers = output_layers
@@ -298,7 +301,7 @@ class CROMA_JOINT_Encoder(Encoder):
             self.patch_size = 8
 
         self.output_dim = self.embed_dim
-        
+
         self.num_patches = int((self.img_size / 8) ** 2)
         self.s1_channels = 2  # fixed at 2 SAR backscatter channels
         self.s2_channels = 12  # fixed at 12 multispectral optical channels

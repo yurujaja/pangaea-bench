@@ -1,6 +1,6 @@
+from collections import OrderedDict
 from logging import Logger
 from typing import Sequence
-from collections import OrderedDict
 
 import torch
 import torch.nn as nn
@@ -10,8 +10,8 @@ from geofm_bench.encoders.base import Encoder
 
 class UNet(Encoder):
     """
-    UNet Encoder for Supervised Baseline, to be trained from scratch. 
-    It supports single time frame inputs with optical bands 
+    UNet Encoder for Supervised Baseline, to be trained from scratch.
+    It supports single time frame inputs with optical bands
 
     Args:
         input_bands (dict[str, list[str]]): Band names, specifically expecting the 'optical' key with a list of bands.
@@ -19,13 +19,15 @@ class UNet(Encoder):
         topology (Sequence[int]): The number of feature channels at each stage of the U-Net encoder.
 
     """
+
     def __init__(
-            self, 
-            input_bands: dict[str, list[str]],
-            input_size: int,
-            topology: Sequence[int],
-            encoder_weights: str = None,
-        ):
+        self,
+        input_bands: dict[str, list[str]],
+        input_size: int,
+        topology: Sequence[int],
+        download_url: str,
+        encoder_weights: str | None = None,
+    ):
         super().__init__(
             model_name="unet_encoder",
             encoder_weights=encoder_weights,  # no pre-trained weights, train from scratch
@@ -33,22 +35,22 @@ class UNet(Encoder):
             input_size=input_size,
             embed_dim=0,
             output_dim=0,
-            multi_temporal=False, # single time frame
+            multi_temporal=False,  # single time frame
+            download_url=download_url,
         )
-       
 
-        self.in_channels = len(input_bands['optical']) # number of optical bands
+        self.in_channels = len(input_bands["optical"])  # number of optical bands
         self.topology = topology
-        
+
         self.in_conv = InConv(self.in_channels, self.topology[0], DoubleConv)
         self.encoder = UNet_Encoder(self.topology)
 
     def forward(self, image):
-        x = image['optical'].squeeze(2)  # squeeze the time dimension
+        x = image["optical"].squeeze(2)  # squeeze the time dimension
         feat = self.in_conv(x)
         output = self.encoder(feat)
         return output
-    
+
     def load_encoder_weights(self, logger: Logger) -> None:
         pass
 
@@ -56,11 +58,12 @@ class UNet(Encoder):
 class UNet_Encoder(nn.Module):
     """
     UNet Encoder class that defines the architecture of the encoder part of the UNet.
-    
+
     Args:
-        topology (Sequence[int]): A sequence of integers defining the number of channels 
+        topology (Sequence[int]): A sequence of integers defining the number of channels
                                   at each layer of the encoder.
     """
+
     def __init__(self, topology: Sequence[int]):
         super(UNet_Encoder, self).__init__()
 
@@ -75,13 +78,14 @@ class UNet_Encoder(nn.Module):
         for idx in range(n_layers):
             is_not_last_layer = idx != n_layers - 1
             in_dim = down_topo[idx]
-            out_dim = down_topo[idx + 1] if is_not_last_layer else down_topo[idx]  # last layer
+            out_dim = (
+                down_topo[idx + 1] if is_not_last_layer else down_topo[idx]
+            )  # last layer
             layer = Down(in_dim, out_dim, DoubleConv)
-            down_dict[f'down{idx + 1}'] = layer
+            down_dict[f"down{idx + 1}"] = layer
         self.down_seq = nn.ModuleDict(down_dict)
 
     def forward(self, x1: torch.Tensor) -> list:
-
         inputs = [x1]
         # Downward U:
         for layer in self.down_seq.values():
@@ -93,7 +97,7 @@ class UNet_Encoder(nn.Module):
 
 
 class DoubleConv(nn.Module):
-    '''(conv => BN => ReLU) * 2'''
+    """(conv => BN => ReLU) * 2"""
 
     def __init__(self, in_ch, out_ch):
         super(DoubleConv, self).__init__()
@@ -103,7 +107,7 @@ class DoubleConv(nn.Module):
             nn.ReLU(inplace=True),
             nn.Conv2d(out_ch, out_ch, 3, padding=1),
             nn.BatchNorm2d(out_ch),
-            nn.ReLU(inplace=True)
+            nn.ReLU(inplace=True),
         )
 
     def forward(self, x):
@@ -125,11 +129,9 @@ class Down(nn.Module):
     def __init__(self, in_ch, out_ch, conv_block):
         super(Down, self).__init__()
 
-        self.mpconv = nn.Sequential(
-            nn.MaxPool2d(2),
-            conv_block(in_ch, out_ch)
-        )
+        self.mpconv = nn.Sequential(nn.MaxPool2d(2), conv_block(in_ch, out_ch))
 
     def forward(self, x):
         x = self.mpconv(x)
         return x
+

@@ -37,15 +37,14 @@ class DownloadProgressBar:
 def download_model(download_url=False, encoder_weights=False):
     if download_url:
         if not os.path.isfile(encoder_weights):
+            # TODO: change this path
             os.makedirs("pretrained_models", exist_ok=True)
 
             pbar = DownloadProgressBar(f"Downloading {encoder_weights}")
 
             if download_url.startswith("https://drive.google.com/"):
                 # Google drive needs some extra stuff compared to a simple file download
-                gdown.download(
-                    download_url, encoder_weights
-                )
+                gdown.download(download_url, encoder_weights)
             else:
                 try:
                     urllib.request.urlretrieve(

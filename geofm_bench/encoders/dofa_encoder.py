@@ -1,18 +1,17 @@
 # Obtained from: https://github.com/zhu-xlab/DOFA
 
-from logging import Logger
 from functools import partial
+from logging import Logger
 from pathlib import Path
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.nn.init as init
-
 from timm.models.vision_transformer import Block
 
-from geofm_bench.encoders.pos_embed import get_1d_sincos_pos_embed_from_grid_torch
 from geofm_bench.encoders.base import Encoder
+from geofm_bench.encoders.pos_embed import get_1d_sincos_pos_embed_from_grid_torch
 
 
 class TransformerWeightGenerator(nn.Module):
@@ -42,7 +41,6 @@ class TransformerWeightGenerator(nn.Module):
         torch.nn.init.normal_(self.weight_tokens, std=0.02)
         torch.nn.init.normal_(self.bias_token, std=0.02)
 
-
     def forward(self, x):
         # x should have shape [seq_len, batch, input_dim]
         pos_wave = x
@@ -64,7 +62,6 @@ class FCResLayer(nn.Module):
         self.nonlin2 = nn.ReLU(inplace=True)
         self.w1 = nn.Linear(self.l_size, self.l_size)
         self.w2 = nn.Linear(self.l_size, self.l_size)
-       
 
     def forward(self, x):
         y = self.w1(x)
@@ -90,8 +87,8 @@ class Dynamic_MLP_OFA(nn.Module):
         self.inter_dim = inter_dim
         self.kernel_size = kernel_size
         self.embed_dim = embed_dim
-        
-        self._num_kernel = self.kernel_size * self.kernel_size * self.embed_dim      
+
+        self._num_kernel = self.kernel_size * self.kernel_size * self.embed_dim
         self.patch_size = (kernel_size, kernel_size)
         self.num_patches = -1
 
@@ -124,12 +121,16 @@ class Dynamic_MLP_OFA(nn.Module):
     def forward(self, img_feat, wvs):
         inplanes = wvs.size(0)
 
-        waves = get_1d_sincos_pos_embed_from_grid_torch(self.wv_planes, wvs * 1000).float()
+        waves = get_1d_sincos_pos_embed_from_grid_torch(
+            self.wv_planes, wvs * 1000
+        ).float()
         waves = self.fclayer(waves)
-        weight, bias = self._get_weights(waves)  
+        weight, bias = self._get_weights(waves)
 
-        dynamic_weight = weight.view(inplanes, self.kernel_size, self.kernel_size, self.embed_dim)
-        dynamic_weight = dynamic_weight.permute([3,0,1,2])
+        dynamic_weight = weight.view(
+            inplanes, self.kernel_size, self.kernel_size, self.embed_dim
+        )
+        dynamic_weight = dynamic_weight.permute([3, 0, 1, 2])
         if bias is not None:
             bias = bias.view([self.embed_dim]) * self.scaler
 
@@ -146,7 +147,6 @@ class Dynamic_MLP_OFA(nn.Module):
 
 
 class DOFA_Encoder(Encoder):
-
     """
     Paper: https://arxiv.org/pdf/2403.15356
     Attributes:
@@ -173,24 +173,25 @@ class DOFA_Encoder(Encoder):
         load_encoder_weights(logger):
             Loads the encoder weights from a pretrained model and logs any missing or incompatible parameters.
     """
+
     def __init__(
-        self, 
+        self,
         encoder_weights: str | Path,
         input_bands: dict[str, list[str]],
         input_size: int,
         embed_dim: int,
         output_layers: int | list[int],
         wave_list: dict[str, dict[str, float]],
-        patch_size=16,                
-        depth=12, 
-        num_heads=16, 
-        wv_planes=128, 
+        download_url: str,
+        patch_size=16,
+        depth=12,
+        num_heads=16,
+        wv_planes=128,
         return_all_tokens=True,
-        mlp_ratio=4., 
+        mlp_ratio=4.0,
         use_norm=True,
-        norm_layer=partial(nn.LayerNorm, eps=1e-6)
+        norm_layer=partial(nn.LayerNorm, eps=1e-6),
     ):
-
         super().__init__(
             model_name="dofa_encoder",
             encoder_weights=encoder_weights,
@@ -199,39 +200,53 @@ class DOFA_Encoder(Encoder):
             embed_dim=embed_dim,
             output_dim=embed_dim,
             multi_temporal=False,
+            download_url=download_url,
         )
-
 
         self.output_layers = output_layers
         self.img_size = input_size
         self.wv_planes = wv_planes
         self.wave_list = wave_list
         self.return_all_tokens = return_all_tokens
-        self.embed_dim = embed_dim 
+        self.embed_dim = embed_dim
         self.patch_size = patch_size
         self.use_norm = use_norm
-        self.wv_list=[self.wave_list[m][bi] for m, b in self.input_bands.items() for bi in b ]
+        self.wv_list = [
+            self.wave_list[m][bi] for m, b in self.input_bands.items() for bi in b
+        ]
 
-        self.norm = norm_layer([embed_dim, (self.img_size // patch_size) ,(self.img_size // patch_size)])
-        
-        self.patch_embed = Dynamic_MLP_OFA(wv_planes=128, inter_dim=128, kernel_size=16, embed_dim=embed_dim)
+        self.norm = norm_layer(
+            [embed_dim, (self.img_size // patch_size), (self.img_size // patch_size)]
+        )
+
+        self.patch_embed = Dynamic_MLP_OFA(
+            wv_planes=128, inter_dim=128, kernel_size=16, embed_dim=embed_dim
+        )
         self.num_patches = (self.img_size // patch_size) ** 2
         self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
-        self.pos_embed = nn.Parameter(torch.zeros(1, self.num_patches + 1, embed_dim), requires_grad=False)  # fixed sin-cos embedding
+        self.pos_embed = nn.Parameter(
+            torch.zeros(1, self.num_patches + 1, embed_dim), requires_grad=False
+        )  # fixed sin-cos embedding
 
-        self.blocks = nn.ModuleList([
-            Block(embed_dim, num_heads, mlp_ratio, qkv_bias=True, norm_layer=norm_layer)
-            for i in range(depth)])
-        
+        self.blocks = nn.ModuleList(
+            [
+                Block(
+                    embed_dim,
+                    num_heads,
+                    mlp_ratio,
+                    qkv_bias=True,
+                    norm_layer=norm_layer,
+                )
+                for i in range(depth)
+            ]
+        )
 
     def forward(self, image):
-
         # embed patches
         x = [image[m].squeeze(2) for m in self.input_bands.keys()]
         x = torch.cat(x, dim=1)
         wavelist = torch.tensor(self.wv_list, device=x.device).float()
         self.waves = wavelist
-
 
         x, _ = self.patch_embed(x, self.waves)
 
@@ -246,14 +261,24 @@ class DOFA_Encoder(Encoder):
         for i, blk in enumerate(self.blocks):
             x = blk(x)
             if i in self.output_layers:
-                out = x[:, 1:].permute(0, 2, 1).view(x.shape[0], -1, self.img_size // self.patch_size, self.img_size // self.patch_size).contiguous()
+                out = (
+                    x[:, 1:]
+                    .permute(0, 2, 1)
+                    .view(
+                        x.shape[0],
+                        -1,
+                        self.img_size // self.patch_size,
+                        self.img_size // self.patch_size,
+                    )
+                    .contiguous()
+                )
                 if self.use_norm:
                     out = self.norm(out)
                 output.append(out)
 
         return output
 
-    def  load_encoder_weights(self, logger: Logger) -> None:
+    def load_encoder_weights(self, logger: Logger) -> None:
         pretrained_model = torch.load(self.encoder_weights, map_location="cpu")
         k = pretrained_model.keys()
         pretrained_encoder = {}
@@ -269,4 +294,3 @@ class DOFA_Encoder(Encoder):
 
         self.load_state_dict(pretrained_encoder, strict=False)
         self.parameters_warning(missing, incompatible_shape, logger)
-

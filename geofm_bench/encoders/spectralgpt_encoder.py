@@ -45,6 +45,7 @@ class SpectralGPT_Encoder(Encoder):
         input_size: int,
         input_bands: dict[str, list[str]],
         output_layers: int | list[int],
+        download_url: str,
         in_chans: int = 3,
         t_patch_size: int = 3,
         patch_size: int = 16,
@@ -67,6 +68,7 @@ class SpectralGPT_Encoder(Encoder):
             embed_dim=embed_dim,
             output_dim=output_dim,
             multi_temporal=False,
+            download_url=download_url,
         )
 
         self.output_layers = output_layers

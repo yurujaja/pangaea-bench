@@ -116,7 +116,6 @@ def main(cfg: DictConfig) -> None:
     logger.info("Built {} dataset.".format(cfg.dataset.dataset_name))
 
     download_model(cfg.encoder.download_url, cfg.encoder.encoder_weights)
-    del cfg.encoder.download_url 
     encoder: Encoder = instantiate(cfg.encoder)
     encoder.load_encoder_weights(logger)
     logger.info("Built {}.".format(encoder.model_name))
