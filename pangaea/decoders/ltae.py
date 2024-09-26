@@ -111,8 +111,7 @@ class LTAE2d(nn.Module):
         self.mlp = nn.Sequential(*layers)
         self.dropout = nn.Dropout(dropout)
 
-    def forward(self, x, batch_positions=None, pad_mask=None, return_comp=False):
-        # sz_b, seq_len, d, h, w = x.shape
+    def forward(self, x, batch_positions=None, pad_mask=None, return_comp=False):        
         sz_b, d, seq_len, h, w = x.shape
         x = x.permute(0, 2, 1, 3, 4)
         if pad_mask is not None:
