@@ -249,7 +249,7 @@ torchrun --nnodes=1 --nproc_per_node=1 pangaea/run.py \
    encoder=remoteclip \
    decoder=upernet\
    preprocessing=default \
-   criterion=cross_entropy \
+   criterion=mse \
    task=segmentation \
    finetune=True
 ```
@@ -265,7 +265,7 @@ torchrun --nnodes=1 --nproc_per_node=1 pangaea/run.py \
    encoder=unet_encoder \
    decoder=unet \
    preprocessing=seg_default \
-   criterion=cross_entropy \
+   criterion=mse \
    task=segmentation \
    finetune=True
 ```
