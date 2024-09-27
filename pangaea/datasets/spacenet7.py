@@ -156,7 +156,7 @@ class AbstractSN7(GeoFMDataset):
             i_splt (int): .
             j_split (int): . #ISSUES
         """
-        super(AbstractSN7, self).__init__(
+        super().__init__(
             split=split,
             dataset_name=dataset_name,
             multi_modal=multi_modal,
@@ -174,9 +174,6 @@ class AbstractSN7(GeoFMDataset):
             data_max=data_max,
             download_url=download_url,
             auto_download=auto_download,
-            # domain_shift=domain_shift,
-            # i_split=i_split,
-            # j_split=j_split,
         )
 
 
@@ -306,7 +303,7 @@ class SN7MAPPING(AbstractSN7):
     ):
         """Initialize the SpaceNet dataset for building mapping.
         """
-        super(SN7MAPPING, self).__init__(
+        super().__init__(
             split=split,
             dataset_name=dataset_name,
             multi_modal=multi_modal,
@@ -446,7 +443,6 @@ class SN7CD(AbstractSN7):
         domain_shift: bool,
         i_split: int,
         j_split: int,
-        eval_mode: bool,
         dataset_multiplier: int,
     ):
         """Initialize the SpaceNet dataset for change detection.
@@ -455,7 +451,7 @@ class SN7CD(AbstractSN7):
             eval_mode (bool): select if evaluation is happening. Instanciate true for val and test
             dataset_multiplier (int): multiplies sample in dataset during training.
         """
-        super(SN7MAPPING, self).__init__(
+        super().__init__(
             split=split,
             dataset_name=dataset_name,
             multi_modal=multi_modal,
@@ -484,8 +480,8 @@ class SN7CD(AbstractSN7):
         self.T = self.multi_temporal
         assert self.T > 1
 
-        self.eval_mode = eval_mode
-        self.multiplier = 1 if eval_mode else dataset_multiplier
+        self.eval_mode = False if split == 'train' else True
+        self.multiplier = 1 if self.eval_mode else dataset_multiplier
 
         self.split = split
         self.items = []
