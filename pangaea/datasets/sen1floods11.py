@@ -10,7 +10,6 @@ import torch
 from pangaea.datasets.utils import download_bucket_concurrently
 from pangaea.datasets.base import GeoFMDataset
 
-# @DATASET_REGISTRY.register()
 class Sen1Floods11(GeoFMDataset):
 
     def __init__(
@@ -103,7 +102,6 @@ class Sen1Floods11(GeoFMDataset):
         self.ignore_index = ignore_index
         self.download_url = download_url
         self.auto_download = auto_download
-        # self.gcs_bucket = gcs_bucket
         
         self.split_mapping = {'train': 'train', 'val': 'valid', 'test': 'test'}
 
