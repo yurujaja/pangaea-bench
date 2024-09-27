@@ -183,6 +183,12 @@ class SegUPerNet(Decoder):
                     feat = self.encoder(img)
             else:
                 feat = self.encoder(img)
+
+            # multi_temporal models can return either (B C' T=1 H' W')
+            # or (B C' H' W'), we need (B C' H' W')
+            if feat[0].ndim == 5:
+                feat = [f.squeeze(-3) for f in feat]
+
         else:
             # remove the temporal dim
             # [B C T=1 H W] -> [B C H W]
@@ -250,6 +256,11 @@ class SegMTUPerNet(SegUPerNet):
                     feats = self.encoder(img)
             else:
                 feats = self.encoder(img)
+            # multi_temporal models can return either (B C' T H' W')
+            # or (B C' H' W') via internal merging strategy
+            # if we have (B C' H' W') we need to skip multi_temporal_strategy
+            if feats[0].ndim == 4:
+                self.multi_temporal_strategy = None
 
         # If the encoder handles only single temporal data, we apply multi_temporal_strategy
         else:
@@ -349,9 +360,6 @@ class SiamUPerNet(SegUPerNet):
                 feat1, feat2 = self.encoder_forward(img)
         else:
             feat1, feat2 = self.encoder_forward(img)
-
-        print("LEN ", len(feat1))
-        print("SHHAPE ", feat1[0].shape)
 
         if self.strategy == "diff":
             feat = [f2 - f1 for f1, f2 in zip(feat1, feat2)]
