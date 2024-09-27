@@ -13,8 +13,8 @@ def read_imgs(multi_temporal, temp , fname, data_dir, img_size):
     imgs_s1, imgs_s2, mask = [], [], []
     if multi_temporal==1:
         month_list = [temp]        
-    else:
-        month_list = list(range(12))
+    else:        
+        month_list = list(range(int(multi_temporal)))
     
     for month in month_list:
         
