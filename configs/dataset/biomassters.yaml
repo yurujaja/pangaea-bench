@@ -1,7 +1,7 @@
 _target_: pangaea.datasets.biomassters.BioMassters
 dataset_name: BioMassters
 root_path: ./data/Biomassters
-# download_url: #https://huggingface.co/datasets/ibm-nasa-geospatial/hls_burn_scars/resolve/main/hls_burn_scars.tar.gz?download=true
+# download_url: 
 auto_download: False
 img_size: 256
 temporal: 6 #6 (summer month use if multi_temp is 1)
