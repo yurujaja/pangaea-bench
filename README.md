@@ -93,9 +93,9 @@ We provide several ways to install the dependencies.
    
    pip install -r requirements.txt
    ```
- **Then install the code repository as a package**
+ **Then install the code repository as a development package**
    ```
-   pip install -e .
+   pip install --no-build-isolation --no-deps -e .
    ```
 
 
