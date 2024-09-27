@@ -222,24 +222,17 @@ class CropTypeMappingSouthSudan(GeoFMDataset):
         # else:
         #     tensor = tensor[..., :self.grid_size]
         return tensor
-    
-    # @staticmethod
-    # def get_splits(dataset_config):
-    #     dataset_train = CropTypeMappingSouthSudan(cfg=dataset_config, split="train")
-    #     dataset_val = CropTypeMappingSouthSudan(cfg=dataset_config, split="val")
-    #     dataset_test = CropTypeMappingSouthSudan(cfg=dataset_config, split="test")
-    #     return dataset_train, dataset_val, dataset_test
 
     @staticmethod
-    def download(dataset_config: dict, silent=False):
-        if os.path.exists(dataset_config["root_path"]):
+    def download(self, silent=False):
+        if os.path.exists(self.root_path):
             if not silent:
                 print("CropTypeMapping Dataset folder exists, skipping downloading dataset.")
             return
 
-        output_path = dataset_config["root_path"]
+        output_path = self.root_path
         os.makedirs(output_path, exist_ok=True)
-        url = dataset_config["download_url"]
+        url = self.download_url
 
         temp_file = os.path.join(output_path, "archive.tar.gz")
 

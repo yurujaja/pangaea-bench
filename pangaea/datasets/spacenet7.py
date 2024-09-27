@@ -244,8 +244,8 @@ class AbstractSN7(GeoFMDataset):
         return int(path.split('_')[-2])
 
     @staticmethod
-    def download(dataset_config: dict, silent=False):
-        output_path = Path(dataset_config["root_path"])
+    def download(self, silent=False):
+        output_path = Path(self.root_path)
 
         if not output_path.exists():
             output_path.mkdir()
@@ -255,7 +255,7 @@ class AbstractSN7(GeoFMDataset):
             return
 
         # download from Google Drive
-        url = dataset_config["download_url"]
+        url = self.download_url
         tar_file = output_path / f'spacenet7.tar.gz'
         gdown.download(url, str(tar_file), quiet=False)
 

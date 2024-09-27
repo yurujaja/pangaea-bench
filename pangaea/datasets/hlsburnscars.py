@@ -110,14 +110,13 @@ class HLSBurnScars(GeoFMDataset):
         self.download_url = download_url
         self.auto_download = auto_download
 
-        # ISSUE
         self.split_mapping = {'train': 'training', 'val': 'validation', 'test': 'validation'}
 
         all_files = sorted(glob(os.path.join(self.root_path, self.split_mapping[self.split], '*merged.tif')))
         all_targets = sorted(glob(os.path.join(self.root_path, self.split_mapping[self.split], '*mask.tif')))
 
         if self.split != "test":
-            split_indices = self.get_stratified_train_val_split(all_files)
+            split_indices = self.get_train_val_split(all_files)
             if self.split == "train":
                 indices = split_indices["train"]
             else:
@@ -130,16 +129,13 @@ class HLSBurnScars(GeoFMDataset):
 
     
     @staticmethod
-    def get_stratified_train_val_split(all_files, split) -> Tuple[Sequence[int], Sequence[int]]:
+    def get_train_val_split(all_files) -> Tuple[Sequence[int], Sequence[int]]:
 
        # Fixed stratified sample to split data into train/val. 
        # This keeps 90% of datapoints belonging to an individual event in the training set and puts the remaining 10% in the validation set. 
-        # disaster_names = list(
-            # map(lambda path: pathlib.Path(path).name.split("_")[0], all_files))
         train_idxs, val_idxs = train_test_split(np.arange(len(all_files)),
                                                 test_size=0.1,
                                                 random_state=23,
-                                                # stratify=disaster_names
                                                 )
         return {"train": train_idxs, "val": val_idxs}
         
@@ -185,9 +181,9 @@ class HLSBurnScars(GeoFMDataset):
         return {"train": train_idxs, "val": val_idxs}
     
     @staticmethod
-    def download(dataset_config:dict, silent=False):
-        output_path = pathlib.Path(dataset_config["root_path"])
-        url = dataset_config["download_url"]
+    def download(self, silent=False):
+        output_path = pathlib.Path(self.root_path)
+        url = self.download_url
 
         try:
             os.makedirs(output_path, exist_ok=False)

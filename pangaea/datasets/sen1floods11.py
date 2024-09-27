@@ -65,6 +65,10 @@ class Sen1Floods11(GeoFMDataset):
             auto_download (bool): whether to download the dataset automatically.
             gcs_bucket (str): subset for downloading the dataset.
         """
+
+        if not os.path.exists(root_path):
+            self.download(root_path, gcs_bucket)
+
         super(Sen1Floods11, self).__init__(
             split=split,
             dataset_name=dataset_name,
@@ -83,7 +87,6 @@ class Sen1Floods11(GeoFMDataset):
             data_max=data_max,
             download_url=download_url,
             auto_download=auto_download,
-            # gcs_bucket=gcs_bucket,
         )
 
         self.root_path = root_path
@@ -167,19 +170,12 @@ class Sen1Floods11(GeoFMDataset):
         }
         return output
 
-    # @staticmethod
-    # def get_splits(dataset_config):
-    #     dataset_train = Sen1Floods11(dataset_config, split="train")
-    #     dataset_val = Sen1Floods11(dataset_config, split="val")
-    #     dataset_test = Sen1Floods11(dataset_config, split="test")
-    #     return dataset_train, dataset_val, dataset_test
-
     @staticmethod
-    def download(dataset_config: dict, silent=False):
-        if os.path.exists(dataset_config["root_path"]):
+    def download(root_path, gcs_bucket, silent=False):
+        if os.path.exists(root_path):
             if not silent:
                 print("Sen1Floods11 Dataset folder exists, skipping downloading dataset.")
             return
-        download_bucket_concurrently(dataset_config["gcs_bucket"], dataset_config["root_path"])
+        download_bucket_concurrently(gcs_bucket, root_path)
 
 
