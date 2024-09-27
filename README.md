@@ -318,7 +318,7 @@ If you use this software in your work, please cite:
 
 ```
 @misc{pangaea,
-  author = {},
+  authors = {Pangaea Team},
   title = {Pangaea},
   year = {2024},
   publisher = {GitHub},
