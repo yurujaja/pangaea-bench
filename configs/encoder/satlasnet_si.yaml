@@ -1,0 +1,25 @@
+
+_target_: pangaea.encoders.satlasnet_encoder.SatlasNet_Encoder
+encoder_weights: null
+download_url: null
+model_identifier: Sentinel2_SwinB_SI_MS  # Single Image Multi-Spectral 
+fpn: False
+input_size: 128
+output_dim: 1024
+
+input_bands:
+  optical:
+    # - B4
+    # - B3
+    # - B2
+
+    #MS Bands 
+    - B2
+    - B3
+    - B4
+    - B5
+    - B6
+    - B7
+    - B8
+    - B11
+    - B12
