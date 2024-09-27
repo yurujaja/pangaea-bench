@@ -47,10 +47,8 @@ def read_imgs(multi_temporal, temp , fname, data_dir, img_size):
 
     imgs_s1 = np.stack(imgs_s1, axis=1)
     imgs_s2 = np.stack(imgs_s2, axis=1)
-
     return imgs_s1, imgs_s2, mask
 
-# @DATASET_REGISTRY.register()
 class BioMassters(GeoFMDataset):
     def __init__(
         self,
@@ -122,7 +120,6 @@ class BioMassters(GeoFMDataset):
             data_max=data_max,
             download_url=download_url,
             auto_download=auto_download,
-            # temp = temp,
         )
         
         self.root_path = root_path
