@@ -426,6 +426,7 @@ class RegUPerNet(Decoder):
             finetune=finetune,
         )
 
+        self.model_name = "Reg_UPerNet"
         if not self.finetune:
             for param in self.encoder.parameters():
                 param.requires_grad = False
