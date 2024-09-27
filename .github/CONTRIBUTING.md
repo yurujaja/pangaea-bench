@@ -234,7 +234,7 @@ We have designed the repo to allow for using your own datasets with minimal effo
              }
 
          @staticmethod
-         def download(dataset_config, silent=False):
+         def download(self, silent=False):
              # Implement if your dataset requires downloading
              pass
      ```
