@@ -154,19 +154,33 @@ torchrun --nnodes=1 --nproc_per_node=1 pangaea/run.py \
 #### Multi-Temporal Semantic Segmentation
 - Multi-temporal decoder config (e.g. `configs/decoder/seg_upernet_mt_ltae.yaml` if you want to use `ltae` as a strategy to combine multi-temporal info) should be used. 
 - In addition, in the dataset config, indicate the number of time frames, e.g., `multi_temporal: 6`
-- To use SatlasNet encoder, the `configs/encoder/satlasnet_mi.yaml` is required.
+
+An example of using SSL4EO-DINO on CropTypeMapping is as below
 ```
 torchrun --nnodes=1 --nproc_per_node=1 pangaea/run.py \
    --config-name=train \
    dataset=croptypemapping \
-   encoder=prithvi \
+   encoder=ssl4eo_dino \
    decoder=seg_upernet_mt_ltae \
    preprocessing=seg_resize \
    criterion=cross_entropy \
    task=segmentation
 ```
 
-To overwrite parameters, please check the Single Temporal Semantic Segmentation example
+To use SatlasNet encoder, the `configs/encoder/satlasnet_mi.yaml` is required
+```
+torchrun --nnodes=1 --nproc_per_node=1 pangaea/run.py \
+   --config-name=train \
+   dataset=croptypemapping \
+   encoder=satlasnet_mi \
+   decoder=seg_upernet_mt_ltae decoder.multi_temporal_strategy=null \
+   preprocessing=seg_resize \
+   criterion=cross_entropy \
+   task=segmentation
+```
+
+
+To overwrite parameters, please check the Single Temporal Semantic Segmentation example.
 
 #### Change Detection
 
@@ -183,7 +197,7 @@ torchrun --nnodes=1 --nproc_per_node=1 pangaea/run.py \
    task=change_detection
 ```
 
-To overwrite parameters, please check the Single Temporal Semantic Segmentation example
+To overwrite parameters, please check the Single Temporal Semantic Segmentation example.
 
 #### Single Temporal Regression
 
@@ -201,11 +215,12 @@ torchrun --nnodes=1 --nproc_per_node=1 pangaea/run.py \
    task=regression
 ```
 To use SatlasNet encoder, the `configs/encoder/satlasnet_si.yaml` is required.
-To overwrite parameters, please check the Single Temporal Semantic Segmentation example
+To overwrite parameters, please check the Single Temporal Semantic Segmentation example.
 
 #### Multi-Temporal Regression
 
-The multi-temporal regression decoder (e.g. `configs/decoder/reg_upernet_mt_ltae.yaml` or `configs/decoder/reg_upernet_mt_linear.yaml`) and the regression task (e.g. `configs/task/regression.yaml`) configs should be used. To use SatlasNet encoder, the `configs/encoder/satlasnet_mi.yaml` is required.
+The multi-temporal regression decoder (e.g. `configs/decoder/reg_upernet_mt_ltae.yaml` or `configs/decoder/reg_upernet_mt_linear.yaml`) and the regression task (e.g. `configs/task/regression.yaml`) configs should be used. 
+
 Take Prithvi encoder on BioMassters as example:
 
 ```
@@ -219,7 +234,8 @@ torchrun --nnodes=1 --nproc_per_node=1 pangaea/run.py \
    task=regression
 ```
 
-To overwrite parameters, please check the Single Temporal Semantic Segmentation example
+To use SatlasNet encoder, please refer to the multi-temporal semantic segmentation example.
+To overwrite parameters, please check the Single Temporal Semantic Segmentation example.
 
 ### 💻 End-to-end Finetuning
 
