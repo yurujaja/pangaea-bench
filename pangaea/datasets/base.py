@@ -1,6 +1,6 @@
 import torch
 from torch.utils.data import Dataset
-
+import os
 
 class GeoFMDataset(Dataset):
     """Base class for all datasets."""
@@ -71,6 +71,9 @@ class GeoFMDataset(Dataset):
         self.data_max = data_max
         self.download_url = download_url
         self.auto_download = auto_download
+
+        if not os.path.exists(self.root_path):
+            self.download(self)
 
     def __len__(self) -> int:
         """Returns the length of the dataset.

@@ -20,9 +20,7 @@ import tarfile
 from pangaea.datasets.utils import DownloadProgressBar
 
 from pangaea.datasets.base import GeoFMDataset
-# from utils.registry import DATASET_REGISTRY
 
-# @DATASET_REGISTRY.register()
 class FiveBillionPixels(GeoFMDataset):
     def __init__(
         self,

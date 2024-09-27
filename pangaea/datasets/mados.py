@@ -181,9 +181,9 @@ class MADOS(GeoFMDataset):
         return int(path.split('_')[-2])
 
     @staticmethod
-    def download(dataset_config: dict, silent=False):
-        output_path = pathlib.Path(dataset_config["root_path"])
-        url = dataset_config["download_url"]
+    def download(self, silent=False):
+        output_path = pathlib.Path(self.root_path)
+        url = self.download_url
 
         existing_dirs = list(output_path.glob("Scene_*"))
         if existing_dirs:
@@ -220,10 +220,3 @@ class MADOS(GeoFMDataset):
             print("done.")
 
         (output_path / temp_file_name).unlink()
-
-    # @staticmethod
-    # def get_splits(dataset_config):
-    #     dataset_train = MADOS(cfg=dataset_config, split="train")
-    #     dataset_val = MADOS(cfg=dataset_config, split="val")
-    #     dataset_test = MADOS(cfg=dataset_config, split="test")
-    #     return dataset_train, dataset_val, dataset_test

@@ -176,12 +176,5 @@ class BioMassters(GeoFMDataset):
         }
 
     # @staticmethod
-    # def get_splits(dataset_config):
-    #     dataset_train = BioMassters(cfg=dataset_config, split='train')
-    #     dataset_val = BioMassters(cfg=dataset_config, split='val')
-    #     dataset_test = BioMassters(cfg=dataset_config, split='test')
-    #     return dataset_train, dataset_val, dataset_test
-    
-    # @staticmethod
-    # def download(dataset_config:dict, silent=False):
+    # def download(self, silent=False):
     #     pass

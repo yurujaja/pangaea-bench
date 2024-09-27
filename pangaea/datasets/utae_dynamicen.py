@@ -229,5 +229,5 @@ class DynamicEarthNet(GeoFMDataset):
     #     return dataset_train, dataset_val, dataset_test
 
     @staticmethod
-    def download(dataset_config: dict, silent=False):
+    def download(self, silent=False):
         pass

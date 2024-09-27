@@ -174,31 +174,11 @@ class xView2(GeoFMDataset):
             'metadata': {"filename":fn}
         }
 
-        # return {
-        #     'image': {
-        #         't0' : {
-        #             'optical': img_pre,
-        #             },
-        #         't1': {
-        #             'optical': img_post,
-        #             },
-        #     },
-        #     'target': msk,  
-        #     'metadata': {"filename":fn}
-        # }
-
-    # @staticmethod
-    # def get_splits(dataset_config):
-    #     dataset_train = xView2(cfg=dataset_config, split="train")
-    #     dataset_val = xView2(cfg=dataset_config, split="val")
-    #     dataset_test = xView2(cfg=dataset_config, split="test")
-    #     return dataset_train, dataset_val, dataset_test
-
 
     @staticmethod
-    def download(dataset_config:dict, silent=False):
-        output_path = pathlib.Path(dataset_config["root_path"])
-        url = dataset_config["download_url"]
+    def download(self, silent=False):
+        output_path = pathlib.Path(self.root_path)
+        url = self.download_url
 
         try:
             os.makedirs(output_path, exist_ok=False)

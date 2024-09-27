@@ -82,13 +82,6 @@ class AI4SmallFarms(GeoFMDataset):
             auto_download=auto_download,
         )
 
-        self.root_path = pathlib.Path(root_path)
-        self.split = split
-        self.image_dir = self.root_path.joinpath(f"sentinel-2-asia/{split}/images")
-        self.mask_dir = self.root_path.joinpath(f"sentinel-2-asia/{split}/masks")
-        self.image_list = sorted(glob(str(self.image_dir.joinpath("*.tif"))))
-        self.mask_list = sorted(glob(str(self.mask_dir.joinpath("*.tif"))))
-
         self.data_mean = data_mean
         self.data_std = data_std
         self.data_min = data_min
@@ -100,6 +93,13 @@ class AI4SmallFarms(GeoFMDataset):
         self.ignore_index = ignore_index
         self.download_url = download_url
         self.auto_download = auto_download
+
+        self.root_path = pathlib.Path(root_path)
+        self.split = split
+        self.image_dir = self.root_path.joinpath(f"sentinel-2-asia/{split}/images")
+        self.mask_dir = self.root_path.joinpath(f"sentinel-2-asia/{split}/masks")
+        self.image_list = sorted(glob(str(self.image_dir.joinpath("*.tif"))))
+        self.mask_list = sorted(glob(str(self.mask_dir.joinpath("*.tif"))))
 
     def __len__(self):
         return len(self.image_list)
@@ -133,8 +133,8 @@ class AI4SmallFarms(GeoFMDataset):
         }
 
     @staticmethod
-    def download(dataset_config: dict, silent=False):
-        root_path = pathlib.Path(dataset_config["root_path"])
+    def download(self, silent=False):
+        root_path = pathlib.Path(self.root_path)
 
         # Create the root directory if it does not exist
         if not root_path.exists():
