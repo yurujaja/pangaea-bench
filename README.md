@@ -211,7 +211,7 @@ torchrun --nnodes=1 --nproc_per_node=1 pangaea/run.py \
    encoder=prithvi \
    decoder=reg_upernet \
    preprocessing=reg_default \
-   criterion=cross_entropy \
+   criterion=mse \
    task=regression
 ```
 To use SatlasNet encoder, the `configs/encoder/satlasnet_si.yaml` is required.
@@ -230,7 +230,7 @@ torchrun --nnodes=1 --nproc_per_node=1 pangaea/run.py \
    encoder=prithvi \
    decoder=reg_upernet_mt_ltae \
    preprocessing=reg_default \
-   criterion=cross_entropy \
+   criterion=mse \
    task=regression
 ```
 

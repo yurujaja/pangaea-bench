@@ -82,7 +82,8 @@ class Trainer:
         ], f"Invalid precision {precision}, use 'fp32', 'fp16' or 'bfp16'."
         self.enable_mixed_precision = precision != "fp32"
         self.precision = torch.float16 if (precision == "fp16") else torch.bfloat16
-        self.scaler = torch.GradScaler("cuda", enabled=self.enable_mixed_precision)
+        # self.scaler = torch.GradScaler("cuda", enabled=self.enable_mixed_precision)
+        self.scaler = torch.cuda.amp.GradScaler("cuda", enabled=self.enable_mixed_precision)
 
         self.start_epoch = 0
 
