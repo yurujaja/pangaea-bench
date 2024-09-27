@@ -2,7 +2,7 @@
 _target_: pangaea.encoders.satlasnet_encoder.SatlasNet_Encoder
 encoder_weights: null
 download_url: null
-model_identifier: Sentinel2_SwinB_MI_MS #Sentinel2_SwinB_SI_RGB   #
+model_identifier: Sentinel2_SwinB_MI_MS # Multi-Image Multi-Spectral 
 fpn: False
 input_size: 128
 output_dim: 1024

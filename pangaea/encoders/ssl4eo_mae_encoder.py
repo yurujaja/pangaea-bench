@@ -197,6 +197,7 @@ class SSL4EO_MAE_SAR_Encoder(SSL4EO_MAE_OPTICAL_Encoder):
         input_size: int,
         input_bands: dict[str, list[str]],
         output_layers: int | list[int],
+        download_url: str,
         embed_dim: int = 1024,
         patch_size: int = 16,
         in_chans: int = 3,
@@ -217,6 +218,7 @@ class SSL4EO_MAE_SAR_Encoder(SSL4EO_MAE_OPTICAL_Encoder):
             num_heads=num_heads,
             mlp_ratio=mlp_ratio,
             norm_layer=norm_layer,
+            download_url=download_url,
         )
 
         self.model_name = "ssl4eo_mae_sar"
