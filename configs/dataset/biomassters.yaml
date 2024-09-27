@@ -1,10 +1,10 @@
 _target_: pangaea.datasets.biomassters.BioMassters
 dataset_name: BioMassters
 root_path: ./data/Biomassters
-# download_url: 
+download_url: 
 auto_download: False
 img_size: 256
-temporal: 6 #6 (summer month use if multi_temp is 1)
+temp: 6 #6 (select month to use if single temporal (multi_temp : 1))
 multi_temporal: 12
 multi_modal: True
 
