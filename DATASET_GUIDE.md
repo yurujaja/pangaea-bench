@@ -157,7 +157,7 @@ This document provides a detailed overview of the datasets used in this reposito
    dataset=spacenet7 \
    encoder=remoteclip \
    decoder=seg_upernet\
-   preprocessing=segmentation \
+   preprocessing=seg_default \
    criterion=cross_entropy \
    task=segmentation
   ```
@@ -168,9 +168,9 @@ This document provides a detailed overview of the datasets used in this reposito
    dataset=spacenet7cd \
    encoder=remoteclip \
    decoder=seg_siamupernet_conc\
-   preprocessing=change_detection \
+   preprocessing=seg_default \
    criterion=cross_entropy \
-   task=segmentation
+   task=change_detection
   ```
 
 ###  AI4SmallFarms
