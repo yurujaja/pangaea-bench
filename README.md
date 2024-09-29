@@ -1,6 +1,6 @@
 [![Tests](https://github.com/yurujaja/geofm-bench/actions/workflows/python-test.yml/badge.svg)](https://github.com/yurujaja/geofm-bench/actions/workflows/python-test.yml)
 
-# PANGAEA: A Diverse Benchmark for Geospatial Foundation Models
+# PANGAEA: A Global and Inclusive Benchmark for Geospatial Foundation Models
 
 ## 📚 Introduction
 
@@ -9,10 +9,10 @@ While geospatial foundation models (GFMs) have proliferated rapidly, their evalu
 To bridge this gap, we propose a standardized evaluation protocol that incorporates a wide-ranging selection of datasets, tasks, resolutions, and sensor types, establishing a robust and widely applicable benchmark for GFMs.
 
 
-<img src=".github/geofmbenchmark.png" alt="PANGAEA: a diverse benchmark for geospatial foundation models" width="90%">
+<img src=".github/geofmbenchmark.png" alt="PANGAEA: a global and inclusive benchmark for geospatial foundation models" width="90%">
 
 
-In this repo, you can find the code to benchmark GFMs. For the moment we included several GFMs that present different approach. We look forward to adding new models and datasets.
+In this repo, you can find the code to benchmark GFMs. For the moment we included several GFMs that present different approaches. We look forward to adding new models and datasets.
 
 For the moment, we support the following **models**:
 
@@ -311,6 +311,7 @@ A pre-print is coming soon... Stay tuned!
 | Prithvi | Sen1Floods11  | 80     | 87.217 |
 | Prithvi | AI4SmallFarms | 80     | 33.796 |
 
+NOTE: if you want to benchmark the results of your model, for a fair comparison do not change the hparams in the configs! When the pre-print will be out, we will publish also a set of "benchmark-configs".
 
 ## 📝 Citation
 
@@ -318,7 +319,7 @@ If you use this software in your work, please cite:
 
 ```
 @misc{pangaea,
-  author = {},
+  author = {Pangaea Team},
   title = {Pangaea},
   year = {2024},
   publisher = {GitHub},
