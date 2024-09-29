@@ -312,6 +312,7 @@ A pre-print is coming soon... Stay tuned!
 | Prithvi | Sen1Floods11  | 80     | 87.217 |
 | Prithvi | AI4SmallFarms | 80     | 33.796 |
 
+NOTE: if you want to benchmark the results of your model, for a fair comparison do not change the hparams in the configs! When the pre-print will be out, we will publish also a set of "benchmark-configs".
 
 ## 📝 Citation
 

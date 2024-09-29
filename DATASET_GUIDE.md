@@ -157,7 +157,7 @@ This document provides a detailed overview of the datasets used in this reposito
    dataset=spacenet7 \
    encoder=remoteclip \
    decoder=seg_upernet\
-   preprocessing=seg_default \
+   preprocessing=segmentation \
    criterion=cross_entropy \
    task=segmentation
   ```
@@ -165,10 +165,10 @@ This document provides a detailed overview of the datasets used in this reposito
     ```
    torchrun --nnodes=1 --nproc_per_node=1 pangaea/run.py \
    --config-name=train \
-   dataset=spacenet7 \
+   dataset=spacenet7cd \
    encoder=remoteclip \
    decoder=seg_siamupernet_conc\
-   preprocessing=seg_default \
+   preprocessing=change_detection \
    criterion=cross_entropy \
    task=segmentation
   ```
