@@ -54,6 +54,7 @@ class CROMA_OPTICAL_Encoder(Encoder):
             embed_dim=768,
             output_dim=768,
             multi_temporal=False,
+            multi_temporal_output=False,
             download_url=download_url,
         )
 
@@ -166,6 +167,7 @@ class CROMA_SAR_Encoder(Encoder):
             embed_dim=768,
             output_dim=768,
             multi_temporal=False,
+            multi_temporal_output=False,
             download_url=download_url,
         )
 
@@ -286,6 +288,7 @@ class CROMA_JOINT_Encoder(Encoder):
             embed_dim=768,
             output_dim=768,
             multi_temporal=False,
+            multi_temporal_output=False,
             download_url=download_url,
         )
 

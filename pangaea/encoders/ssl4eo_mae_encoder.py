@@ -63,6 +63,7 @@ class SSL4EO_MAE_OPTICAL_Encoder(Encoder):
             embed_dim=embed_dim,
             output_dim=embed_dim,
             multi_temporal=False,
+            multi_temporal_output=False,
             download_url=download_url,
         )
 

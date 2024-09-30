@@ -11,9 +11,9 @@ import tqdm
 
 
 class DownloadProgressBar:
-    """Download progress bar.
-    """
-    def __init__(self, text: str="Downloading...") -> None:
+    """Download progress bar."""
+
+    def __init__(self, text: str = "Downloading...") -> None:
         """Initialize the DownloadProgressBar.
 
         Args:
@@ -59,6 +59,7 @@ class Encoder(nn.Module):
         embed_dim: int,
         output_dim: int,
         multi_temporal: bool,
+        multi_temporal_output: bool,
         encoder_weights: str | Path,
         download_url: str,
     ) -> None:
@@ -72,6 +73,7 @@ class Encoder(nn.Module):
             embed_dim (int): dimension of the embedding used by the encoder.
             output_dim (int): dimension of the embedding output by the encoder, accepted by the decoder.
             multi_temporal (bool): whether the model is multi-temporal or not.
+            multi_temporal (bool): whether the model output is multi-temporal or not.
             encoder_weights (str | Path): path to the encoder weights.
             download_url (str): url to download the model.
         """
@@ -83,6 +85,7 @@ class Encoder(nn.Module):
         self.output_dim = output_dim
         self.encoder_weights = encoder_weights
         self.multi_temporal = multi_temporal
+        self.multi_temporal_output = multi_temporal_output
         self.download_url = download_url
 
         # download_model if necessary
@@ -131,15 +134,15 @@ class Encoder(nn.Module):
         for param in self.parameters():
             param.requires_grad = False
 
-    def forward(self, x:dict[str, torch.Tensor]) -> list[torch.Tensor]:
+    def forward(self, x: dict[str, torch.Tensor]) -> list[torch.Tensor]:
         """Foward pass of the encoder.
 
         Args:
             x (dict[str, torch.Tensor]): encoder's input structured as a dictionary:
             x = {modality1: tensor1, modality2: tensor2, ...}, e.g. x = {"optical": tensor1, "sar": tensor2}.
             If the encoder is multi-temporal (self.multi_temporal==True), input tensor shape is (B C T H W) with C the
-            number of bands required by the encoder for the given modality and T the number of time steps. If the 
-            encoder is not multi-temporal, input tensor shape is (B C H W) with C the number of bands required by the 
+            number of bands required by the encoder for the given modality and T the number of time steps. If the
+            encoder is not multi-temporal, input tensor shape is (B C H W) with C the number of bands required by the
             encoder for the given modality.
         Raises:
             NotImplementedError: raise if the method is not implemented.
@@ -153,8 +156,7 @@ class Encoder(nn.Module):
         raise NotImplementedError
 
     def download_model(self) -> None:
-        """Download the model if the weights are not already downloaded.
-        """
+        """Download the model if the weights are not already downloaded."""
         if self.download_url and not os.path.isfile(self.encoder_weights):
             # TODO: change this path
             os.makedirs("pretrained_models", exist_ok=True)

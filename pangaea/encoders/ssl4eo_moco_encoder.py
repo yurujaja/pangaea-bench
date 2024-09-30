@@ -62,6 +62,7 @@ class SSL4EO_MOCO_Encoder(Encoder):
             embed_dim=embed_dim,
             output_dim=embed_dim,
             multi_temporal=False,
+            multi_temporal_output=False,
             download_url=download_url,
         )
 
@@ -166,4 +167,3 @@ class SSL4EO_MOCO_Encoder(Encoder):
                 output.append(out)
                 # x = self.norm(x)
         return output
-
