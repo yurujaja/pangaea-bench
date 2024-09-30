@@ -67,7 +67,7 @@ We have designed the repo to allow for benchmarking your own model with minimal 
              input_bands: dict[str, list[str]],
              output_layers: int | list[int],
              in_chans: int,              #newly added parameter
-         ):
+         ) -> None:
              super().__init__(
                  model_name="my_model_name",
                  encoder_weights=encoder_weights,
@@ -76,6 +76,7 @@ We have designed the repo to allow for benchmarking your own model with minimal 
                  embed_dim=768,        # my_model_embed_dim, fixed parameters
                  output_dim=768,       # my_model_output_dim, fixed parameters
                  multi_temporal=False, # wether support multi-temporal, fixed parametersfixed parameters
+                 multi_temporal_ouput=False, # wether the output of the model has a temporal dimension
              )
      
             self.in_chans = in_chans    #newly added parameter
@@ -89,13 +90,29 @@ We have designed the repo to allow for benchmarking your own model with minimal 
              )
              # Specify output layers if applicable
 
-         def load_encoder_weights(self, pretrained_path):
+         def load_encoder_weights(self, pretrained_path: str) -> None:
              # Load pretrained weights
              state_dict = torch.load(pretrained_path, map_location='cpu')
              self.load_state_dict(state_dict, strict=False)
              print(f"Loaded encoder weights from {pretrained_path}")
 
-         def forward(self, image):
+         def forward(self, x: dict[str, torch.Tensor]) -> list[torch.Tensor]:
+             """Foward pass of the encoder.
+ 
+             Args:
+                 x (dict[str, torch.Tensor]): encoder's input structured as a dictionary:
+                 x = {modality1: tensor1, modality2: tensor2, ...}, e.g. x = {"optical": tensor1, "sar": tensor2}.
+                 If the encoder is multi-temporal (self.multi_temporal==True), input tensor shape is (B C T H W) with C the
+                 number of bands required by the encoder for the given modality and T the number of time steps. If the
+                 encoder is not multi-temporal, input tensor shape is (B C H W) with C the number of bands required by the
+                 encoder for the given modality.
+ 
+             Returns:
+                 list[torch.Tensor]: list of the embeddings for each modality. For single-temporal encoders, the list's
+                 elements are of shape (B, embed_dim, H', W'). For multi-temporal encoders, the list's elements are of shape
+                 (B, C', T, H', W') with T the number of time steps if the encoder does not have any time-merging strategy,
+                 else (B, C', H', W') if the encoder has a time-merging strategy (where C'==self.output_dim).
+             """
              x = image['optical']
              outputs = []
              # Forward pass through the model
