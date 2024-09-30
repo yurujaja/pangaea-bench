@@ -65,6 +65,7 @@ class Prithvi_Encoder(Encoder):
             embed_dim=embed_dim,
             output_dim=embed_dim,
             multi_temporal=True,
+            multi_temporal_output=True,
             download_url=download_url,
         )
 

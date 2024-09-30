@@ -36,6 +36,7 @@ class UNet(Encoder):
             embed_dim=0,
             output_dim=0,
             multi_temporal=False,  # single time frame
+            multi_temporal_output=False,
             download_url=download_url,
         )
 
@@ -134,4 +135,3 @@ class Down(nn.Module):
     def forward(self, x):
         x = self.mpconv(x)
         return x
-
