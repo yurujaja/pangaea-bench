@@ -15,7 +15,7 @@ multi_modal: False
 
 # classes
 ignore_index: -1
-num_classes: 1
+num_classes: 2
 classes:
   - Background
   - Building
