@@ -1,0 +1,29 @@
+trainer:
+  _target_: pangaea.engine.trainer.SegTrainer
+  # params overwritten in run
+  model: null
+  train_loader: null
+  optimizer: null
+  lr_scheduler: null
+  evaluator: null
+  exp_dir: null
+  device: null
+  criterion: null
+
+  # params to adapt
+  n_epochs: 80
+  precision: fp32
+  ckpt_interval: 20
+  eval_interval: 5
+  log_interval: 5
+  use_wandb: ${use_wandb}
+
+evaluator:
+  _target_: pangaea.engine.evaluator.SegEvaluator
+  # params overwritten in run
+  val_loader: null
+  exp_dir: null
+  device: null
+  use_wandb: ${use_wandb}
+
+

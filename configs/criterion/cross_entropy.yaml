@@ -1,0 +1,2 @@
+_target_: torch.nn.CrossEntropyLoss
+ignore_index: ${dataset.ignore_index}

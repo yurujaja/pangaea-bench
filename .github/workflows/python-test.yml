@@ -41,7 +41,7 @@ jobs:
     - name: Create environment with mamba
       uses: conda-incubator/setup-miniconda@v3
       with:
-        mamba-version: "*"
+        mamba-version: "1.5.10"
         channels: pytorch, nvidia, conda-forge
         auto-activate-base: false
         activate-environment: gfm-bench8

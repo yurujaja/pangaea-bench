@@ -1,0 +1,90 @@
+_target_: pangaea.datasets.mados.MADOS
+dataset_name: MADOS
+root_path: ./data/mados
+download_url: https://zenodo.org/records/10664073/files/MADOS.zip?download=1
+auto_download: True
+
+img_size: 240
+multi_temporal: False
+multi_modal: False
+
+# classes
+ignore_index: -1
+num_classes: 15
+classes: 
+  - Marine Debris
+  - Dense Sargassum
+  - Sparse Floating Algae
+  - Natural Organic Material
+  - Ship
+  - Oil Spill
+  - Marine Water
+  - Sediment-Laden Water
+  - Foam
+  - Turbid Water
+  - Shallow Water
+  - Waves & Wakes
+  - Oil Platform
+  - Jellyfish
+  - Sea snot
+distribution:
+  - 0.00336
+  - 0.00241
+  - 0.00336
+  - 0.00142
+  - 0.00775
+  - 0.18452
+  - 0.34775
+  - 0.20638
+  - 0.00062
+  - 0.1169
+  - 0.09188
+  - 0.01309
+  - 0.00917
+  - 0.00176
+  - 0.00963
+
+# data stats
+bands:
+  optical:
+    - B1
+    - B2
+    - B3
+    - B4
+    - B5
+    - B6
+    - B7
+    - B8
+    - B8A
+    - B11
+    - B12
+data_mean:
+  optical:
+    - 0.0582676
+    - 0.05223386
+    - 0.04381474
+    - 0.0357083
+    - 0.03412902
+    - 0.03680401
+    - 0.03999107
+    - 0.03566642
+    - 0.03965081
+    - 0.0267993
+    - 0.01978944
+data_std:
+  optical:
+    - 0.03240627
+    - 0.03432253
+    - 0.0354812
+    - 0.0375769
+    - 0.03785412
+    - 0.04992323
+    - 0.05884482
+    - 0.05545856
+    - 0.06423746
+    - 0.04211187
+    - 0.03019115
+data_min:
+  optical: [0.0000, -0.0318, 0.0000, -0.0088, -0.0143, -0.0116, -0.0100, -0.0071, -0.0066, -0.0004, -0.0017]
+data_max:
+  optical: [1.1649, 1.4814, 1.9679, 1.9531, 2.1102, 2.5981, 2.8735, 2.3780, 2.6617, 1.5348, 1.3859]

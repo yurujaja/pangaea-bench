@@ -1,0 +1,29 @@
+_target_: pangaea.encoders.prithvi_encoder.Prithvi_Encoder
+encoder_weights: ./pretrained_models/Prithvi_100M.pt
+download_url: https://huggingface.co/ibm-nasa-geospatial/Prithvi-100M/resolve/main/Prithvi_100M.pt?download=true
+
+embed_dim: 768
+input_size: 224
+in_chans: 6
+patch_size: 16
+num_heads: 12
+depth: 12
+mlp_ratio: 4
+tubelet_size: 1
+
+num_frames: ${dataset.multi_temporal}
+
+input_bands:
+  optical:
+    - B2
+    - B3
+    - B4
+    - B8A
+    - B11
+    - B12
+
+output_layers:
+  - 3
+  - 5
+  - 7
+  - 11

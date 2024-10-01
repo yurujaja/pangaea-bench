@@ -1,0 +1,34 @@
+_target_:  pangaea.encoders.ssl4eo_mae_encoder.SSL4EO_MAE_OPTICAL_Encoder
+encoder_weights: ./pretrained_models/B13_vits16_mae_0099_ckpt.pth
+download_url: https://drive.google.com/uc?id=1LREGuI6w7Gq6Xm0jFQdxxtp8QkmLvJWk&export=download&confirm=yes
+
+
+embed_dim: 384
+input_size: 224
+in_chans: 13
+patch_size: 16
+num_heads: 6
+depth: 12
+mlp_ratio: 4
+
+input_bands:
+  optical:
+    - B1
+    - B2
+    - B3
+    - B4
+    - B5
+    - B6
+    - B7
+    - B8
+    - B8A
+    - B9
+    - B10
+    - B11
+    - B12
+
+output_layers:
+  - 3
+  - 5
+  - 7
+  - 11

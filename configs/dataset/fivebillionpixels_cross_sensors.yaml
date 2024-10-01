@@ -1,0 +1,88 @@
+_target_: pangaea.datasets.fivebillionpixels.FiveBillionPixels
+dataset_name: FiveBillionPixels
+root_path: /geomatics/gpuserver-1/vmarsocci/FiveBillionPixels/dom_adapt
+download_url: False 
+auto_download: False
+
+img_size: 1000
+multi_temporal: False
+multi_modal: False
+
+# classes
+ignore_index: 0
+num_classes: 25
+classes:
+- unlabeled
+- industrial area
+- paddy field
+- irrigated field
+- dry cropland
+- garden land
+- arbor forest
+- shrub forest
+- park
+- natural meadow
+- artificial meadow
+- river
+- urban residential
+- lake
+- pond
+- fish pond
+- snow
+- bareland
+- rural residential
+- stadium
+- square
+- road
+- overpass
+- railway station
+- airport
+distribution:
+  - 0.88889
+  - 0.11111
+  - 0.88889
+  - 0.11111
+  - 0.88889
+  - 0.11111
+  - 0.88889
+  - 0.11111
+  - 0.88889
+  - 0.11111
+  - 0.88889
+  - 0.11111
+  - 0.88889
+  - 0.11111
+  - 0.88889
+  - 0.11111
+  - 0.11111
+  - 0.88889
+  - 0.11111
+  - 0.88889
+  - 0.11111
+  - 0.88889
+  - 0.11111
+  - 0.88889
+  - 0.11111
+
+bands:
+  optical:
+    - B4
+    - B3
+    - B2
+    - B8
+data_mean:
+  optical:
+    - 124.3
+    - 94.2
+    - 98.
+    - 92.6
+data_std:
+  optical:
+    - 51.
+    - 50.
+    - 47.1
+    - 44.5
+data_min:
+  optical: [0.0000, 0.0000, 0.0000, 0.0000]
+data_max:
+  optical: [0.0000, 0.0000, 0.0000, 0.0000]

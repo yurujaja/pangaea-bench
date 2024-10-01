@@ -1,0 +1,27 @@
+_target_: pangaea.encoders.scalemae_encoder.ScaleMAE_Encoder
+encoder_weights:  ./pretrained_models/scalemae-vitlarge-800.pth
+download_url: https://github.com/bair-climate-initiative/scale-mae/releases/download/base-800/scalemae-vitlarge-800.pth
+
+embed_dim: 1024
+input_size: 224
+
+in_chans: 3
+patch_size: 16
+depth: 24
+num_heads: 16
+mlp_ratio: 4
+qkv_bias: True
+  
+input_res: 1.
+
+input_bands:
+  optical:
+    - B4
+    - B3
+    - B2
+
+output_layers:
+  - 7
+  - 11
+  - 15
+  - 23
