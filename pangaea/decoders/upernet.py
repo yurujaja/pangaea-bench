@@ -362,17 +362,20 @@ class SiamUPerNet(SegUPerNet):
             feature_multiplier=feature_multiplier,
         )
 
-    def encoder_forward(
-        self, img: dict[str, torch.Tensor]
-    ) -> list[dict[str, torch.Tensor]]:
+    def encoder_forward(self, img: dict[str, torch.Tensor]) -> list[list[torch.Tensor]]:
         if self.encoder.multi_temporal:
             # Retains the temporal dimension
             img1 = {k: v[:, :, [0], :, :] for k, v in img.items()}
             img2 = {k: v[:, :, [1], :, :] for k, v in img.items()}
 
-            # multi_temporal encoder returns features (B C T H W)
-            feat1 = self.encoder(img1).squeeze(-3)
-            feat2 = self.encoder(img2).squeeze(-3)
+            # multi_temporal encoder returns features (B C T=1 H W)
+            # or (B C T H W)
+            feat1 = self.encoder(img1)
+            feat2 = self.encoder(img2)
+
+            if self.encoder.multi_temporal_output:
+                feat1 = [f.squeeze(-3) for f in feat1]
+                feat2 = [f.squeeze(-3) for f in feat2]
 
         else:
             img1 = {k: v[:, :, 0, :, :] for k, v in img.items()}
