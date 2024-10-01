@@ -182,17 +182,15 @@ class AbstractSN7(GeoFMDataset):
         with open(metadata_file, 'r') as f:
             self.metadata = json.load(f)
 
-        self.img_size = 1024  # size of the SpaceNet 7 images
-        # unpacking config
-        self.tile_size = img_size  # size used for tiling the images
-        assert self.img_size % self.tile_size == 0
+        self.sn7_img_size = 1024  # size of the SpaceNet 7 images
+        self.img_size = img_size  # size used for tiling the images
+        assert self.sn7_img_size % self.img_size == 0
 
         self.data_mean = data_mean
         self.data_std = data_std
         self.data_min = data_min
         self.data_max = data_max
         self.classes = classes
-        self.img_size = img_size
         self.distribution = distribution
         self.num_classes = self.class_num = num_classes
         self.ignore_index = ignore_index
@@ -217,7 +215,7 @@ class AbstractSN7(GeoFMDataset):
         folder = self.root_path / 'train' / aoi_id / 'images_masked'
         file = folder / f'global_monthly_{year}_{month:02d}_mosaic_{aoi_id}.tif'
         with rasterio.open(str(file), mode='r') as src:
-            img = src.read(out_shape=(1024, 1024), resampling=rasterio.enums.Resampling.nearest)
+            img = src.read(out_shape=(self.sn7_img_size, self.sn7_img_size), resampling=rasterio.enums.Resampling.nearest)
         # 4th band (last oen) is alpha band
         img = img[:-1]
         return img.astype(np.float32)
@@ -226,7 +224,7 @@ class AbstractSN7(GeoFMDataset):
         folder = self.root_path / 'train' / aoi_id / 'labels_raster'
         file = folder / f'global_monthly_{year}_{month:02d}_mosaic_{aoi_id}_Buildings.tif'
         with rasterio.open(str(file), mode='r') as src:
-            label = src.read(out_shape=(1024, 1024), resampling=rasterio.enums.Resampling.nearest)
+            label = src.read(out_shape=(self.sn7_img_size, self.sn7_img_size), resampling=rasterio.enums.Resampling.nearest)
         label = (label > 0).squeeze()
         return label.astype(np.int64)
 
@@ -350,15 +348,15 @@ class SN7MAPPING(AbstractSN7):
                             'month': timestamp['month'],
                         }
                         # tiling the timestamps
-                        for i in range(0, self.img_size, self.tile_size):
-                            for j in range(0, self.img_size, self.tile_size):
+                        for i in range(0, self.sn7_img_size, self.img_size):
+                            for j in range(0, self.sn7_img_size, self.img_size):
                                 item['i'] = i
                                 item['j'] = j
                                 self.items.append(dict(item))
         
         else:  # within-scenes split
-            assert self.i_split % self.tile_size == 0 and self.j_split % self.tile_size == 0
-            assert self.tile_size <= self.i_split and self.tile_size <= self.j_split
+            assert self.i_split % self.img_size == 0 and self.j_split % self.img_size == 0
+            assert self.img_size <= self.i_split and self.img_size <= self.j_split
             self.aoi_ids = list(self.sn7_aois)
             for aoi_id in self.aoi_ids:
                 timestamps = list(self.metadata[aoi_id])
@@ -371,18 +369,18 @@ class SN7MAPPING(AbstractSN7):
                         }
                         if split == 'train':
                             i_min, i_max = 0, self.i_split
-                            j_min, j_max = 0, self.img_size
+                            j_min, j_max = 0, self.sn7_img_size
                         elif split == 'val':
-                            i_min, i_max = self.i_split, self.img_size
+                            i_min, i_max = self.i_split, self.sn7_img_size
                             j_min, j_max = 0, self.j_split
                         elif split == 'test':
-                            i_min, i_max = self.i_split, self.img_size
-                            j_min, j_max = self.j_split, self.img_size
+                            i_min, i_max = self.i_split, self.sn7_img_size
+                            j_min, j_max = self.j_split, self.sn7_img_size
                         else:
                             raise Exception('Unkown split')
                         # tiling the timestamps
-                        for i in range(i_min, i_max, self.tile_size):
-                            for j in range(j_min, j_max, self.tile_size):
+                        for i in range(i_min, i_max, self.img_size):
+                            for j in range(j_min, j_max, self.img_size):
                                 item['i'] = i
                                 item['j'] = j
                                 self.items.append(dict(item))
@@ -400,8 +398,8 @@ class SN7MAPPING(AbstractSN7):
 
         # cut to tile
         i, j = item['i'], item['j']
-        image = image[:, i:i + self.tile_size, j:j + self.tile_size]
-        target = target[i:i + self.tile_size, j:j + self.tile_size]
+        image = image[:, i:i + self.img_size, j:j + self.img_size]
+        target = target[i:i + self.img_size, j:j + self.img_size]
 
         image = torch.from_numpy(image)
         target = torch.from_numpy(target)
@@ -500,32 +498,32 @@ class SN7CD(AbstractSN7):
             for aoi_id in self.aoi_ids:
                 item = { 'aoi_id': aoi_id }
                 # tiling the timestamps
-                for i in range(0, self.img_size, self.tile_size):
-                    for j in range(0, self.img_size, self.tile_size):
+                for i in range(0, self.sn7_img_size, self.img_size):
+                    for j in range(0, self.sn7_img_size, self.img_size):
                         item['i'] = i
                         item['j'] = j
                         self.items.append(dict(item))
         
         else:  # within-scenes split
-            assert self.i_split % self.tile_size == 0 and self.j_split % self.tile_size == 0
-            assert self.tile_size <= self.i_split and self.tile_size <= self.j_split
+            assert self.i_split % self.img_size == 0 and self.j_split % self.img_size == 0
+            assert self.img_size <= self.i_split and self.img_size <= self.j_split
             self.aoi_ids = list(self.sn7_aois)
             for aoi_id in self.aoi_ids:
                 item = { 'aoi_id': aoi_id }
                 if split == 'train':
                     i_min, i_max = 0, self.i_split
-                    j_min, j_max = 0, self.img_size
+                    j_min, j_max = 0, self.sn7_img_size
                 elif split == 'val':
-                    i_min, i_max = self.i_split, self.img_size
+                    i_min, i_max = self.i_split, self.sn7_img_size
                     j_min, j_max = 0, self.j_split
                 elif split == 'test':
-                    i_min, i_max = self.i_split, self.img_size
-                    j_min, j_max = self.j_split, self.img_size
+                    i_min, i_max = self.i_split, self.sn7_img_size
+                    j_min, j_max = self.j_split, self.sn7_img_size
                 else:
                     raise Exception('Unkown split')
                 # tiling the timestamps
-                for i in range(i_min, i_max, self.tile_size):
-                    for j in range(j_min, j_max, self.tile_size):
+                for i in range(i_min, i_max, self.img_size):
+                    for j in range(j_min, j_max, self.img_size):
                         item['i'] = i
                         item['j'] = j
                         self.items.append(dict(item))
@@ -566,8 +564,8 @@ class SN7CD(AbstractSN7):
 
         # cut to tile
         i, j = item['i'], item['j']
-        image = image[:, :, i:i + self.tile_size, j:j + self.tile_size]
-        target = target[i:i + self.tile_size, j:j + self.tile_size]
+        image = image[:, :, i:i + self.img_size, j:j + self.img_size]
+        target = target[i:i + self.img_size, j:j + self.img_size]
 
         # weight for oversampling
         weight = torch.empty(target.shape)
