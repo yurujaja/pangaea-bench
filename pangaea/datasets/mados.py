@@ -149,7 +149,7 @@ class MADOS(GeoFMDataset):
             upscale_factor = int(os.path.basename(os.path.dirname(path))) // 10
 
             band = tifffile.imread(path)
-            band = cv2.resize(band, fx=upscale_factor, fy=upscale_factor, interpolation=cv2.INTER_NEAREST)
+            band = cv2.resize(band, dsize=None, fx=upscale_factor, fy=upscale_factor, interpolation=cv2.INTER_NEAREST)
             band_tensor = torch.from_numpy(band).unsqueeze(0)
             current_image.append(band_tensor)
 
