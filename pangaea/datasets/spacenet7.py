@@ -442,6 +442,7 @@ class SN7CD(AbstractSN7):
         i_split: int,
         j_split: int,
         dataset_multiplier: int,
+        minimum_temporal_gap: int,
     ):
         """Initialize the SpaceNet dataset for change detection.
 
@@ -470,9 +471,6 @@ class SN7CD(AbstractSN7):
             domain_shift=domain_shift,
             i_split=i_split,
             j_split=j_split,
-            # eval_mode=eval_mode,
-            # dataset_multiplier=dataset_multiplier,
-
         )
 
         self.T = self.multi_temporal
@@ -480,6 +478,7 @@ class SN7CD(AbstractSN7):
 
         self.eval_mode = False if split == 'train' else True
         self.multiplier = 1 if self.eval_mode else dataset_multiplier
+        self.min_gap = minimum_temporal_gap
 
         self.split = split
         self.items = []
@@ -543,7 +542,10 @@ class SN7CD(AbstractSN7):
             t_values = list(np.linspace(0, len(timestamps), self.T, endpoint=False, dtype=int))
         else:
             if self.T == 2:
-                t_values = [0, -1]
+                # t_values = [0, -1]
+                t1 = np.random.randint(0, len(timestamps) - self.min_gap)
+                t2 = np.random.randint(t1 + self.min_gap, len(timestamps))
+                t_values = [t1, t2]
             else:  # randomly add intermediate timestamps
                 t_values = [0] + sorted(np.random.randint(1, len(timestamps) - 1, size=self.T - 2)) + [-1]
 
