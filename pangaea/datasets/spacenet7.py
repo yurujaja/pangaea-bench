@@ -221,7 +221,7 @@ class AbstractSN7(GeoFMDataset):
         folder = self.root_path / 'train' / aoi_id / 'images_masked'
         file = folder / f'global_monthly_{year}_{month:02d}_mosaic_{aoi_id}.tif'
         img = tifffile.imread(file)
-        img = cv2.resize(img, dsize=(self.img_size, self.img_size), interpolation=cv2.INTER_NEAREST)
+        img = cv2.resize(img, dsize=(self.img_size, self.img_size), interpolation=cv2.INTER_NEAREST_EXACT)
         # 4th band (last one) is alpha band
         img = img.transpose(2, 0, 1)[:-1]
         return img.astype(np.float32)
@@ -230,7 +230,7 @@ class AbstractSN7(GeoFMDataset):
         folder = self.root_path / 'train' / aoi_id / 'labels_raster'
         file = folder / f'global_monthly_{year}_{month:02d}_mosaic_{aoi_id}_Buildings.tif'
         label = tifffile.imread(file)
-        label = cv2.resize(label, dsize=(self.img_size, self.img_size), interpolation=cv2.INTER_NEAREST)
+        label = cv2.resize(label, dsize=(self.img_size, self.img_size), interpolation=cv2.INTER_NEAREST_EXACT)
         label = (label > 0).squeeze()
         return label.astype(np.int64)
 
