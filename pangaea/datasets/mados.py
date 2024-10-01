@@ -6,6 +6,7 @@ import urllib.error
 import zipfile
 
 from glob import glob
+import cv2
 import tifffile
 import numpy as np
 
@@ -148,11 +149,8 @@ class MADOS(GeoFMDataset):
             upscale_factor = int(os.path.basename(os.path.dirname(path))) // 10
 
             band = tifffile.imread(path)
-            band_tensor = torch.from_numpy(band)
-            band_tensor.unsqueeze_(0).unsqueeze_(0)
-            band_tensor = torch.nn.functional.interpolate(
-                band_tensor, scale_factor=upscale_factor, mode="nearest"
-            ).squeeze_(0)
+            band = cv2.resize(band, fx=upscale_factor, fy=upscale_factor, interpolation=cv2.INTER_NEAREST)
+            band_tensor = torch.from_numpy(band).unsqueeze(0)
             current_image.append(band_tensor)
 
         image = torch.cat(current_image)
