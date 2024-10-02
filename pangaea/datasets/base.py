@@ -139,6 +139,7 @@ class GeoFMSubset(Subset):
         self.data_std = getattr(dataset, 'data_std', None)
         self.data_min = getattr(dataset, 'data_min', None)
         self.data_max = getattr(dataset, 'data_max', None)
+        self.split = getattr(dataset, 'split', None)
 
     def filter_by_indices(self, indices):
         """Apply filtering by indices directly in this subset."""

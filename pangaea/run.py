@@ -158,11 +158,19 @@ def main(cfg: DictConfig) -> None:
             # indices = random.sample(
             #     range(n_train_samples), int(n_train_samples * cfg.limited_label)
             # )
-            indices, _ = stratify_single_dataset_indices(train_dataset, num_classes=cfg.dataset.num_classes, label_fraction=cfg.limited_label, num_bins=3)
+            
+            # Stratify train dataset
+            indices, _ = stratify_single_dataset_indices(train_dataset, num_classes=cfg.dataset.num_classes, label_fraction=cfg.limited_label, num_bins=3, logger=logger)
             train_dataset = GeoFMSubset(train_dataset, indices)
+
+            # Stratify validation dataset
+            indices, _ = stratify_single_dataset_indices(val_dataset, num_classes=cfg.dataset.num_classes, label_fraction=cfg.limited_label, num_bins=3, logger=logger)
+            val_dataset = GeoFMSubset(val_dataset, indices)
+            
             logger.info(
-                f"Created a subset of the train dataset, with {cfg.limited_label * 100}% of the labels available"
-                f"Total number of patches used: {len(train_dataset)}"
+                f"Created a subset of the train and val dataset, with {cfg.limited_label * 100}% of the labels available\n"
+                f"Total number of train patches: {len(train_dataset)}\n"
+                f"Total number of validation patches: {len(val_dataset)}\n"
             )
         else:
             logger.info("The entire train dataset will be used.")
