@@ -139,12 +139,10 @@ class Sen1Floods11(GeoFMDataset):
 
     def __getitem__(self, index):
         s2_image = tifffile.imread(self.s2_image_list[index])
-        s2_image = s2_image.transpose(2, 0, 1)
 
         s1_image = tifffile.imread(self.s1_image_list[index])
         # Convert the missing values (clouds etc.)
         s1_image = np.nan_to_num(s1_image)
-        s1_image = s1_image.transpose(2, 0, 1)
         
         target = tifffile.imread(self.target_list[index], key=0)
         timestamp = self._get_date(index)
