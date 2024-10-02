@@ -1,0 +1,4 @@
+_target_: pangaea.decoders.unet.SiamDiffUNet
+
+num_classes: ${dataset.num_classes}
+finetune: ${finetune}
