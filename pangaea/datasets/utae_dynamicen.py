@@ -166,6 +166,7 @@ class DynamicEarthNet(GeoFMDataset):
             image_stack = np.concatenate(cur_images, axis=0)
             dates = torch.from_numpy(np.array(cur_dates, dtype=np.int32))
             label = tifffile.imread(os.path.join(self.root_path, self.labels[index][1:]))
+            label = label.transpose(2, 0, 1)
             mask = np.zeros((label.shape[1], label.shape[2]), dtype=np.int32)
 
             for i in range(self.num_classes + 1):
@@ -189,6 +190,7 @@ class DynamicEarthNet(GeoFMDataset):
             image_stack = np.concatenate(cur_images, axis=0)
             dates = torch.from_numpy(np.array(self.planet_day[index][len(self.dates):], dtype=np.int32))
             label = tifffile.imread(os.path.join(self.root_path, self.labels[index][1:]))
+            label = label.transpose(2, 0, 1)
             mask = np.zeros((label.shape[1], label.shape[2]), dtype=np.int32)
 
             for i in range(self.num_classes + 1):

@@ -84,4 +84,4 @@ def download_bucket_concurrently(bucket_name, destination_directory=""):
 
 def read_tif(file: pathlib.Path):
     arr = tifffile.imread(file)
-    return arr.transpose((1, 2, 0))
+    return arr.transpose(2, 0, 1)

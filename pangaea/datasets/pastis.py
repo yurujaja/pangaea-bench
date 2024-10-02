@@ -210,7 +210,7 @@ class Pastis(GeoFMDataset):
                         + ".tif",
                     ) 
                 output["aerial"] = split_image(
-                    torch.FloatTensor(tifffile.imread(path), self.nb_split, part)
+                    torch.FloatTensor(tifffile.imread(path).transpose(2,0,1), self.nb_split, part)
                 )
             elif modality == "s1-median":
                 modality_name = "s1a"
