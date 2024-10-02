@@ -126,7 +126,6 @@ class SiamDiffUNet(SiamUNet):
         encoder: Encoder,
         num_classes: int,
         finetune: bool,
-        strategy: str,
     ):
         super().__init__(
             encoder=encoder,
@@ -143,7 +142,6 @@ class SiamConcUNet(SiamUNet):
         encoder: Encoder,
         num_classes: int,
         finetune: bool,
-        strategy: str,
     ):
         super().__init__(
             encoder=encoder,
