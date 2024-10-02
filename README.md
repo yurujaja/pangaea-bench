@@ -101,7 +101,7 @@ We provide several ways to install the dependencies.
 
 ## 🏋️ Training
 
-To run experiments, please refer to `configs/train.yaml`. In it, in addition to some basic info about training (e.g. `finetune` for fine-tuning also the encoder, `limited_label` to train the model on a subset of labels, `num_workers`, `batch_size` and so on), there are 5 different basic configs:
+To run experiments, please refer to `configs/train.yaml`. In it, in addition to some basic info about training (e.g. `finetune` for fine-tuning also the encoder, `limited_label` to train the model on a stratified subset of labels, `num_workers`, `batch_size` and so on), there are 5 different basic configs:
 - `dataset`: Information of downstream datasets such as image size, band_statistics, classes etc.
 - `decoder`: Downstream task decoder fine-tuning related parameters, like the type of architecture (e.g. UPerNet), which multi-temporal strategy to use, and other related hparams (e.g. nr of channels)
 - `encoder`: GFM encoder related parameters. `output_layers` is used for which layers are used for Upernet decoder.  
