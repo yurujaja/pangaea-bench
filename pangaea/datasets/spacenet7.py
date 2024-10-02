@@ -122,6 +122,7 @@ class AbstractSN7(GeoFMDataset):
         domain_shift: bool,
         i_split: int,
         j_split: int,
+        include_masked: bool,
     ):
         """Initialize the SpaceNet dataset.
         Link: https://spacenet.ai/sn7-challenge/
@@ -155,6 +156,7 @@ class AbstractSN7(GeoFMDataset):
             domain_shift (bool): wheter to perform domain adaptation evaluation.
             i_splt (int): .
             j_split (int): . #ISSUES
+            include_masked (bool): whether to include partly masked images during training
         """
         super().__init__(
             split=split,
@@ -176,31 +178,20 @@ class AbstractSN7(GeoFMDataset):
             auto_download=auto_download,
         )
 
-
         self.root_path = Path(root_path)
         metadata_file = self.root_path / 'metadata_train.json'
         with open(metadata_file, 'r') as f:
             self.metadata = json.load(f)
 
         self.sn7_img_size = 1024  # size of the SpaceNet 7 images
-        self.img_size = img_size  # size used for tiling the images
+        # img_size used for tiling the images
         assert self.sn7_img_size % self.img_size == 0
-
-        self.data_mean = data_mean
-        self.data_std = data_std
-        self.data_min = data_min
-        self.data_max = data_max
-        self.classes = classes
-        self.distribution = distribution
-        self.num_classes = self.class_num = num_classes
-        self.ignore_index = ignore_index
-        self.download_url = download_url
-        self.auto_download = auto_download
         
-        self.distribution = distribution
+        self.eval_mode = False if split == 'train' else True
         self.domain_shift = domain_shift
         self.i_split = i_split
         self.j_split = j_split
+        self.include_masked = include_masked
         self.sn7_aois = list(SN7_TRAIN) + list(SN7_VAL) + list(SN7_TEST)
 
     @abstractmethod
@@ -219,6 +210,16 @@ class AbstractSN7(GeoFMDataset):
         # 4th band (last oen) is alpha band
         img = img[:-1]
         return img.astype(np.float32)
+    
+    def load_mask(self, aoi_id: str, year: int, month: int) -> np.ndarray:
+        folder = self.root_path / 'train' / aoi_id / 'UDM_masks'
+        file = folder / f'global_monthly_{year}_{month:02d}_mosaic_{aoi_id}_UDM.tif'
+        if not file.exists():
+            return np.zeros((self.sn7_img_size, self.sn7_img_size))
+        with rasterio.open(str(file), mode='r') as src:
+            mask = src.read(out_shape=(self.sn7_img_size, self.sn7_img_size), resampling=rasterio.enums.Resampling.nearest)
+        mask = (mask == 255).squeeze()
+        return mask.astype(bool)
 
     def load_building_label(self, aoi_id: str, year: int, month: int) -> np.ndarray:
         folder = self.root_path / 'train' / aoi_id / 'labels_raster'
@@ -298,6 +299,7 @@ class SN7MAPPING(AbstractSN7):
         domain_shift: bool,
         i_split: int,
         j_split: int,
+        include_masked: int,
     ):
         """Initialize the SpaceNet dataset for building mapping.
         """
@@ -322,9 +324,9 @@ class SN7MAPPING(AbstractSN7):
             domain_shift=domain_shift,
             i_split=i_split,
             j_split=j_split,
+            include_masked=include_masked,
         )
 
-        self.split = split
         self.items = []
 
         if self.domain_shift:  # split by AOI ids
@@ -341,18 +343,21 @@ class SN7MAPPING(AbstractSN7):
             for aoi_id in self.aoi_ids:
                 timestamps = list(self.metadata[aoi_id])
                 for timestamp in timestamps:
-                    if not timestamp['mask'] and timestamp['label']:
-                        item = {
-                            'aoi_id': timestamp['aoi_id'],
-                            'year': timestamp['year'],
-                            'month': timestamp['month'],
-                        }
-                        # tiling the timestamps
-                        for i in range(0, self.sn7_img_size, self.img_size):
-                            for j in range(0, self.sn7_img_size, self.img_size):
-                                item['i'] = i
-                                item['j'] = j
-                                self.items.append(dict(item))
+                    assert(timestamp['label'])
+                    if timestamp['mask'] and (self.eval_mode or not self.include_masked):
+                        continue  # ignore masked images if in eval mode or when not included
+                    item = {
+                        'aoi_id': timestamp['aoi_id'],
+                        'year': timestamp['year'],
+                        'month': timestamp['month'],
+                        'mask': timestamp['mask'],
+                    }
+                    # tiling the timestamps
+                    for i in range(0, self.sn7_img_size, self.img_size):
+                        for j in range(0, self.sn7_img_size, self.img_size):
+                            item['i'] = i
+                            item['j'] = j
+                            self.items.append(dict(item))
         
         else:  # within-scenes split
             assert self.i_split % self.img_size == 0 and self.j_split % self.img_size == 0
@@ -361,29 +366,32 @@ class SN7MAPPING(AbstractSN7):
             for aoi_id in self.aoi_ids:
                 timestamps = list(self.metadata[aoi_id])
                 for timestamp in timestamps:
-                    if not timestamp['mask'] and timestamp['label']:
-                        item = {
-                            'aoi_id': timestamp['aoi_id'],
-                            'year': timestamp['year'],
-                            'month': timestamp['month'],
-                        }
-                        if split == 'train':
-                            i_min, i_max = 0, self.i_split
-                            j_min, j_max = 0, self.sn7_img_size
-                        elif split == 'val':
-                            i_min, i_max = self.i_split, self.sn7_img_size
-                            j_min, j_max = 0, self.j_split
-                        elif split == 'test':
-                            i_min, i_max = self.i_split, self.sn7_img_size
-                            j_min, j_max = self.j_split, self.sn7_img_size
-                        else:
-                            raise Exception('Unkown split')
-                        # tiling the timestamps
-                        for i in range(i_min, i_max, self.img_size):
-                            for j in range(j_min, j_max, self.img_size):
-                                item['i'] = i
-                                item['j'] = j
-                                self.items.append(dict(item))
+                    assert(timestamp['label'])
+                    if timestamp['mask'] and (self.eval_mode or not self.include_masked):
+                        continue  # ignore masked images if in eval mode or when not included
+                    item = {
+                        'aoi_id': timestamp['aoi_id'],
+                        'year': timestamp['year'],
+                        'month': timestamp['month'],
+                        'mask': timestamp['mask'],
+                    }
+                    if split == 'train':
+                        i_min, i_max = 0, self.i_split
+                        j_min, j_max = 0, self.sn7_img_size
+                    elif split == 'val':
+                        i_min, i_max = self.i_split, self.sn7_img_size
+                        j_min, j_max = 0, self.j_split
+                    elif split == 'test':
+                        i_min, i_max = self.i_split, self.sn7_img_size
+                        j_min, j_max = self.j_split, self.sn7_img_size
+                    else:
+                        raise Exception('Unkown split')
+                    # tiling the timestamps
+                    for i in range(i_min, i_max, self.img_size):
+                        for j in range(j_min, j_max, self.img_size):
+                            item['i'] = i
+                            item['j'] = j
+                            self.items.append(dict(item))
 
     def __len__(self):
         return len(self.items)
@@ -401,18 +409,21 @@ class SN7MAPPING(AbstractSN7):
         image = image[:, i:i + self.img_size, j:j + self.img_size]
         target = target[i:i + self.img_size, j:j + self.img_size]
 
+        masked = bool(item['mask'])
+        if masked:
+            assert not self.eval_mode and self.include_masked
+            mask = self.load_mask(aoi_id, year, month)
+            mask = mask[i:i + self.img_size, j:j + self.img_size]
+            target[mask] = -1
+
         image = torch.from_numpy(image)
         target = torch.from_numpy(target)
-        # weight = torch.empty(target.shape)
-        # for i, freq in enumerate(self.distribution):
-        #     weight[target == i] = 1 - freq
 
         output = {
             'image': {
                 'optical': image,
             },
             'target': target,
-            # 'weight': weight,
             'metadata': {}
         }
 
@@ -441,6 +452,7 @@ class SN7CD(AbstractSN7):
         domain_shift: bool,
         i_split: int,
         j_split: int,
+        include_masked: bool,
         dataset_multiplier: int,
         minimum_temporal_gap: int,
     ):
@@ -471,12 +483,13 @@ class SN7CD(AbstractSN7):
             domain_shift=domain_shift,
             i_split=i_split,
             j_split=j_split,
+            include_masked=include_masked,
         )
 
         self.T = self.multi_temporal
-        assert self.T > 1
+        if not self.T == 2:  # only supports bi-temporal change detection currently
+            raise NotImplementedError
 
-        self.eval_mode = False if split == 'train' else True
         self.multiplier = 1 if self.eval_mode else dataset_multiplier
         self.min_gap = minimum_temporal_gap
 
@@ -536,19 +549,21 @@ class SN7CD(AbstractSN7):
         item = self.items[index]
         aoi_id = item['aoi_id']
 
+        # create a list of all valid timestamps (depending on whether masked images are considered)
+        if self.eval_mode or not self.include_masked:
+            timestamps = [ts for ts in self.metadata[aoi_id] if not ts['mask'] and ts['label']]
+        else:
+            timestamps = [ts for ts in self.metadata[aoi_id] if ts['label']]
+
         # determine timestamps for t1 and t2 (random for train and first-last for eval)
-        timestamps = [ts for ts in self.metadata[aoi_id] if not ts['mask'] and ts['label']]
         if self.eval_mode:
             t_values = list(np.linspace(0, len(timestamps), self.T, endpoint=False, dtype=int))
         else:
-            if self.T == 2:
-                # t_values = [0, -1]
-                t1 = np.random.randint(0, len(timestamps) - self.min_gap)
-                t2 = np.random.randint(t1 + self.min_gap, len(timestamps))
-                t_values = [t1, t2]
-            else:  # randomly add intermediate timestamps
-                t_values = [0] + sorted(np.random.randint(1, len(timestamps) - 1, size=self.T - 2)) + [-1]
-
+            assert self.T == 2
+            # t_values = [0, -1]
+            t1 = np.random.randint(0, len(timestamps) - self.min_gap)
+            t2 = np.random.randint(t1 + self.min_gap, len(timestamps))
+            t_values = [t1, t2]
         timestamps = sorted([timestamps[t] for t in t_values], key=lambda ts: int(ts['year']) * 12 + int(ts['month']))
 
         # load images according to timestamps
@@ -569,6 +584,16 @@ class SN7CD(AbstractSN7):
         image = image[:, :, i:i + self.img_size, j:j + self.img_size]
         target = target[i:i + self.img_size, j:j + self.img_size]
 
+        masked_t1, masked_t2 = bool(timestamps[0]['mask']), bool(timestamps[-1]['mask'])
+        if masked_t1 or masked_t2:
+            assert not self.eval_mode and self.include_masked
+            mask_t1 = self.load_mask(aoi_id, year_t1, month_t1)
+            mask_t1 = mask_t1[i:i + self.img_size, j:j + self.img_size]
+            target[mask_t1] = -1
+            mask_t2 = self.load_mask(aoi_id, year_t2, month_t2)
+            mask_t2 = mask_t2[i:i + self.img_size, j:j + self.img_size]
+            target[mask_t2] = -1
+
         # weight for oversampling
         weight = torch.empty(target.shape)
         for i, freq in enumerate(self.distribution):
@@ -585,10 +610,4 @@ class SN7CD(AbstractSN7):
 
         return output
 
-    # @staticmethod
-    # def get_splits(dataset_config):
-    #     dataset_train = SN7CD(cfg=dataset_config, split='train', eval_mode=False)
-    #     dataset_val = SN7CD(cfg=dataset_config, split='val', eval_mode=True)
-    #     dataset_test = SN7CD(cfg=dataset_config, split='test', eval_mode=True)
-    #     return dataset_train, dataset_val, dataset_test
 

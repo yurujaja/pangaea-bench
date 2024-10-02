@@ -1,7 +1,7 @@
 _target_: pangaea.datasets.spacenet7.SN7MAPPING
 dataset_name: SN7MAPPING
 root_path: ./data/spacenet7
-download_url: https://drive.google.com/uc?id=1BADSEjxYKFZZlM-tEkRUfHvHi5XdaVV9
+download_url: https://drive.google.com/uc?id=18W4vYx2jRXr3iXJbFNMTL_zVUk0jYHeg
 auto_download: True
 
 img_size: 256  # the image size is used to tile the SpaceNet 7 images (1024, 1024)
@@ -12,6 +12,8 @@ j_split: 512
 
 multi_temporal: False
 multi_modal: False
+
+include_masked: False
 
 # classes
 ignore_index: -1

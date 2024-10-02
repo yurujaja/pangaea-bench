@@ -1,7 +1,7 @@
 _target_: pangaea.datasets.spacenet7.SN7CD
 dataset_name: SN7CD
 root_path: ./data/spacenet7
-download_url: https://drive.google.com/uc?id=1BADSEjxYKFZZlM-tEkRUfHvHi5XdaVV9
+download_url: https://drive.google.com/uc?id=18W4vYx2jRXr3iXJbFNMTL_zVUk0jYHeg
 auto_download: True
 
 img_size: 256  # the image size is used to tile the SpaceNet 7 images (1024, 1024)
@@ -14,7 +14,8 @@ multi_temporal: 2
 multi_modal: False
 
 dataset_multiplier: 5  # multiplies sample in dataset during training
-minimum_temporal_gap: 5
+minimum_temporal_gap: 12
+include_masked: True
 
 # classes
 ignore_index: -1
