@@ -1,0 +1,8 @@
+_target_: pangaea.decoders.upernet.RegUPerNet
+
+# overwritten in run
+encoder: null
+finetune: ${finetune}
+
+# to adapt
+channels: 512

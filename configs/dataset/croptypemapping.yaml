@@ -1,0 +1,103 @@
+_target_: pangaea.datasets.croptypemapping.CropTypeMappingSouthSudan
+dataset_name: CropTypeMappingSouthSudan
+root_path: ./data/croptypemapping
+download_url: https://drive.google.com/drive/folders/1WhVObtFOzYFiXBsbbrEGy1DUtv7ov7wF?usp=sharing
+auto_download: True
+
+img_size: 64
+multi_temporal: 6
+multi_modal: True
+
+use_pad: True
+
+# classes
+ignore_index: -1
+num_classes: 4
+classes:
+  - Sorghum
+  - Maize
+  - Rice
+  - Groundnut
+
+distribution:
+  - 0.6795
+  - 0.0851
+  - 0.0690
+  - 0.0598
+
+bands:
+  optical:
+    - B2
+    - B3
+    - B4
+    - B5
+    - B6
+    - B7
+    - B8
+    - B8A
+    - B11
+    - B12
+  sar:
+    - VV
+    - VH
+
+data_mean:
+  optical:
+    - 2031.16920682
+    - 1961.43060316
+    - 1979.41012191
+    - 2145.66313603
+    - 2700.28841168
+    - 3006.88002707
+    - 2870.5346053
+    - 3215.05569934
+    - 2367.76517845
+    - 1645.22422113
+  sar:
+    - -9.44869226
+    - -15.3094007
+data_std:
+  optical:
+    - 2112.21251357
+    - 2027.46443505
+    - 2136.80409481
+    - 2100.72540842
+    - 2082.19262389
+    - 2142.97310584
+    - 2071.28295354
+    - 2152.28899028
+    - 1334.5474462
+    - 1059.03926125   
+  sar:
+    - 4.10761933
+    - 5.67646377
+data_max:
+  optical:
+    - 2122
+    - 13586
+    - 14617
+    - 14437
+    - 14656
+    - 15154
+    - 14732
+    - 15241
+    - 14482
+    - 14883
+  sar:
+    - 1.55260473
+    - 1.51483255
+data_min:
+  optical:
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+  sar:
+    - -24.94717798
+    - -34.38814055

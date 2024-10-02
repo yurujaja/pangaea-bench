@@ -1,4 +1,4 @@
-name: gfm-bench8
+name: pangaea-bench
 channels:
   - pytorch
   - nvidia
@@ -19,7 +19,6 @@ dependencies:
   - tifffile
   - timm
   - einops
-  - open-clip-torch
   - rioxarray
   - pytorch-cuda=11.8
   - gdown
@@ -29,4 +28,7 @@ dependencies:
   - omegaconf
   - pydataverse
   - pytest
-  - pip install pyDataverse
+  - yacs
+  - wandb
+  - hydra-core
+

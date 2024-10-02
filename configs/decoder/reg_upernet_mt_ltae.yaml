@@ -1,0 +1,11 @@
+_target_: pangaea.decoders.upernet.RegMTUPerNet
+
+
+# overwritten in run
+encoder: null
+multi_temporal: ${dataset.multi_temporal}
+finetune: ${finetune}
+
+# to adapt
+channels: 512
+multi_temporal_strategy: ltae

@@ -3,16 +3,16 @@ import unittest
 
 class testPackageImports(unittest.TestCase):
     def test_datasets(self):
-        import datasets
+        from pangaea import datasets
 
     def test_foundation_models(self):
-        import foundation_models
+        from pangaea import encoders
 
     def test_segmentors(self):
-        import segmentors
+        from pangaea import decoders
 
     def test_engine(self):
-        import engine
+        from pangaea import engine
 
     def test_run(self):
-        import run
+        from pangaea import run
