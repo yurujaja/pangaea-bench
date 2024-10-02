@@ -26,7 +26,7 @@ from pangaea.utils.utils import (
     seed_worker,
 )
 from pangaea.utils.stratification import stratify_single_dataset_indices
-
+from pangaea.datasets.base import GeoFMSubset
 
 def get_exp_name(hydra_config: HydraConf) -> str:
     """Create a unique experiment name based on the choices made in the config.
@@ -154,15 +154,15 @@ def main(cfg: DictConfig) -> None:
                 preprocess, dataset=val_dataset, encoder=encoder
             )
         if 0 < cfg.limited_label < 1:
-            n_train_samples = len(train_dataset)
-            indices = random.sample(
-                range(n_train_samples), int(n_train_samples * cfg.limited_label)
-            )
-            # labeled_train_idx, _ = stratify_single_dataset_indices(train_dataset, num_classes=2, label_fraction=0.5, num_bins=3)
-            # indices = labeled_train_idx
-            train_dataset = Subset(train_dataset, indices)
+            # n_train_samples = len(train_dataset)
+            # indices = random.sample(
+            #     range(n_train_samples), int(n_train_samples * cfg.limited_label)
+            # )
+            indices, _ = stratify_single_dataset_indices(train_dataset, num_classes=cfg.dataset.num_classes, label_fraction=cfg.limited_label, num_bins=3)
+            train_dataset = GeoFMSubset(train_dataset, indices)
             logger.info(
                 f"Created a subset of the train dataset, with {cfg.limited_label * 100}% of the labels available"
+                f"Total number of patches used: {len(train_dataset)}"
             )
         else:
             logger.info("The entire train dataset will be used.")
