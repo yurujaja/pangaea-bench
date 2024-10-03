@@ -112,8 +112,8 @@ class Evaluator:
             pred.append(model.forward(img_, output_size=(input_size, input_size)))
         pred = torch.cat(pred, dim=0)
 
-        pred = pred.view(b, num_crops, model.num_classes, input_size, input_size)
-        merged_pred = torch.zeros((b, model.num_classes, height, width), device=pred.device)
+        pred = pred.view(b, num_crops, -1, input_size, input_size)
+        merged_pred = torch.zeros((b, pred.shape[2], height, width), device=pred.device)
         pred_count = torch.zeros((b, height, width), dtype=torch.long, device=pred.device)
         for i in range(h):
             for j in range(w):

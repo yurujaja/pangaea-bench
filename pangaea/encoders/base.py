@@ -146,11 +146,8 @@ class Encoder(nn.Module):
     def naive_multi_temporal_forward(self, image: dict[str, torch.Tensor]) -> list[torch.Tensor]:
         b, c, t, h, w = image[list(image.keys())[0]].shape
         image = {k: v.transpose(1, 2).contiguous().view(-1, c, 1, h, w) for k, v in image.items()}
-        if not self.finetune:
-            with torch.no_grad():
-                feats = self.forward(image)
-        else:
-            feats = self.forward(image)
+
+        feats = self.forward(image)
         feats = [f.view(b, -1, f.shape[1], f.shape[2], f.shape[3]).transpose(1, 2) for f in feats]
 
         return feats
@@ -165,6 +162,8 @@ class Encoder(nn.Module):
                     raise ValueError(f"Cannot squeeze temporal dimension {v.shape[2]} other than 1.")
             elif v.dim() != 4:
                 raise ValueError(f"Unknown image shape other than (B C H W) and (B C T H W).")
+
+        return image
 
 
     def download_model(self) -> None:

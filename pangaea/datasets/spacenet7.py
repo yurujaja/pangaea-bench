@@ -432,8 +432,8 @@ class SN7CD(AbstractSN7):
         i_split: int,
         j_split: int,
         dataset_multiplier: int,
-            minimum_temporal_gap: int,
-            preprocessor: BasePreprocessor = None
+        minimum_temporal_gap: int,
+        preprocessor: BasePreprocessor = None
 
     ):
         """Initialize the SpaceNet dataset for change detection.

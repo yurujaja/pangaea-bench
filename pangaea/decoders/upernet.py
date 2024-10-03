@@ -173,30 +173,14 @@ class SegUPerNet(Decoder):
         feats = self.fpn_bottleneck(fpn_outs)
         return feats
 
-    def forward(self, img, output_shape=None):
+    def forward(self, img, output_size=None):
         """Forward function."""
 
-        # img[modality] of shape [B C T=1 H W]
-        if self.encoder.multi_temporal:
-            if not self.finetune:
-                with torch.no_grad():
-                    feat = self.encoder(img)
-            else:
+        if not self.finetune:
+            with torch.no_grad():
                 feat = self.encoder(img)
-
-            # multi_temporal models can return either (B C' T=1 H' W')
-            # or (B C' H' W'), we need (B C' H' W')
-            if feat[0].ndim == 5:
-                feat = [f.squeeze(-3) for f in feat]
-
         else:
-            # remove the temporal dim
-            # [B C T=1 H W] -> [B C H W]
-            if not self.finetune:
-                with torch.no_grad():
-                    feat = self.encoder({k: v[:, :, 0, :, :] for k, v in img.items()})
-            else:
-                feat = self.encoder({k: v[:, :, 0, :, :] for k, v in img.items()})
+            feat = self.encoder(img)
 
         feat = self.neck(feat)
         feat = self._forward_feature(feat)
@@ -204,9 +188,9 @@ class SegUPerNet(Decoder):
         output = self.conv_seg(feat)
 
         # fixed bug just for optical single modality
-        if output_shape is None:
-            output_shape = img[list(img.keys())[0]].shape[-2:]
-        output = F.interpolate(output, size=output_shape, mode="bilinear")
+        if output_size is None:
+            output_size = img[list(img.keys())[0]].shape[-2:]
+        output = F.interpolate(output, size=output_size, mode="bilinear")
 
         return output
 
@@ -233,7 +217,7 @@ class SegMTUPerNet(SegUPerNet):
         )
 
         self.multi_temporal = multi_temporal
-        self.multi_temporal_strategy = multi_temporal_strategy
+        self.multi_temporal_strategy = multi_temporal_strategy if not self.encoder.multi_temporal_fusion else None
         if self.multi_temporal_strategy == "ltae":
             self.tmap = LTAE2d(
                 positional_encoding=False,
@@ -244,56 +228,33 @@ class SegMTUPerNet(SegUPerNet):
         elif self.multi_temporal_strategy == "linear":
             self.tmap = nn.Linear(self.multi_temporal, 1)
         else:
-            self.tmap = None
+            self.tmap = nn.Identity()
+
+
 
     def forward(
-        self, img: dict[str, torch.Tensor], output_shape: torch.Size | None = None
+        self, img: dict[str, torch.Tensor], output_size: torch.Size | None = None
     ) -> torch.Tensor:
-        # If the encoder handles multi_temporal we feed it with the input
-        if self.encoder.multi_temporal:
-            if not self.finetune:
-                with torch.no_grad():
-                    feats = self.encoder(img)
-            else:
+
+        if not self.finetune:
+            with torch.no_grad():
                 feats = self.encoder(img)
-            # multi_temporal models can return either (B C' T H' W')
-            # or (B C' H' W') via internal merging strategy
-            # if we have (B C' H' W') we need to skip multi_temporal_strategy
-            if feats[0].ndim == 4:
-                self.multi_temporal_strategy = None
-
-        # If the encoder handles only single temporal data, we apply multi_temporal_strategy
         else:
-            feats = []
-            for i in range(self.multi_temporal):
-                if not self.finetune:
-                    with torch.no_grad():
-                        feats.append(
-                            self.encoder({k: v[:, :, i, :, :] for k, v in img.items()})
-                        )
-                else:
-                    feats.append(
-                        self.encoder({k: v[:, :, i, :, :] for k, v in img.items()})
-                    )
+            feats = self.encoder(img)
 
-            feats = [list(i) for i in zip(*feats)]
-            feats = [torch.stack(feat_layers, dim=2) for feat_layers in feats]
-
-        if self.multi_temporal_strategy is not None:
-            for i in range(len(feats)):
-                if self.multi_temporal_strategy == "ltae":
-                    feats[i] = self.tmap(feats[i])
-                elif self.multi_temporal_strategy == "linear":
-                    feats[i] = self.tmap(feats[i].permute(0, 1, 3, 4, 2)).squeeze(-1)
+        if self.multi_temporal_strategy == "linear":
+            feats = [self.tmap(feat.permute(0, 1, 3, 4, 2)).squeeze(-1) for feat in feats]
+        else:
+            feats = [self.tmap(feat) for feat in feats]
 
         feat = self.neck(feats)
         feat = self._forward_feature(feat)
         feat = self.dropout(feat)
         output = self.conv_seg(feat)
 
-        if output_shape is None:
-            output_shape = img[list(img.keys())[0]].shape[-2:]
-        output = F.interpolate(output, size=output_shape, mode="bilinear")
+        if output_size is None:
+            output_size = img[list(img.keys())[0]].shape[-2:]
+        output = F.interpolate(output, size=output_size, mode="bilinear")
 
         return output
 
@@ -332,18 +293,26 @@ class SiamUPerNet(SegUPerNet):
     def encoder_forward(
         self, img: dict[str, torch.Tensor]
     ) -> list[dict[str, torch.Tensor]]:
-        # Retains the temporal dimension
-        img1 = {k: v[:, :, [0], :, :] for k, v in img.items()}
-        img2 = {k: v[:, :, [1], :, :] for k, v in img.items()}
+        if self.encoder.multi_temporal:
+            # Retains the temporal dimension
+            img1 = {k: v[:, :, [0], :, :] for k, v in img.items()}
+            img2 = {k: v[:, :, [1], :, :] for k, v in img.items()}
 
-        # multi_temporal encoder returns features (B C T H W)
-        feat1 = self.encoder(img1).squeeze(-3)
-        feat2 = self.encoder(img2).squeeze(-3)
+            # multi_temporal encoder returns features (B C T H W)
+            feat1 = self.encoder(img1).squeeze(-3)
+            feat2 = self.encoder(img2).squeeze(-3)
+
+        else:
+            img1 = {k: v[:, :, 0, :, :] for k, v in img.items()}
+            img2 = {k: v[:, :, 1, :, :] for k, v in img.items()}
+
+            feat1 = self.encoder(img1)
+            feat2 = self.encoder(img2)
 
         return [feat1, feat2]
 
     def forward(
-        self, img: dict[str, torch.Tensor], output_shape: torch.Size | None = None
+        self, img: dict[str, torch.Tensor], output_size: torch.Size | None = None
     ) -> torch.Tensor:
         """Forward function for change detection."""
 
@@ -365,9 +334,9 @@ class SiamUPerNet(SegUPerNet):
         feat = self.dropout(feat)
         output = self.conv_seg(feat)
 
-        if output_shape is None:
-            output_shape = img[list(img.keys())[0]].shape[-2:]
-        output = F.interpolate(output, size=output_shape, mode="bilinear")
+        if output_size is None:
+            output_size = img[list(img.keys())[0]].shape[-2:]
+        output = F.interpolate(output, size=output_size, mode="bilinear")
 
         return output
 
@@ -547,7 +516,7 @@ class RegUPerNet(Decoder):
         feats = self.fpn_bottleneck(fpn_outs)
         return feats
 
-    def forward(self, img, output_shape=None):
+    def forward(self, img, output_size=None):
         if not self.finetune:
             with torch.no_grad():
                 feat = self.encoder(img)
@@ -560,9 +529,9 @@ class RegUPerNet(Decoder):
         reg_logit = self.conv_reg(feat)
         output = torch.relu(reg_logit)
 
-        if output_shape is None:
-            output_shape = img[list(img.keys())[0]].shape[-2:]
-        output = F.interpolate(output, size=output_shape, mode="bilinear")
+        if output_size is None:
+            output_size = img[list(img.keys())[0]].shape[-2:]
+        output = F.interpolate(output, size=output_size, mode="bilinear")
 
         return output
 
@@ -585,8 +554,7 @@ class RegMTUPerNet(RegUPerNet):
         )
 
         self.multi_temporal = multi_temporal
-        self.multi_temporal_strategy = multi_temporal_strategy
-
+        self.multi_temporal_strategy = multi_temporal_strategy if not self.encoder.multi_temporal_fusion else None
         if self.multi_temporal_strategy == "ltae":
             self.tmap = LTAE2d(
                 positional_encoding=False,
@@ -597,40 +565,22 @@ class RegMTUPerNet(RegUPerNet):
         elif self.multi_temporal_strategy == "linear":
             self.tmap = nn.Linear(self.multi_temporal, 1)
         else:
-            self.tmap = None
+            self.tmap = nn.Identity()
 
     def forward(
-        self, img: dict[str, torch.Tensor], output_shape: torch.Size | None = None
+        self, img: dict[str, torch.Tensor], output_size: torch.Size | None = None
     ) -> torch.Tensor:
         # If the encoder handles multi_temporal we feed it with the input
-        if self.encoder.multi_temporal:
-            if not self.finetune:
-                with torch.no_grad():
-                    feats = self.encoder(img)
-            else:
+        if not self.finetune:
+            with torch.no_grad():
                 feats = self.encoder(img)
         else:
-            feats = []
-            for i in range(self.multi_temporal):
-                if not self.finetune:
-                    with torch.no_grad():
-                        feats.append(
-                            self.encoder({k: v[:, :, i, :, :] for k, v in img.items()})
-                        )
-                else:
-                    feats.append(
-                        self.encoder({k: v[:, :, i, :, :] for k, v in img.items()})
-                    )
+            feats = self.encoder(img)
 
-            feats = [list(i) for i in zip(*feats)]
-            feats = [torch.stack(feat_layers, dim=2) for feat_layers in feats]
-
-        if self.multi_temporal_strategy is not None:
-            for i in range(len(feats)):
-                if self.multi_temporal_strategy == "ltae":
-                    feats[i] = self.tmap(feats[i])
-                elif self.multi_temporal_strategy == "linear":
-                    feats[i] = self.tmap(feats[i].permute(0, 1, 3, 4, 2)).squeeze(-1)
+        if self.multi_temporal_strategy == "linear":
+            feats = [self.tmap(feat.permute(0, 1, 3, 4, 2)).squeeze(-1) for feat in feats]
+        else:
+            feats = [self.tmap(feat) for feat in feats]
 
         feat = self.neck(feats)
         feat = self._forward_feature(feat)
@@ -638,9 +588,9 @@ class RegMTUPerNet(RegUPerNet):
         reg_logit = self.conv_reg(feat)
         output = torch.relu(reg_logit)
 
-        if output_shape is None:
-            output_shape = img[list(img.keys())[0]].shape[-2:]
-        output = F.interpolate(output, size=output_shape, mode="bilinear")
+        if output_size is None:
+            output_size = img[list(img.keys())[0]].shape[-2:]
+        output = F.interpolate(output, size=output_size, mode="bilinear")
 
         return output
 
