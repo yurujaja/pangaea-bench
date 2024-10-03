@@ -15,7 +15,7 @@ multi_modal: False
 
 dataset_multiplier: 5  # multiplies sample in dataset during training
 minimum_temporal_gap: 12
-include_masked: True
+include_masked: False
 
 # classes
 ignore_index: -1

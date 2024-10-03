@@ -560,10 +560,10 @@ class SN7CD(AbstractSN7):
             t_values = list(np.linspace(0, len(timestamps), self.T, endpoint=False, dtype=int))
         else:
             assert self.T == 2
-            # t_values = [0, -1]
-            t1 = np.random.randint(0, len(timestamps) - self.min_gap)
-            t2 = np.random.randint(t1 + self.min_gap, len(timestamps))
-            t_values = [t1, t2]
+            t_values = [0, -1]
+            # t1 = np.random.randint(0, len(timestamps) - self.min_gap)
+            # t2 = np.random.randint(t1 + self.min_gap, len(timestamps))
+            # t_values = [t1, t2]
         timestamps = sorted([timestamps[t] for t in t_values], key=lambda ts: int(ts['year']) * 12 + int(ts['month']))
 
         # load images according to timestamps
