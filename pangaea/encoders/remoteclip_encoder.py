@@ -367,7 +367,7 @@ class RemoteCLIP_Encoder(Encoder):
             embed_dim=embed_dim,
             output_dim=embed_dim,
             multi_temporal=False,
-            multi_temporal_output=False,
+            multi_temporal_fusion=False,
             download_url=download_url,
         )
 
@@ -458,9 +458,10 @@ class RemoteCLIP_Encoder(Encoder):
         self.load_state_dict(pretrained_encoder, strict=False)
         self.parameters_warning(missing, incompatible_shape, logger)
 
-    def forward(self, image):
-        x = image["optical"].squeeze(2)
-        x = self.conv1(x)  # shape = [*, width, grid, grid]
+    def native_forward(self, image):
+        image = self.squeeze_temporal_dimension(image)
+
+        x = self.conv1(image["optical"])  # shape = [*, width, grid, grid]
         x = x.reshape(x.shape[0], x.shape[1], -1)  # shape = [*, width, grid ** 2]
         x = x.permute(0, 2, 1)  # shape = [*, grid ** 2, width]
 

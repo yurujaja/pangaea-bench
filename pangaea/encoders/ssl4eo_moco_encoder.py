@@ -62,7 +62,7 @@ class SSL4EO_MOCO_Encoder(Encoder):
             embed_dim=embed_dim,
             output_dim=embed_dim,
             multi_temporal=False,
-            multi_temporal_output=False,
+            multi_temporal_fusion=False,
             download_url=download_url,
         )
 
@@ -138,10 +138,10 @@ class SSL4EO_MOCO_Encoder(Encoder):
         self.load_state_dict(pretrained_encoder, strict=False)
         self.parameters_warning(missing, incompatible_shape, logger)
 
-    def forward(self, image):
-        x = image["optical"].squeeze(2)
+    def native_forward(self, image):
+        image = self.squeeze_temporal_dimension(image)
 
-        x = self.patch_embed(x)
+        x = self.patch_embed(image["optical"])
         cls_tokens = self.cls_token.expand(x.shape[0], -1, -1)
         x = torch.cat((cls_tokens, x), dim=1)
 
@@ -167,3 +167,4 @@ class SSL4EO_MOCO_Encoder(Encoder):
                 output.append(out)
                 # x = self.norm(x)
         return output
+

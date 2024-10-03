@@ -73,7 +73,7 @@ class ScaleMAE_Encoder(Encoder):
             embed_dim=embed_dim,
             output_dim=embed_dim,
             multi_temporal=False,
-            multi_temporal_output=False,
+            multi_temporal_fusion=False,
             download_url=download_url,
         )
 
@@ -149,10 +149,11 @@ class ScaleMAE_Encoder(Encoder):
         self.load_state_dict(pretrained_encoder, strict=False)
         self.parameters_warning(missing, incompatible_shape, logger)
 
-    def forward(self, image):
-        x = image["optical"].squeeze(2)
-        B, _, h, w = x.shape
-        x = self.patch_embed(x)
+    def native_forward(self, image):
+        image = self.squeeze_temporal_dimension(image)
+
+        B, _, h, w = image["optical"].shape
+        x = self.patch_embed(image["optical"])
 
         num_patches = int(
             (h * w) / (self.patch_embed.patch_size[0] * self.patch_embed.patch_size[1])

@@ -12,7 +12,7 @@ from datetime import datetime
 # from PIL import Image
 
 from pangaea.datasets.base import GeoFMDataset
-
+from pangaea.engine.data_preprocessor import BasePreprocessor
 # from utils.registry import DATASET_REGISTRY
 
 # @DATASET_REGISTRY.register()
@@ -36,6 +36,8 @@ class DynamicEarthNet(GeoFMDataset):
         data_max: dict[str, list[str]],
         download_url: str,
         auto_download: bool,
+        sample_dates: list,
+        preprocessor: BasePreprocessor = None
     ):
         """Initialize the DynamicEarthNet dataset.
         Link: https://github.com/aysim/dynnet
@@ -85,23 +87,10 @@ class DynamicEarthNet(GeoFMDataset):
             data_max=data_max,
             download_url=download_url,
             auto_download=auto_download,
+            preprocessor=preprocessor
         )
 
-        self.root_path = root_path
-        self.ignore_index = ignore_index
-        self.split = split
-        self.data_mean = data_mean
-        self.data_std = data_std
-        self.data_min = data_min
-        self.data_max = data_max
-        self.classes = classes
-        self.img_size = img_size
-        self.distribution = distribution
-        self.num_classes = num_classes
-        self.download_url = download_url
-        self.auto_download = auto_download
-
-        self.mode = 'weekly'
+        self.sample_dates = sample_dates
 
         self.files = []
 
@@ -118,97 +107,22 @@ class DynamicEarthNet(GeoFMDataset):
         self.files, self.labels, self.year_months = list(zip(*file_list))
         self.files = [f.replace('/reprocess-cropped/UTM-24000/', '/planet/') for f in self.files]
 
-        if self.mode == 'daily':
-            self.all_days = list(range(len(self.files)))
-
-            for i in range(len(self.files)):
-                self.planet, self.day = [], []
-                date_count = 0
-                for _, _, infiles in os.walk(os.path.join(self.root_path, self.files[i][1:])):
-                    for infile in sorted(infiles):
-                        if infile.startswith(self.year_months[i]):
-                            self.planet.append(os.path.join(self.files[i], infile))
-                            self.day.append((datetime(int(str(infile.split('.')[0])[:4]), int(str(infile.split('.')[0][5:7])),
-                                                  int(str(infile.split('.')[0])[8:])) - self.reference_date).days)
-                            date_count += 1
-                self.all_days[i] = list(zip(self.planet, self.day))
-                self.all_days[i].insert(0, date_count)
-
-        else:
-            self.planet, self.day = [], []
-            if self.mode == 'weekly':
-                self.dates = ['01', '05', '10', '15', '20', '25']
-            elif self.mode == 'single':
-                self.dates = ['01']
-
-            for i, year_month in enumerate(self.year_months):
-                for date in self.dates:
-                    curr_date = year_month + '-' + date
-                    self.planet.append(os.path.join(self.files[i], curr_date + '.tif'))
-                    self.day.append((datetime(int(str(curr_date)[:4]), int(str(curr_date[5:7])),
-                                                  int(str(curr_date)[8:])) - self.reference_date).days)
-            self.planet_day = list(zip(*[iter(self.planet)] * len(self.dates), *[iter(self.day)] * len(self.dates)))
-
-
-    def load_data(self, index):
-        cur_images, cur_dates = [], []
-        if self.mode == 'daily':
-            for i in range(1, self.all_days[index][0]+1):
-                img = rasterio.open(os.path.join(self.root_path, self.all_days[index][i][0][1:]))
-                red = img.read(3)
-                green = img.read(2)
-                blue = img.read(1)
-                nir = img.read(4)
-                image = np.dstack((red, green, blue, nir))
-                cur_images.append(np.expand_dims(np.asarray(image, dtype=np.float32), axis=0)) # np.array already\
-                cur_dates.append(self.all_days[index][i][1])
-
-            image_stack = np.concatenate(cur_images, axis=0)
-            dates = torch.from_numpy(np.array(cur_dates, dtype=np.int32))
-            label = rasterio.open(os.path.join(self.root_path, self.labels[index][1:]))
-            label = label.read()
-            mask = np.zeros((label.shape[1], label.shape[2]), dtype=np.int32)
-
-            for i in range(self.num_classes + 1):
-                if i == 6:
-                    mask[label[i, :, :] == 255] = -1
-                else:
-                    mask[label[i, :, :] == 255] = i
-
-            return (image_stack, dates), mask
-
-        else:
-            for i in range(len(self.dates)):
-                # read .tif
-                img = rasterio.open(os.path.join(self.root_path, self.planet_day[index][i][1:]))
-                red = img.read(3)
-                green = img.read(2)
-                blue = img.read(1)
-                nir = img.read(4)
-                image = np.dstack((red, green, blue, nir))
-                cur_images.append(np.expand_dims(np.asarray(image, dtype=np.float32), axis=0))   # np.array already\
-            image_stack = np.concatenate(cur_images, axis=0)
-            dates = torch.from_numpy(np.array(self.planet_day[index][len(self.dates):], dtype=np.int32))
-            label = rasterio.open(os.path.join(self.root_path, self.labels[index][1:]))
-            label = label.read()
-            mask = np.zeros((label.shape[1], label.shape[2]), dtype=np.int32)
-
-            for i in range(self.num_classes + 1):
-                if i == 6:
-                    mask[label[i, :, :] == 255] = -1
-                else:
-                    mask[label[i, :, :] == 255] = i
-
-            return (image_stack, dates), mask
+        self.all_sequences = []
+        for f, ym in zip(self.files, self.year_months):
+            images = []
+            for date in self.sample_dates:
+                image_file = os.path.join(self.root_path, f[1:], f"{ym}-{date}.npy")
+                assert os.path.isfile(image_file), f"{image_file} does not exist"
+                images.append(image_file)
+            self.all_sequences.append(images)
 
     def __len__(self):
         return len(self.files)
 
     def __getitem__(self, index):
-        (images, dates), label = self.load_data(index)
-
-        images = torch.from_numpy(images).permute(3, 0, 1, 2)#.transpose(0, 1)
-        label = torch.from_numpy(np.array(label, dtype=np.int32)).long()
+        images = [np.load(seq) for seq in self.all_sequences[index]]
+        images = torch.from_numpy(np.stack(images, axis=0)).transpose(0, 1).float()
+        label = torch.from_numpy(np.load(os.path.join(self.root_path, self.labels[index][1:].replace('tif', 'npy')))).long()
 
         output = {
             'image': {
@@ -218,15 +132,11 @@ class DynamicEarthNet(GeoFMDataset):
             'metadata': {}
         }
 
-        return output
-        #return {'img': images, 'label': label, 'meta': dates}
+        if self.preprocessor is not None:
+            output = self.preprocessor(output)
 
-    # @staticmethod
-    # def get_splits(dataset_config):
-    #     dataset_train = DynamicEarthNet(cfg=dataset_config, split="train")
-    #     dataset_val = DynamicEarthNet(cfg=dataset_config, split="val")
-    #     dataset_test = DynamicEarthNet(cfg=dataset_config, split="test")
-    #     return dataset_train, dataset_val, dataset_test
+        return output
+
 
     @staticmethod
     def download(self, silent=False):

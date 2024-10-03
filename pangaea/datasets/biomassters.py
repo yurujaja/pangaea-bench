@@ -4,10 +4,9 @@ import pandas as pd
 import pathlib
 import rasterio
 from tifffile import imread
-from os.path import join as opj
 
-from pangaea.datasets.utils import read_tif
 from pangaea.datasets.base import GeoFMDataset
+from pangaea.engine.data_preprocessor import BasePreprocessor
 
 def read_imgs(multi_temporal, temp , fname, data_dir, img_size):
     imgs_s1, imgs_s2, mask = [], [], []
@@ -70,6 +69,7 @@ class BioMassters(GeoFMDataset):
         download_url: str,
         auto_download: bool,
         temp: int,
+        preprocessor: BasePreprocessor = None
     ):
         """Initialize the BioMassters dataset.
         Link: https://huggingface.co/datasets/nascetti-a/BioMassters
@@ -120,24 +120,9 @@ class BioMassters(GeoFMDataset):
             data_max=data_max,
             download_url=download_url,
             auto_download=auto_download,
+            preprocessor=preprocessor,
         )
-        
-        self.root_path = root_path
-        self.multi_temporal = multi_temporal
-        self.temp = temp
-        self.split = split
 
-        self.data_mean = data_mean
-        self.data_std = data_std
-        self.data_min = data_min
-        self.data_max = data_max
-        self.classes = classes
-        self.img_size = img_size
-        self.distribution = distribution
-        self.num_classes = num_classes
-        self.ignore_index = ignore_index
-        self.download_url = download_url
-        self.auto_download = auto_download
         
         self.data_path = pathlib.Path(self.root_path).joinpath(f"{split}_Data_list.csv")
         self.id_list = pd.read_csv(self.data_path)['chip_id']
@@ -163,14 +148,20 @@ class BioMassters(GeoFMDataset):
         imgs_s2 = torch.from_numpy(imgs_s2).float()
         target = torch.from_numpy(target).float()
 
-        return {
-            'image': {
-                    'optical': imgs_s2,
-                    'sar' : imgs_s1,
-                    },
-            'target': target,  
-            'metadata': {'masks':mask}
+        output = {
+            "image": {
+                'optical': imgs_s2,
+                'sar': imgs_s1,
+            },
+            "target": target,
+            "metadata": {},
         }
+
+        if self.preprocessor is not None:
+            output = self.preprocessor(output)
+
+        return output
+
 
     # @staticmethod
     # def download(self, silent=False):

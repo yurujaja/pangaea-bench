@@ -63,7 +63,7 @@ class SSL4EO_MAE_OPTICAL_Encoder(Encoder):
             embed_dim=embed_dim,
             output_dim=embed_dim,
             multi_temporal=False,
-            multi_temporal_output=False,
+            multi_temporal_fusion=False,
             download_url=download_url,
         )
 
@@ -226,10 +226,11 @@ class SSL4EO_MAE_SAR_Encoder(SSL4EO_MAE_OPTICAL_Encoder):
         self.multi_temporal = False
         self.output_dim = embed_dim
 
-    def forward(self, image):
+    def native_forward(self, image):
         # embed patches
-        x = image["sar"].squeeze(2)
-        x = self.patch_embed(x)
+        image = self.squeeze_temporal_dimension(image)
+
+        x = self.patch_embed(image["sar"])
 
         # append cls token
         cls_tokens = self.cls_token.expand(x.shape[0], -1, -1)

@@ -388,7 +388,7 @@ class SSL4EO_Data2Vec_Encoder(Encoder):
             embed_dim=embed_dim,
             output_dim=embed_dim,
             multi_temporal=False,
-            multi_temporal_output=False,
+            multi_temporal_fusion=False,
             download_url=download_url,
         )
 
@@ -483,9 +483,9 @@ class SSL4EO_Data2Vec_Encoder(Encoder):
     def no_weight_decay(self):
         return {"pos_embed", "cls_token"}
 
-    def forward(self, images):
-        x = images["optical"].squeeze(2)
-        x = self.patch_embed(x)
+    def native_forward(self, image):
+        image = self.squeeze_temporal_dimension(image)
+        x = self.patch_embed(image["optical"])
         batch_size, seq_len, _ = x.size()
 
         cls_tokens = self.cls_token.expand(

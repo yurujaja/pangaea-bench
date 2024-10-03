@@ -9,7 +9,7 @@ from pyDataverse.api import DataAccessApi, NativeApi
 from tifffile import imread
 
 from pangaea.datasets.base import GeoFMDataset
-
+from pangaea.engine.data_preprocessor import BasePreprocessor
 
 class AI4SmallFarms(GeoFMDataset):
     def __init__(
@@ -31,6 +31,7 @@ class AI4SmallFarms(GeoFMDataset):
         data_max: dict[str, list[str]],
         download_url: str,
         auto_download: bool,
+        preprocessor: BasePreprocessor = None
     ):
         """Initialize the AI4SmallFarms dataset.
             Link: https://phys-techsciences.datastations.nl/dataset.xhtml?persistentId=doi:10.17026/dans-xy6-ngg6
@@ -80,22 +81,11 @@ class AI4SmallFarms(GeoFMDataset):
             data_max=data_max,
             download_url=download_url,
             auto_download=auto_download,
+            preprocessor=preprocessor
         )
 
-        self.data_mean = data_mean
-        self.data_std = data_std
-        self.data_min = data_min
-        self.data_max = data_max
-        self.classes = classes
-        self.img_size = img_size
-        self.distribution = distribution
-        self.num_classes = num_classes
-        self.ignore_index = ignore_index
-        self.download_url = download_url
-        self.auto_download = auto_download
-
         self.root_path = pathlib.Path(root_path)
-        self.split = split
+
         self.image_dir = self.root_path.joinpath(f"sentinel-2-asia/{split}/images")
         self.mask_dir = self.root_path.joinpath(f"sentinel-2-asia/{split}/masks")
         self.image_list = sorted(glob(str(self.image_dir.joinpath("*.tif"))))
@@ -124,13 +114,18 @@ class AI4SmallFarms(GeoFMDataset):
         # Convert target to a boolean tensor
         target = target.bool()
 
-        return {
+        output = {
             "image": {
                 "optical": image,
             },
             "target": target,
             "metadata": {},
         }
+
+        if self.preprocessor is not None:
+            output = self.preprocessor(output)
+
+        return output
 
     @staticmethod
     def download(self, silent=False):

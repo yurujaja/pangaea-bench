@@ -646,7 +646,7 @@ class GFMSwin_Encoder(Encoder):
             embed_dim=embed_dim,
             output_dim=output_dim,
             multi_temporal=False,
-            multi_temporal_output=False,
+            multi_temporal_fusion=False,
             download_url=download_url,
         )
 
@@ -756,9 +756,9 @@ class GFMSwin_Encoder(Encoder):
         self.load_state_dict(pretrained_encoder, strict=False)
         self.parameters_warning(missing, incompatible_shape, logger)
 
-    def forward(self, image):
-        x = image["optical"].squeeze(2)
-        x = self.patch_embed(x)
+    def native_forward(self, image):
+        image = self.squeeze_temporal_dimension(image)
+        x = self.patch_embed(image["optical"])
         if self.ape:
             x = x + self.absolute_pos_embed
         x = self.pos_drop(x)
@@ -935,3 +935,4 @@ def remap_pretrained_keys_swin(model, checkpoint_model):
         del checkpoint_model[k]
 
     return checkpoint_model
+

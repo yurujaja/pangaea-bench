@@ -267,7 +267,7 @@ class SSL4EO_DINO_Encoder(Encoder):
             embed_dim=embed_dim,
             output_dim=embed_dim,
             multi_temporal=False,
-            multi_temporal_output=False,
+            multi_temporal_fusion=False,
             download_url=download_url,
         )
 
@@ -363,9 +363,10 @@ class SSL4EO_DINO_Encoder(Encoder):
 
         return self.pos_drop(x)
 
-    def forward(self, images):
-        x = images["optical"].squeeze(2)
-        x = self.prepare_tokens(x)
+    def native_forward(self, image):
+        image = self.squeeze_temporal_dimension(image)
+
+        x = self.prepare_tokens(image["optical"])
 
         output = []
         for i, blk in enumerate(self.blocks):

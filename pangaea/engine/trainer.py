@@ -1,3 +1,4 @@
+import copy
 import logging
 import operator
 import os
@@ -171,7 +172,6 @@ class Trainer:
                             for k, v in self.training_metrics.items()
                         },
                     },
-                    step=epoch * len(self.train_loader) + batch_idx,
                 )
 
             self.training_stats["batch_time"].update(time.time() - end_time)
@@ -193,7 +193,7 @@ class Trainer:
             "scaler": self.scaler.state_dict(),
             "epoch": epoch,
         }
-        return checkpoint
+        return copy.deepcopy(checkpoint)
 
     def save_model(
         self,

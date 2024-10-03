@@ -200,7 +200,7 @@ class DOFA_Encoder(Encoder):
             embed_dim=embed_dim,
             output_dim=embed_dim,
             multi_temporal=False,
-            multi_temporal_output=False,
+            multi_temporal_fusion=False,
             download_url=download_url,
         )
 
@@ -242,9 +242,11 @@ class DOFA_Encoder(Encoder):
             ]
         )
 
-    def forward(self, image):
+    def native_forward(self, image):
         # embed patches
-        x = [image[m].squeeze(2) for m in self.input_bands.keys()]
+        image = self.squeeze_temporal_dimension(image)
+
+        x = [image[m] for m in self.input_bands.keys()]
         x = torch.cat(x, dim=1)
         wavelist = torch.tensor(self.wv_list, device=x.device).float()
         self.waves = wavelist

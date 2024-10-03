@@ -2,12 +2,12 @@ import logging
 import os
 import time
 from pathlib import Path
+import math
 
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-
 
 class Evaluator:
     """
@@ -42,18 +42,23 @@ class Evaluator:
         val_loader: DataLoader,
         exp_dir: str | Path,
         device: torch.device,
-        use_wandb: bool,
+        inference_mode: str = 'sliding',
+        sliding_inference_batch: int = None,
+        use_wandb: bool = False,
     ) -> None:
         self.val_loader = val_loader
         self.logger = logging.getLogger()
         self.exp_dir = exp_dir
         self.device = device
+        self.inference_mode = inference_mode
+        self.sliding_inference_batch = sliding_inference_batch
         self.classes = self.val_loader.dataset.classes
         self.split = self.val_loader.dataset.split
         self.ignore_index = self.val_loader.dataset.ignore_index
         self.num_classes = len(self.classes)
         self.max_name_len = max([len(name) for name in self.classes])
         self.use_wandb = use_wandb
+
 
         if use_wandb:
             import wandb
@@ -76,6 +81,53 @@ class Evaluator:
 
     def log_metrics(self, metrics):
         pass
+
+    @staticmethod
+    def sliding_inference(model, img, input_size, output_size=None, stride=None, max_batch=None):
+        b, c, t, height, width = img[list(img.keys())[0]].shape
+
+        if stride is None:
+            h = int(math.ceil(height / input_size))
+            w = int(math.ceil(width / input_size))
+        else:
+            h = math.ceil((height - input_size) / stride) + 1
+            w = math.ceil((width - input_size) / stride) + 1
+
+        h_grid = torch.linspace(0, height - input_size, h).round().long()
+        w_grid = torch.linspace(0, width - input_size, w).round().long()
+        num_crops = h * w
+
+        for k, v in img.items():
+            img_crops = []
+            for i in range(h):
+                for j in range(w):
+                    img_crops.append(v[:, :, :, h_grid[i]:h_grid[i] + input_size, w_grid[j]:w_grid[j] + input_size])
+            img[k] = torch.cat(img_crops, dim=0)
+
+        pred = []
+        max_batch = max_batch if max_batch is not None else num_crops
+        batch_num = int(math.ceil(num_crops / max_batch))
+        for i in range(batch_num):
+            img_ = {k: v[max_batch * i: min(max_batch * i + max_batch, num_crops)] for k, v in img.items()}
+            pred.append(model.forward(img_, output_size=(input_size, input_size)))
+        pred = torch.cat(pred, dim=0)
+
+        pred = pred.view(b, num_crops, model.num_classes, input_size, input_size)
+        merged_pred = torch.zeros((b, model.num_classes, height, width), device=pred.device)
+        pred_count = torch.zeros((b, height, width), dtype=torch.long, device=pred.device)
+        for i in range(h):
+            for j in range(w):
+                merged_pred[:, :, h_grid[i]:h_grid[i] + input_size,
+                w_grid[j]:w_grid[j] + input_size] += pred[:, h * i + j]
+                pred_count[:, h_grid[i]:h_grid[i] + input_size,
+                w_grid[j]:w_grid[j] + input_size] += 1
+
+        merged_pred = merged_pred / pred_count
+        if output_size is not None:
+            merged_pred = F.interpolate(merged_pred, size=output_size, mode="bilinear")
+
+        return merged_pred
+
 
 
 class SegEvaluator(Evaluator):
@@ -104,9 +156,11 @@ class SegEvaluator(Evaluator):
         val_loader: DataLoader,
         exp_dir: str | Path,
         device: torch.device,
-        use_wandb: bool,
+        inference_mode: str = 'sliding',
+        sliding_inference_batch: int = None,
+        use_wandb: bool = False,
     ):
-        super().__init__(val_loader, exp_dir, device, use_wandb)
+        super().__init__(val_loader, exp_dir, device, inference_mode, sliding_inference_batch, use_wandb)
 
     @torch.no_grad()
     def evaluate(self, model, model_name='model', model_ckpt_path=None):
@@ -133,7 +187,13 @@ class SegEvaluator(Evaluator):
             image = {k: v.to(self.device) for k, v in image.items()}
             target = target.to(self.device)
 
-            logits = model(image, output_shape=target.shape[-2:])
+            if self.inference_mode == "sliding":
+                input_size = model.module.encoder.input_size
+                logits = self.sliding_inference(model, image, input_size,  output_size=target.shape[-2:], max_batch=self.sliding_inference_batch)
+            elif self.inference_mode == "whole":
+                logits = model(image, output_size=target.shape[-2:])
+            else:
+                raise NotImplementedError((f"Inference mode {self.inference_mode} is not implemented."))
             if logits.shape[1] == 1:
                 pred = (torch.sigmoid(logits) > 0.5).type(torch.int64).squeeze(dim=1)
             else:
@@ -148,7 +208,7 @@ class SegEvaluator(Evaluator):
         torch.distributed.all_reduce(
             confusion_matrix, op=torch.distributed.ReduceOp.SUM
         )
-        metrics = self.compute_metrics(confusion_matrix)
+        metrics = self.compute_metrics(confusion_matrix.cpu())
         self.log_metrics(metrics)
 
         used_time = time.time() - t
@@ -278,9 +338,11 @@ class RegEvaluator(Evaluator):
         val_loader: DataLoader,
         exp_dir: str | Path,
         device: torch.device,
-        use_wandb: bool,
+        inference_mode: str = 'sliding',
+        sliding_inference_batch: int = None,
+        use_wandb: bool = False,
     ):
-        super().__init__(val_loader, exp_dir, device, use_wandb)
+        super().__init__(val_loader, exp_dir, device, inference_mode, sliding_inference_batch, use_wandb)
 
     @torch.no_grad()
     def evaluate(self, model, model_name='model', model_ckpt_path=None):
@@ -305,7 +367,15 @@ class RegEvaluator(Evaluator):
             image = {k: v.to(self.device) for k, v in image.items()}
             target = target.to(self.device)
 
-            logits = model(image, output_shape=target.shape[-2:]).squeeze(dim=1)
+            if self.inference_mode == "sliding":
+                input_size = model.module.encoder.input_size
+                logits = self.sliding_inference(model, image, input_size, output_size=target.shape[-2:],
+                                                max_batch=self.sliding_inference_batch)
+            elif self.inference_mode == "whole":
+                logits = model(image, output_size=target.shape[-2:]).squeeze(dim=1)
+            else:
+                raise NotImplementedError((f"Inference mode {self.inference_mode} is not implemented."))
+
             mse = F.mse_loss(logits, target)
 
         metrics = {"MSE" : mse.item(), "RMSE" : torch.sqrt(mse).item()}

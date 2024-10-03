@@ -2,29 +2,24 @@
 SpaceNet 7 dataset: https://spacenet.ai/sn7-challenge/
 '''
 
-import os
-import time
+
 from pathlib import Path
-import urllib.request
-import urllib.error
+
 import tarfile
 import shutil
 import gdown
 
 import json
-from glob import glob
 import rasterio
 import numpy as np
 
 import torch
-import torchvision.transforms.functional as TF
-import torchvision.transforms as T
+
 
 from abc import abstractmethod
 
-from pangaea.datasets.utils import DownloadProgressBar
 from pangaea.datasets.base import GeoFMDataset
-# from utils.registry import DATASET_REGISTRY
+from pangaea.engine.data_preprocessor import BasePreprocessor
 
 # train/val/test split from https://doi.org/10.3390/rs15215135
 SN7_TRAIN = [
@@ -122,6 +117,7 @@ class AbstractSN7(GeoFMDataset):
         domain_shift: bool,
         i_split: int,
         j_split: int,
+        preprocessor: BasePreprocessor = None
     ):
         """Initialize the SpaceNet dataset.
         Link: https://spacenet.ai/sn7-challenge/
@@ -153,10 +149,10 @@ class AbstractSN7(GeoFMDataset):
             download_url (str): url to download the dataset.
             auto_download (bool): whether to download the dataset automatically.
             domain_shift (bool): wheter to perform domain adaptation evaluation.
-            i_splt (int): .
+            i_split (int): .
             j_split (int): . #ISSUES
         """
-        super().__init__(
+        super(AbstractSN7, self).__init__(
             split=split,
             dataset_name=dataset_name,
             multi_modal=multi_modal,
@@ -174,6 +170,7 @@ class AbstractSN7(GeoFMDataset):
             data_max=data_max,
             download_url=download_url,
             auto_download=auto_download,
+            preprocessor=preprocessor
         )
 
 
@@ -186,18 +183,6 @@ class AbstractSN7(GeoFMDataset):
         self.img_size = img_size  # size used for tiling the images
         assert self.sn7_img_size % self.img_size == 0
 
-        self.data_mean = data_mean
-        self.data_std = data_std
-        self.data_min = data_min
-        self.data_max = data_max
-        self.classes = classes
-        self.distribution = distribution
-        self.num_classes = self.class_num = num_classes
-        self.ignore_index = ignore_index
-        self.download_url = download_url
-        self.auto_download = auto_download
-        
-        self.distribution = distribution
         self.domain_shift = domain_shift
         self.i_split = i_split
         self.j_split = j_split
@@ -298,10 +283,11 @@ class SN7MAPPING(AbstractSN7):
         domain_shift: bool,
         i_split: int,
         j_split: int,
+        preprocessor: BasePreprocessor = None
     ):
         """Initialize the SpaceNet dataset for building mapping.
         """
-        super().__init__(
+        super(SN7MAPPING, self).__init__(
             split=split,
             dataset_name=dataset_name,
             multi_modal=multi_modal,
@@ -322,6 +308,7 @@ class SN7MAPPING(AbstractSN7):
             domain_shift=domain_shift,
             i_split=i_split,
             j_split=j_split,
+            preprocessor=preprocessor
         )
 
         self.split = split
@@ -416,6 +403,9 @@ class SN7MAPPING(AbstractSN7):
             'metadata': {}
         }
 
+        if self.preprocessor is not None:
+            output = self.preprocessor(output)
+
         return output
 
 class SN7CD(AbstractSN7):
@@ -442,7 +432,9 @@ class SN7CD(AbstractSN7):
         i_split: int,
         j_split: int,
         dataset_multiplier: int,
-        minimum_temporal_gap: int,
+            minimum_temporal_gap: int,
+            preprocessor: BasePreprocessor = None
+
     ):
         """Initialize the SpaceNet dataset for change detection.
 
@@ -450,7 +442,7 @@ class SN7CD(AbstractSN7):
             eval_mode (bool): select if evaluation is happening. Instanciate true for val and test
             dataset_multiplier (int): multiplies sample in dataset during training.
         """
-        super().__init__(
+        super(SN7CD, self).__init__(
             split=split,
             dataset_name=dataset_name,
             multi_modal=multi_modal,
@@ -471,6 +463,7 @@ class SN7CD(AbstractSN7):
             domain_shift=domain_shift,
             i_split=i_split,
             j_split=j_split,
+            preprocessor=preprocessor
         )
 
         self.T = self.multi_temporal
@@ -570,18 +563,21 @@ class SN7CD(AbstractSN7):
         target = target[i:i + self.img_size, j:j + self.img_size]
 
         # weight for oversampling
-        weight = torch.empty(target.shape)
-        for i, freq in enumerate(self.distribution):
-            weight[target == i] = 1 - freq
+        # weight = torch.empty(target.shape)
+        # for i, freq in enumerate(self.distribution):
+        #     weight[target == i] = 1 - freq
 
         output = {
             'image': {
                 'optical': image,
             },
             'target': target,
-            'weight': weight,
+            # 'weight': weight,
             'metadata': {}
         }
+
+        if self.preprocessor is not None:
+            output = self.preprocessor(output)
 
         return output
 

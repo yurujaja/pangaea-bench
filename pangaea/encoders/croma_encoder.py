@@ -54,7 +54,6 @@ class CROMA_OPTICAL_Encoder(Encoder):
             embed_dim=768,
             output_dim=768,
             multi_temporal=False,
-            multi_temporal_output=False,
             download_url=download_url,
         )
 
@@ -84,9 +83,12 @@ class CROMA_OPTICAL_Encoder(Encoder):
             dim=self.embed_dim, depth=self.encoder_depth, in_channels=self.s2_channels
         )
 
-    def forward(self, image):
+    def native_forward(self, image):
+
+        image = self.squeeze_temporal_dimension(image)
+
         output = self.s2_encoder(
-            image["optical"].squeeze(2),
+            image["optical"],
             self.attn_bias.to(image["optical"].device),
             self.output_layers,
         )  # (bsz, num_patches, encoder_dim)
@@ -167,7 +169,7 @@ class CROMA_SAR_Encoder(Encoder):
             embed_dim=768,
             output_dim=768,
             multi_temporal=False,
-            multi_temporal_output=False,
+            multi_temporal_fusion=False,
             download_url=download_url,
         )
 
@@ -200,11 +202,12 @@ class CROMA_SAR_Encoder(Encoder):
             in_channels=self.s1_channels,
         )
 
-    def forward(self, image):
+    def native_forward(self, image):
         # output = []
+        image = self.squeeze_temporal_dimension(image)
 
         output = self.s1_encoder(
-            image["sar"].squeeze(2),
+            image["sar"],
             self.attn_bias.to(image["sar"].device),
             self.output_layers,
         )  # (bsz, num_patches, encoder_dim)
@@ -288,7 +291,6 @@ class CROMA_JOINT_Encoder(Encoder):
             embed_dim=768,
             output_dim=768,
             multi_temporal=False,
-            multi_temporal_output=False,
             download_url=download_url,
         )
 
@@ -333,10 +335,10 @@ class CROMA_JOINT_Encoder(Encoder):
     def forward(self, image):
         attn_bias = self.attn_bias.to(image["optical"].device)
         SAR_encodings = self.s1_encoder(
-            image["sar"].squeeze(2), attn_bias
+            image["sar"], attn_bias
         )  # (bsz, num_patches, encoder_dim)
         optical_encodings = self.s2_encoder(
-            image["optical"].squeeze(2), attn_bias
+            image["optical"], attn_bias
         )  # (bsz, num_patches, encoder_dim)
         output = self.cross_encoder(
             x=SAR_encodings,

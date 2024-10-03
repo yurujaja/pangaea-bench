@@ -11,6 +11,7 @@ import numpy as np
 
 import warnings
 
+
 warnings.filterwarnings("ignore", category=rasterio.errors.NotGeoreferencedWarning)
 
 import torch
@@ -19,6 +20,7 @@ import torchvision.transforms as T
 
 from pangaea.datasets.utils import DownloadProgressBar
 from pangaea.datasets.base import GeoFMDataset
+from pangaea.engine.data_preprocessor import BasePreprocessor
 
 ###############################################################
 # MADOS DATASET                                               #
@@ -45,6 +47,7 @@ class MADOS(GeoFMDataset):
         data_max: dict[str, list[str]],
         download_url: str,
         auto_download: bool,
+        preprocessor: BasePreprocessor = None
     ):
         """Initialize the MADOS dataset.
         Link: https://marine-pollution.github.io/index.html
@@ -94,23 +97,8 @@ class MADOS(GeoFMDataset):
             data_max=data_max,
             download_url=download_url,
             auto_download=auto_download,
+            preprocessor=preprocessor,
         )
-
-        self.root_path = root_path
-        self.classes = classes
-        self.split = split
-
-        self.data_mean = data_mean
-        self.data_std = data_std
-        self.data_min = data_min
-        self.data_max = data_max
-        self.classes = classes
-        self.img_size = img_size
-        self.distribution = distribution
-        self.num_classes = num_classes
-        self.ignore_index = ignore_index
-        self.download_url = download_url
-        self.auto_download = auto_download
 
         self.ROIs_split = np.genfromtxt(os.path.join(self.root_path, 'splits', f'{split}_X.txt'), dtype='str')
 
@@ -168,11 +156,14 @@ class MADOS(GeoFMDataset):
 
         output = {
             'image': {
-                'optical': image,
+                'optical': image.unsqueeze(1),
             },
             'target': target,
             'metadata': {}
         }
+
+        if self.preprocessor is not None:
+            output = self.preprocessor(output)
 
         return output
 

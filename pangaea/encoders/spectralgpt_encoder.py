@@ -68,7 +68,7 @@ class SpectralGPT_Encoder(Encoder):
             embed_dim=embed_dim,
             output_dim=output_dim,
             multi_temporal=False,
-            multi_temporal_output=False,
+            multi_temporal_fusion=False,
             download_url=download_url,
         )
 
@@ -162,9 +162,9 @@ class SpectralGPT_Encoder(Encoder):
         self.load_state_dict(pretrained_encoder, strict=False)
         self.parameters_warning(missing, incompatible_shape, logger)
 
-    def forward(self, image: dict[str, torch.Tensor]) -> list[torch.Tensor]:
+    def native_forward(self, image: dict[str, torch.Tensor]) -> list[torch.Tensor]:
         # input image of shape B C H W
-        x = image["optical"].unsqueeze(-3)  # B C H W -> B C 1 H W
+        x = image["optical"]#.unsqueeze(-3)  # B C H W -> B C 1 H W
 
         x = x.permute(0, 2, 1, 3, 4)  # for this model: B, T, C, H, W
         x = self.patch_embed(x)

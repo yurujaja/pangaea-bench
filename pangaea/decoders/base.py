@@ -1,7 +1,10 @@
+import math
+import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from pangaea.encoders.base import Encoder
-
+import matplotlib.pyplot as plt
 
 class Decoder(nn.Module):
     """Base class for decoders."""
@@ -23,3 +26,8 @@ class Decoder(nn.Module):
         self.encoder = encoder
         self.num_classes = num_classes
         self.finetune = finetune
+
+
+
+
+

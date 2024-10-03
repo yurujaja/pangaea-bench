@@ -24,6 +24,9 @@ evaluator:
   val_loader: null
   exp_dir: null
   device: null
+  inference_mode: sliding
+  sliding_inference_batch: 8
   use_wandb: ${use_wandb}
+
 
 

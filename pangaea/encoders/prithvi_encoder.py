@@ -65,7 +65,7 @@ class Prithvi_Encoder(Encoder):
             embed_dim=embed_dim,
             output_dim=embed_dim,
             multi_temporal=True,
-            multi_temporal_output=True,
+            multi_temporal_fusion=False,
             download_url=download_url,
         )
 
@@ -159,10 +159,9 @@ class Prithvi_Encoder(Encoder):
             nn.init.constant_(m.bias, 0)
             nn.init.constant_(m.weight, 1.0)
 
-    def forward(self, image):
+    def native_forward(self, image):
         # embed patches
-        x = image["optical"]
-        x = self.patch_embed(x)
+        x = self.patch_embed(image["optical"])
 
         cls_tokens = self.cls_token.expand(x.shape[0], -1, -1)
         x = torch.cat((cls_tokens, x), dim=1)
@@ -191,7 +190,6 @@ class Prithvi_Encoder(Encoder):
                 output.append(out)
 
         return output
-
 
 class PatchEmbed(nn.Module):
     """Frames of 2D Images to Patch Embedding

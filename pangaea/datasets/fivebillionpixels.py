@@ -1,25 +1,15 @@
 import os
-import time
-import torch
 import numpy as np
-import rasterio
-import random
 from glob import glob
 
 from PIL import Image
 import tifffile as tiff
-import cv2
 
 import torch
 import torchvision.transforms.functional as TF
-import torchvision.transforms as T
-
-import pathlib
-import urllib
-import tarfile
-from pangaea.datasets.utils import DownloadProgressBar
 
 from pangaea.datasets.base import GeoFMDataset
+from pangaea.engine.data_preprocessor import BasePreprocessor
 
 class FiveBillionPixels(GeoFMDataset):
     def __init__(
@@ -42,6 +32,7 @@ class FiveBillionPixels(GeoFMDataset):
         download_url: str,
         auto_download: bool,
         use_cmyk: bool,
+        preprocessor: BasePreprocessor = None
     ):
         """Initialize the FiveBillionPixels dataset.
         Link to original dataset: https://x-ytong.github.io/project/Five-Billion-Pixels.html
@@ -92,25 +83,11 @@ class FiveBillionPixels(GeoFMDataset):
             data_max=data_max,
             download_url=download_url,
             auto_download=auto_download,
+            preprocessor=preprocessor
             # use_cmyk=use_cmyk,
         )
 
         self._base_dir = root_path
-        self.classes = classes
-        self.use_cmyk = use_cmyk
-        self.split = split
-
-        self.data_mean = data_mean
-        self.data_std = data_std
-        self.data_min = data_min
-        self.data_max = data_max
-        self.classes = classes
-        self.img_size = img_size
-        self.distribution = distribution
-        self.num_classes = num_classes
-        self.ignore_index = ignore_index
-        self.download_url = download_url
-        self.auto_download = auto_download
 
         self._image_dir = sorted(glob(os.path.join(self._base_dir, self.split, 'imgs', '*.tif')))
         self._label_dir = sorted(glob(os.path.join(self._base_dir, self.split, 'labels', '*.tif')))
@@ -139,7 +116,10 @@ class FiveBillionPixels(GeoFMDataset):
             'target': target,
             'metadata': {}
         }
-        
+
+        if self.preprocessor is not None:
+            output = self.preprocessor(output)
+
         return output
 
     

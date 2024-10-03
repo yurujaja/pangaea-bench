@@ -105,7 +105,7 @@ class SiamUNet(Decoder):
         img2 = {k: v[:,:,1,:,:] for k, v in img.items()}
 
         feat1 = self.encoder(img1)
-        feat2= self.encoder(img2)
+        feat2 = self.encoder(img2)
  
         if self.strategy == 'diff':
             feat = [f2 - f1 for f1, f2 in zip(feat1, feat2)]

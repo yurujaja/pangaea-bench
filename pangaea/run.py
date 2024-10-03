@@ -15,6 +15,7 @@ from torch.utils.data.distributed import DistributedSampler
 
 from pangaea.decoders.base import Decoder
 from pangaea.encoders.base import Encoder
+from pangaea.engine.data_preprocessor import build_preprocessor
 from pangaea.engine.evaluator import Evaluator
 from pangaea.engine.trainer import Trainer
 from pangaea.utils.collate_fn import get_collate_fn
@@ -95,7 +96,7 @@ def main(cfg: DictConfig) -> None:
 
             wandb_cfg = OmegaConf.to_container(cfg, resolve=True)
             wandb.init(
-                project="geofm-bench",
+                project="pangaea-bench",
                 name=exp_name,
                 config=wandb_cfg,
                 id=cfg.get("wandb_run_id"),
@@ -108,10 +109,12 @@ def main(cfg: DictConfig) -> None:
     logger.info("The experiment is stored in %s\n" % exp_dir)
     logger.info(f"Device used: {device}")
 
+    train_preprocessor = build_preprocessor(cfg.preprocessing.train, cfg.dataset, cfg.encoder)
+    val_preprocessor = build_preprocessor(cfg.preprocessing.test, cfg.dataset, cfg.encoder)
+
     # get datasets
-    train_dataset: Dataset = instantiate(cfg.dataset, split="train")
-    val_dataset: Dataset = instantiate(cfg.dataset, split="val")
-    test_dataset: Dataset = instantiate(cfg.dataset, split="test")
+    train_dataset: Dataset = instantiate(cfg.dataset, split="train", preprocessor=train_preprocessor)
+    val_dataset: Dataset = instantiate(cfg.dataset, split="val", preprocessor=val_preprocessor)
     logger.info("Built {} dataset.".format(cfg.dataset.dataset_name))
 
     encoder: Encoder = instantiate(cfg.encoder)
@@ -138,14 +141,6 @@ def main(cfg: DictConfig) -> None:
 
     # training
     if train_run:
-        for preprocess in cfg.preprocessing.train:
-            train_dataset: Dataset = instantiate(
-                preprocess, dataset=train_dataset, encoder=encoder
-            )
-        for preprocess in cfg.preprocessing.test:
-            val_dataset: Dataset = instantiate(
-                preprocess, dataset=val_dataset, encoder=encoder
-            )
         if 0 < cfg.limited_label < 1:
             n_train_samples = len(train_dataset)
             indices = random.sample(
@@ -166,7 +161,7 @@ def main(cfg: DictConfig) -> None:
             num_workers=cfg.num_workers,
             pin_memory=True,
             # persistent_workers=True causes memory leak
-            persistent_workers=False,
+            persistent_workers=True,
             worker_init_fn=seed_worker,
             generator=get_generator(cfg.seed),
             drop_last=True,
@@ -175,8 +170,8 @@ def main(cfg: DictConfig) -> None:
         val_loader = DataLoader(
             val_dataset,
             sampler=DistributedSampler(val_dataset),
-            batch_size=cfg.batch_size,
-            num_workers=cfg.num_workers,
+            batch_size=cfg.test_batch_size,
+            num_workers=cfg.test_num_workers,
             pin_memory=True,
             persistent_workers=False,
             worker_init_fn=seed_worker,
@@ -214,16 +209,14 @@ def main(cfg: DictConfig) -> None:
         trainer.train()
 
     # Evaluation
-    for preprocess in cfg.preprocessing.test:
-        test_dataset: Dataset = instantiate(
-            preprocess, dataset=test_dataset, encoder=encoder
-        )
+    test_preprocessor = build_preprocessor(cfg.preprocessing.test, cfg.dataset, cfg.encoder)
+    test_dataset: Dataset = instantiate(cfg.dataset, split="test", preprocessor=test_preprocessor)
 
     test_loader = DataLoader(
         test_dataset,
         sampler=DistributedSampler(test_dataset),
-        batch_size=cfg.batch_size,
-        num_workers=cfg.num_workers,
+        batch_size=cfg.test_batch_size,
+        num_workers=cfg.test_num_workers,
         pin_memory=True,
         persistent_workers=False,
         drop_last=False,

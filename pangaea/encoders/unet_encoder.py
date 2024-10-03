@@ -46,9 +46,10 @@ class UNet(Encoder):
         self.in_conv = InConv(self.in_channels, self.topology[0], DoubleConv)
         self.encoder = UNet_Encoder(self.topology)
 
-    def forward(self, image):
-        x = image["optical"].squeeze(2)  # squeeze the time dimension
-        feat = self.in_conv(x)
+    def native_forward(self, image):
+        image = self.squeeze_temporal_dimension(image)
+
+        feat = self.in_conv(image["optical"])
         output = self.encoder(feat)
         return output
 
