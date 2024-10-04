@@ -272,7 +272,7 @@ class Trainer:
         if isinstance(curr_metric, list):
             curr_metric = curr_metric[0] if self.train_loader.dataset.num_classes == 1 else np.mean(curr_metric)
         if self.best_metric_comp(curr_metric, self.best_metric):
-            self.best_metric = eval_metrics[self.best_metric_key]
+            self.best_metric = curr_metric
             self.best_ckpt = self.get_checkpoint(epoch)
 
     @torch.no_grad()
