@@ -7,6 +7,8 @@ use_wandb: false
 num_workers: 1
 batch_size: 8
 
+test_num_workers: 4
+test_batch_size: 1
 
 # EXPERIMENT
 finetune: false

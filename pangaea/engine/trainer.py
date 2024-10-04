@@ -1,3 +1,4 @@
+import copy
 import logging
 import operator
 import os
@@ -11,7 +12,7 @@ from torch.optim.lr_scheduler import LRScheduler
 from torch.optim.optimizer import Optimizer
 from torch.utils.data import DataLoader
 from pangaea.utils.logger import RunningAverageMeter, sec_to_hm
-
+import wandb
 
 class Trainer:
     def __init__(
@@ -87,11 +88,6 @@ class Trainer:
 
         self.start_epoch = 0
 
-        if self.use_wandb:
-            import wandb
-
-            self.wandb = wandb
-
     def train(self) -> None:
         """Train the model for n_epochs then evaluate the model and save the best model."""
         # end_time = time.time()
@@ -141,7 +137,7 @@ class Trainer:
             with torch.autocast(
                 "cuda", enabled=self.enable_mixed_precision, dtype=self.precision
             ):
-                logits = self.model(image, output_shape=target.shape[-2:])
+                logits = self.model(image, output_size=target.shape[-2:])
                 loss = self.compute_loss(logits, target)
 
             self.optimizer.zero_grad()
@@ -161,7 +157,7 @@ class Trainer:
             self.lr_scheduler.step()
 
             if self.use_wandb and self.rank == 0:
-                self.wandb.log(
+                wandb.log(
                     {
                         "train_loss": loss.item(),
                         "learning_rate": self.optimizer.param_groups[0]["lr"],
@@ -171,7 +167,6 @@ class Trainer:
                             for k, v in self.training_metrics.items()
                         },
                     },
-                    step=epoch * len(self.train_loader) + batch_idx,
                 )
 
             self.training_stats["batch_time"].update(time.time() - end_time)
@@ -193,7 +188,7 @@ class Trainer:
             "scaler": self.scaler.state_dict(),
             "epoch": epoch,
         }
-        return checkpoint
+        return copy.deepcopy(checkpoint)
 
     def save_model(
         self,

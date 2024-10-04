@@ -2,6 +2,12 @@ import torch
 from torch.utils.data import Dataset
 import os
 
+from pangaea.engine.data_preprocessor import BasePreprocessor
+
+
+#from ..engine.data_preprocessor import BaseTransform
+#from hydra.utils import instantiate
+
 class GeoFMDataset(Dataset):
     """Base class for all datasets."""
 
@@ -24,6 +30,7 @@ class GeoFMDataset(Dataset):
         data_max: dict[str, list[str]],
         download_url: str,
         auto_download: bool,
+        preprocessor: BasePreprocessor = None
     ):
         """Initializes the dataset.
 
@@ -71,6 +78,9 @@ class GeoFMDataset(Dataset):
         self.data_max = data_max
         self.download_url = download_url
         self.auto_download = auto_download
+        self.preprocessor = preprocessor
+
+
 
         if not os.path.exists(self.root_path):
             self.download(self)
@@ -106,6 +116,17 @@ class GeoFMDataset(Dataset):
              "metadata": dict}.
         """
         raise NotImplementedError
+
+    # def build_preprocessor(self, cfg, encoder):
+    #     preprocessor = InitTransform(dataset=self, encoder=encoder)
+    #     for preprocess in cfg:
+    #         preprocessor = instantiate(
+    #             preprocess, pre_transforms=preprocessor
+    #         )
+    #     self.preprocessor = preprocessor
+    #
+    # def set_preprocessor(self, transforms: BaseTransform) -> None:
+    #     self.transforms = transforms
 
     @staticmethod
     def download(self) -> None:

@@ -148,11 +148,9 @@ class LTAE2d(nn.Module):
         )  # Concatenate heads
         out = self.dropout(self.mlp(out))
         out = self.out_norm(out) if self.out_norm is not None else out
-        out = out.view(sz_b, h, w, -1).permute(0, 3, 1, 2)
+        out = out.view(sz_b, h, w, -1).permute(0, 3, 1, 2).contiguous()
 
-        attn = attn.view(self.n_head, sz_b, h, w, seq_len).permute(
-            0, 1, 4, 2, 3
-        )  # head x b x t x h x w
+        attn = attn.view(self.n_head, sz_b, h, w, seq_len).permute(0, 1, 4, 2, 3).contiguous()  # head x b x t x h x w
 
         if self.return_att:
             return out, attn

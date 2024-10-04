@@ -16,7 +16,7 @@ import tarfile
 
 from pangaea.datasets.utils import DownloadProgressBar
 from pangaea.datasets.base import GeoFMDataset
-
+from pangaea.engine.data_preprocessor import BasePreprocessor
 
 class xView2(GeoFMDataset):
     def __init__(
@@ -38,6 +38,7 @@ class xView2(GeoFMDataset):
         data_max: dict[str, list[str]],
         download_url: str,
         auto_download: bool,
+        preprocessor: BasePreprocessor = None
     ):
         """Initialize the xView2 dataset.
         Link: https://xview2.org/dataset
@@ -88,22 +89,8 @@ class xView2(GeoFMDataset):
             data_max=data_max,
             download_url=download_url,
             auto_download=auto_download,
+            preprocessor=preprocessor
         )
-
-        self.root_path = root_path
-        self.split = split
-        self.bands = bands
-        self.data_mean = data_mean
-        self.data_std = data_std
-        self.data_min = data_min
-        self.data_max = data_max
-        self.classes = classes
-        self.img_size = img_size
-        self.distribution = distribution
-        self.num_classes = num_classes
-        self.ignore_index = ignore_index
-        self.download_url = download_url
-        self.auto_download = auto_download
 
         self.all_files = self.get_all_files()
         
@@ -165,14 +152,19 @@ class xView2(GeoFMDataset):
         # img_post = torch.from_numpy(img_post.transpose((2, 0, 1))).float()
         msk = torch.from_numpy(msk).float()
 
-
-        return {
+        output = {
             'image': {
                     'optical': img,
                     },
-            'target': msk,  
+            'target': msk,
             'metadata': {"filename":fn}
         }
+
+        if self.preprocessor is not None:
+            output = self.preprocessor(output)
+
+        return output
+
 
 
     @staticmethod

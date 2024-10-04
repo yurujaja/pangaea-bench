@@ -45,12 +45,12 @@ class UNet(Decoder):
         self.decoder = UNet_Decoder(self.topology)
         self.conv_seg = OutConv(self.topology[0], self.num_classes)
 
-    def forward(self, img, output_shape=None):
+    def forward(self, img, output_size=None):
         """Forward function."""
         feat = self.encoder(img)
         feat = self.decoder(feat)
         output = self.conv_seg(feat)
-        # output = F.interpolate(output, size=output_shape, mode='bilinear')
+        output = F.interpolate(output, size=output_size, mode='bilinear')
         return output
 
 
@@ -98,14 +98,14 @@ class SiamUNet(Decoder):
         self.decoder = UNet_Decoder(self.topology)
         self.conv_seg = OutConv(self.topology[0], self.num_classes)
 
-    def forward(self, img, output_shape=None):
+    def forward(self, img, output_size=None):
         """Forward function."""
         
         img1 = {k: v[:,:,0,:,:] for k, v in img.items()}
         img2 = {k: v[:,:,1,:,:] for k, v in img.items()}
 
         feat1 = self.encoder(img1)
-        feat2= self.encoder(img2)
+        feat2 = self.encoder(img2)
  
         if self.strategy == 'diff':
             feat = [f2 - f1 for f1, f2 in zip(feat1, feat2)]

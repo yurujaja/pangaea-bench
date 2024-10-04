@@ -9,16 +9,14 @@ from sklearn.model_selection import train_test_split
 from glob import glob
 
 import torch
-import torchvision.transforms.functional as TF
-import torchvision.transforms as T
 
 import pathlib
 import urllib
 import tarfile
 
-# from utils.registry import DATASET_REGISTRY
 from pangaea.datasets.utils import DownloadProgressBar
 from pangaea.datasets.base import GeoFMDataset
+from pangaea.engine.data_preprocessor import BasePreprocessor
 
 # @DATASET_REGISTRY.register()
 class HLSBurnScars(GeoFMDataset):
@@ -41,6 +39,7 @@ class HLSBurnScars(GeoFMDataset):
         data_max: dict[str, list[str]],
         download_url: str,
         auto_download: bool,
+        preprocessor: BasePreprocessor = None
     ):
         
         """Initialize the HLSBurnScars dataset.
@@ -92,23 +91,9 @@ class HLSBurnScars(GeoFMDataset):
             data_max=data_max,
             download_url=download_url,
             auto_download=auto_download,
+            preprocessor=preprocessor
         )
 
-        self.root_path = root_path
-        self.classes = classes
-        self.split = split
-        
-        self.data_mean = data_mean
-        self.data_std = data_std
-        self.data_min = data_min
-        self.data_max = data_max
-        self.classes = classes
-        self.img_size = img_size
-        self.distribution = distribution
-        self.num_classes = num_classes
-        self.ignore_index = ignore_index
-        self.download_url = download_url
-        self.auto_download = auto_download
 
         self.split_mapping = {'train': 'training', 'val': 'validation', 'test': 'validation'}
 
@@ -164,6 +149,9 @@ class HLSBurnScars(GeoFMDataset):
             'metadata': {}
         }
         
+        if self.preprocessor is not None:
+            output = self.preprocessor(output)
+
         return output
 
     

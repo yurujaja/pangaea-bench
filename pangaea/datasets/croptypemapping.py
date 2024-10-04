@@ -13,7 +13,7 @@ import pandas as pd
 import torch
 
 from pangaea.datasets.base import GeoFMDataset
-# from utils.registry import DATASET_REGISTRY
+from pangaea.engine.data_preprocessor import BasePreprocessor
 
 
 # @DATASET_REGISTRY.register()
@@ -38,6 +38,7 @@ class CropTypeMappingSouthSudan(GeoFMDataset):
         download_url: str,
         auto_download: bool,
         use_pad: bool,
+        preprocessor: BasePreprocessor = None
     ):
         """Initialize the CropTypeMappingSouthSudan dataset.
         Link: https://sustainlab-group.github.io/sustainbench/docs/datasets/sdg2/crop_type_mapping_ghana-ss.html#download
@@ -88,26 +89,14 @@ class CropTypeMappingSouthSudan(GeoFMDataset):
             data_max=data_max,
             download_url=download_url,
             auto_download=auto_download,
+            preprocessor=preprocessor
             # use_pad=use_pad
         )
 
-        self.root_path = root_path
-        self.classes = classes
         self.split = split
         self.split_dict = {'train': 0, 'val': 1, 'test': 2}
         self.split_mapping = {'train': 'Train', 'val': 'Validation', 'test': 'Test'}
 
-        self.data_mean = data_mean
-        self.data_std = data_std
-        self.data_min = data_min
-        self.data_max = data_max
-        self.classes = classes
-        self.img_size = img_size
-        self.distribution = distribution
-        self.num_classes = num_classes
-        self.ignore_index = ignore_index
-        self.download_url = download_url
-        self.auto_download = auto_download
 
         self.country = 'southsudan'
         self.use_pad = use_pad
@@ -157,6 +146,9 @@ class CropTypeMappingSouthSudan(GeoFMDataset):
                 'target': label,
                 'metadata': metadata
             }
+
+            if self.preprocessor is not None:
+                output = self.preprocessor(output)
 
             return output
         

@@ -15,7 +15,7 @@ import torch
 from einops import rearrange
 
 from pangaea.datasets.base import GeoFMDataset
-
+from pangaea.engine.data_preprocessor import BasePreprocessor
 
 def prepare_dates(date_dict, reference_date):
     """Date formating."""
@@ -84,6 +84,7 @@ class Pastis(GeoFMDataset):
         data_max: dict[str, list[str]],
         download_url: str,
         auto_download: bool,
+        preprocessor: BasePreprocessor = None
     ):
         """Initialize the PASTIS dataset.
 
@@ -132,6 +133,7 @@ class Pastis(GeoFMDataset):
             data_max=data_max,
             download_url=download_url,
             auto_download=auto_download,
+            preprocessor=preprocessor
         )
 
         assert split in ["train", "val", "test"], "Split must be train, val or test"
@@ -142,23 +144,7 @@ class Pastis(GeoFMDataset):
         else:
             folds = [5]
 
-        self.dataset_name = dataset_name
-        self.bands = bands
-        self.split = split
-        self.path = root_path
-        self.data_mean = data_mean
-        self.data_std = data_std
-        self.data_min = data_min
-        self.data_max = data_max
-        self.classes = classes
-        self.img_size = img_size
-        self.distribution = distribution
 
-        self.num_classes = num_classes
-        self.ignore_index = ignore_index
-        self.grid_size = multi_temporal
-        self.download_url = download_url
-        self.auto_download = auto_download
         self.modalities = ["s2", "aerial", "s1-asc"]
         self.nb_split = 1
 

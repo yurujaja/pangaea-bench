@@ -1,324 +1,160 @@
 import logging
 import math
 import random
+import numbers
 
 import numpy as np
 import torch
 import torchvision.transforms as T
+import torchvision.transforms.functional as TF
 from torch.utils.data import Dataset
 
-from pangaea.datasets.base import GeoFMDataset
-from pangaea.encoders.base import Encoder
+from hydra.utils import instantiate
+
+from typing import Callable, Dict, List, Optional, Sequence, Union, Tuple
+import copy
 
 
-class RichDataset(Dataset):
-    """Dataset wrapper to add preprocessing steps."""
+def build_preprocessor(preprocessing_cfg, dataset_cfg, encoder_cfg):
+    if preprocessing_cfg is None:
+        return None
+    preprocessor = InitPreprocessor(dataset_cfg, encoder_cfg)
 
-    def __init__(self, dataset: GeoFMDataset, encoder: Encoder):
-        """Initialize the RichDataset.
-
-        Args:
-            dataset (GeoFMDataset): dataset used.
-            encoder (Encoder): encoder used.
-        """
-        self.dataset = dataset
-        self.encoder = encoder
-
-        # WARNING: Patch to overcome recursive wrapping issues
-        self.split = dataset.split
-        self.dataset_name = dataset.dataset_name
-        self.multi_modal = dataset.multi_modal
-        self.multi_temporal = dataset.multi_temporal
-        self.root_path = dataset.root_path
-        self.classes = dataset.classes
-        self.num_classes = dataset.num_classes
-        self.ignore_index = dataset.ignore_index
-        self.img_size = dataset.img_size
-        self.bands = dataset.bands
-        self.distribution = dataset.distribution
-        self.data_mean = dataset.data_mean
-        self.data_std = dataset.data_std
-        self.data_min = dataset.data_min
-        self.data_max = dataset.data_max
-        self.download_url = dataset.download_url
-        self.auto_download = dataset.auto_download
-
-    def __getitem__(
-        self, index: int
-    ) -> dict[str, torch.Tensor | dict[str, torch.Tensor]]:
-        """Return a modified item from the dataset.
-
-        Args:
-            index (int): index of data.
-        Returns:
-            dict[str, torch.Tensor | dict[str, torch.Tensor]]: output dictionary following the format
-            {"image":
-                {
-                "optical": torch.Tensor of shape (C H W) (or (C T H W) if multi-temporal dataset),
-                 "sar": torch.Tensor of shape (C H W) (or (C T H W) if multi-temporal dataset)
-                 },
-            "target": torch.Tensor of shape (H W),
-             "metadata": dict}.
-        """
-        return self.dataset[index]
-
-    def __len__(self) -> int:
-        """Return the length of the dataset.
-
-        Returns:
-            int: length of the dataset.
-        """
-        return len(self.dataset)
-
-
-class SegPreprocessor(RichDataset):
-    def __init__(self, dataset: GeoFMDataset, encoder: Encoder) -> None:
-        """Initialize the SegPreprocessor for segmentation tasks.
-
-        Args:
-            dataset (GeoFMDataset): dataset used.
-            encoder (Encoder): encoder used.
-        """
-        super().__init__(dataset, encoder)
-
-        self.preprocessor = {}
-        self.preprocessor["optical"] = (
-            BandAdaptor(dataset=dataset, encoder=encoder, modality="optical")
-            if "optical" in dataset.bands.keys()
-            else None
+    for preprocess in preprocessing_cfg:
+        preprocessor = instantiate(
+            preprocess, preprocessor=preprocessor
         )
-        self.preprocessor["sar"] = (
-            BandAdaptor(dataset=dataset, encoder=encoder, modality="sar")
-            if "sar" in dataset.bands.keys()
-            else None
-        )
-        for modality in self.encoder.input_bands:
-            new_stats = self.preprocessor[modality].preprocess_band_statistics(
-                self.dataset.data_mean[modality],
-                self.dataset.data_std[modality],
-                self.dataset.data_min[modality],
-                self.dataset.data_max[modality],
-            )
 
-            self.dataset.data_mean[modality] = new_stats[0]
-            self.dataset.data_std[modality] = new_stats[1]
-            self.dataset.data_min[modality] = new_stats[2]
-            self.dataset.data_max[modality] = new_stats[3]
+    return preprocessor
 
-    def __getitem__(
-        self, index: int
+class BasePreprocessor():
+    """Base class for augmentations."""
+
+    def __init__(self, preprocessor: Callable = None) -> None:
+        if isinstance(preprocessor, BasePreprocessor):
+            self.preprocessor = preprocessor
+
+            self.dataset_img_size = copy.deepcopy(preprocessor.dataset_img_size)
+            self.encoder_input_size = copy.deepcopy(preprocessor.encoder_input_size)
+
+            self.dataset_bands = copy.deepcopy(preprocessor.dataset_bands)
+            self.encoder_bands = copy.deepcopy(preprocessor.encoder_bands)
+            self.in_bands = copy.deepcopy(preprocessor.out_bands)
+            self.out_bands = copy.deepcopy(preprocessor.out_bands)
+
+            self.multi_modal = copy.deepcopy(preprocessor.multi_modal)
+            self.multi_temporal = copy.deepcopy(preprocessor.multi_temporal)
+
+            self.data_mean = copy.deepcopy(preprocessor.data_mean)
+            self.data_std = copy.deepcopy(preprocessor.data_std)
+            self.data_min = copy.deepcopy(preprocessor.data_min)
+            self.data_max = copy.deepcopy(preprocessor.data_max)
+
+            self.class_distribution = copy.deepcopy(preprocessor.class_distribution)
+            self.ignore_index = copy.deepcopy(preprocessor.ignore_index)
+
+
+    def __call__(
+        self, data: dict[str, torch.Tensor | dict[str, torch.Tensor]]
     ) -> dict[str, torch.Tensor | dict[str, torch.Tensor]]:
-        """Return a modified item from the dataset.
 
-        Args:
-            index (int): index of data.
-        Returns:
-            dict[str, torch.Tensor | dict[str, torch.Tensor]]: output dictionary following the format
-            {"image":
-                {
-                encoder_modality_1: torch.Tensor of shape (C T H W) (with T=1 if single timeframe)
-                ...
-                encoder_modality_N: torch.Tensor of shape (C T H W) (with T=1 if single timeframe)
-                 },
-            "target": torch.Tensor of shape (H W),
-             "metadata": dict}.
-        """
-        data = self.dataset[index]
+        if self.preprocessor is not None:
+            data = self.preprocessor(data)
 
-        for k, v in data["image"].items():
-            if k in self.encoder.input_bands:
-                data["image"][k] = self.preprocessor[k](v)
-
-        data["target"] = data["target"].long()
         return data
 
-
-class RegPreprocessor(SegPreprocessor):
-    def __init__(self, dataset: GeoFMDataset, encoder: Encoder) -> None:
-        """Initialize the RegPreprocessor for regression tasks."""
-        super().__init__(dataset, encoder)
-
-    def __getitem__(
-        self, index: int
-    ) -> dict[str, torch.Tensor | dict[str, torch.Tensor]]:
-        """Return a modified item from the dataset.
-
-        Args:
-            index (int): index of data.
-        Returns:
-            dict[str, torch.Tensor | dict[str, torch.Tensor]]: output dictionary following the format
-            {"image":
-                {
-                encoder_modality_1: torch.Tensor of shape (C T H W) (with T=1 if single timeframe)
-                ...
-                encoder_modality_N: torch.Tensor of shape (C T H W) (with T=1 if single timeframe)
-                 },
-            "target": torch.Tensor of shape (H W),
-             "metadata": dict}.
-        """
-        data = self.dataset[index]
+    def check_dimension(self, data: dict[str, torch.Tensor | dict[str, torch.Tensor]]):
         for k, v in data["image"].items():
-            if k in self.encoder.input_bands:
-                data["image"][k] = self.preprocessor[k](v)
-        data["target"] = data["target"].float()
+            if len(v.shape) != 4:
+                raise AssertionError(f"Image dimension must be 4 (C, T, H, W), Got {str(len(v.shape))}")
+
+        if len(data["target"].shape) != 2:
+           raise AssertionError(f"Target dimension must be 2 (H, W), Got {str(len(data['target'].shape))}")
+
+    def check_size(self, data: dict[str, torch.Tensor | dict[str, torch.Tensor]]):
+        base_shape = data["image"][list(data["image"].keys())[0]].shape
+
+        for k, v in data["image"].items():
+            if v.shape[1:] != base_shape[1:]:
+                shape = {k: tuple(v.shape[1:]) for k, v in data["image"].items()}
+                raise AssertionError(f"Image size (T, H, W) from all modalities must be equal, Got {str(shape)}")
+
+        if base_shape[-2:] != data["target"].shape[-2:]:
+            raise AssertionError(f"Image size and target size (H, W) must be equal, Got {str(tuple(base_shape[-2:]))} and {str(tuple(data['target'].shape[-2:]))}")
+
+
+class InitPreprocessor(BasePreprocessor):
+    """Base class for augmentations."""
+    def __init__(self, dataset_cfg, encoder_cfg) -> None:
+        self.dataset_img_size = dataset_cfg['img_size']
+        self.encoder_input_size = encoder_cfg['input_size']
+
+        self.dataset_bands = dataset_cfg['bands']
+        self.encoder_bands = encoder_cfg['input_bands']
+        self.in_bands = dataset_cfg['bands']
+        self.out_bands = dataset_cfg['bands']
+
+        self.multi_modal = dataset_cfg['multi_modal']
+        self.multi_temporal = dataset_cfg['multi_temporal']
+
+        self.data_mean = {k: torch.tensor(v) for k, v in dataset_cfg['data_mean'].items()}
+        self.data_std = {k: torch.tensor(v) for k, v in dataset_cfg['data_std'].items()}
+        self.data_min = {k: torch.tensor(v) for k, v in dataset_cfg['data_min'].items()}
+        self.data_max = {k: torch.tensor(v) for k, v in dataset_cfg['data_max'].items()}
+
+        self.ignore_index = dataset_cfg['ignore_index']
+        self.class_distribution = dataset_cfg['distribution']
+
+        self.preprocessor = None
+
+    def __call__(
+        self, data: dict[str, torch.Tensor | dict[str, torch.Tensor]]
+    ) -> dict[str, torch.Tensor | dict[str, torch.Tensor]]:
+
+        self.check_dimension(data)
+
         return data
 
-
-class BandAdaptor:
-    def __init__(self, dataset: GeoFMDataset, encoder: Encoder, modality: str) -> None:
+class BandFilter(BasePreprocessor):
+    """Intialize the BandFilter.
+    Args:
+        dataset (GeoFMDataset): dataset used.
+        encoder (Encoder): encoder used.
+    """
+    def __init__(
+            self,
+            preprocessor: BasePreprocessor,
+    ) -> None:
         """Intialize the BandAdaptor.
         Args:
             dataset (GeoFMDataset): dataset used.
-            encoder (Encoder): encoder unded.
-            modality (str): image modality.
+            encoder (Encoder): encoder used.
         """
-        self.dataset_bands = dataset.bands[modality]
-        self.input_bands = getattr(encoder.input_bands, modality, [])
+        super().__init__(preprocessor)
+
+        self.out_bands = {}
 
         # list of length dataset_n_bands with True if the band is used in the encoder
         # and is available in the dataset
-        self.used_bands_mask = torch.tensor(
-            [b in self.input_bands for b in self.dataset_bands], dtype=torch.bool
-        )
-        # list of length encoder_n_bands with True if the band is available in the dataset
-        # and used in the encoder
-        self.avail_bands_mask = torch.tensor(
-            [b in self.dataset_bands for b in self.input_bands], dtype=torch.bool
-        )
-        # list of length encoder_n_bands with the index of the band in the dataset
-        # if the band is available in the dataset and -1 otherwise
-        self.avail_bands_indices = torch.tensor(
-            [
-                self.dataset_bands.index(b) if b in self.dataset_bands else -1
-                for b in self.input_bands
-            ],
-            dtype=torch.long,
-        )
-
-        # if the encoder requires bands that are not available in the dataset
-        # then we need to pad the input with zeros
-        self.need_padded = self.avail_bands_mask.sum() < len(self.input_bands)
-        self.logger = logging.getLogger()
-        self.logger.info(f"Adaptor for modality: {modality}")
-        self.logger.info(
-            "Available bands in dataset: {}".format(
-                " ".join(str(b) for b in self.dataset_bands)
+        self.used_bands_indices = {}
+        for k in self.in_bands.keys():
+            if k not in self.encoder_bands.keys():
+                continue
+            self.used_bands_indices[k] = torch.tensor(
+                [self.in_bands[k].index(b) for b in self.encoder_bands[k] if b in self.in_bands[k]], dtype=torch.long
             )
-        )
-        self.logger.info(
-            "Required bands in encoder: {}".format(
-                " ".join(str(b) for b in self.input_bands)
-            )
-        )
-        if self.need_padded:
-            self.logger.info(
-                "Unavailable bands {} are padded with zeros".format(
-                    " ".join(
-                        str(b)
-                        for b in np.array(self.input_bands)[
-                            self.avail_bands_mask.logical_not()
-                        ]
-                    )
-                )
-            )
+            self.out_bands[k] = [self.in_bands[k][i.item()] for i in self.used_bands_indices[k]]
+            self.data_mean[k] = preprocessor.data_mean[k][self.used_bands_indices[k]]
+            self.data_std[k] = preprocessor.data_std[k][self.used_bands_indices[k]]
+            self.data_min[k] = preprocessor.data_min[k][self.used_bands_indices[k]]
+            self.data_max[k] = preprocessor.data_max[k][self.used_bands_indices[k]]
 
-    def preprocess_band_statistics(
-        self,
-        data_mean: list[float],
-        data_std: list[float],
-        data_min: list[float],
-        data_max: list[float],
-    ) -> tuple[
-        list[float],
-        list[float],
-        list[float],
-        list[float],
-    ]:
-        """Filter the statistics to match the available bands.
-        Args:
-            data_mean (list[float]): dataset mean (per band in dataset).
-            data_std (list[float]): dataset std (per band in dataset).
-            data_min (list[float]): dataset min (per band in dataset).
-            data_max (list[float]): dataset max (per band in dataset).
-        Returns:
-            tuple[ list[float], list[float], list[float], list[float], ]:
-            dataset mean, std, min, max (per band in encoder). Pad with zeros
-            if the band is required by the encoder but not included in the dataset.
-        """
-        data_mean = [
-            data_mean[i] if i != -1 else 0.0 for i in self.avail_bands_indices.tolist()
-        ]
-        data_std = [
-            data_std[i] if i != -1 else 1.0 for i in self.avail_bands_indices.tolist()
-        ]
-        data_min = [
-            data_min[i] if i != -1 else -1.0 for i in self.avail_bands_indices.tolist()
-        ]
-        data_max = [
-            data_max[i] if i != -1 else 1.0 for i in self.avail_bands_indices.tolist()
-        ]
-        return data_mean, data_std, data_min, data_max
-
-    def preprocess_single_timeframe(self, image: torch.Tensor) -> torch.Tensor:
-        """Apply the preprocessing to a single timeframe, i.e. pad unavailable
-        bands with zeros if needed to match encoder's bands.
-        Args:
-            image (torch.Tensor): input image of shape (dataset_n_bands H W).
-        Returns:
-            torch.Tensor: output image of shape (encoder_n_bands H W).
-        """
-        # add padding band at index 0 on the first dim
-        padded_image = torch.cat([torch.zeros_like(image[0:1]), image], dim=0)
-        # request all encoder's band. In self.avail_band_indices we have
-        # -1 for bands not available in the dataset. So we add 1 to get the
-        # correct index in the padded image (index 0 is the 0-padding band)
-        return padded_image[self.avail_bands_indices + 1]
-
-    def __call__(self, image: torch.Tensor) -> torch.Tensor:
-        """Apply the preprocessing to the image. Pad unavailable bands with zeros.
-        Args:
-            image (torch.Tensor): image of shape (dataset_n_bands H W).
-        Returns:
-            torch.Tensor: output image of shape (encoder_n_bands T H W).
-            In the case of sigle timeframe, T = 1.
-        """
-        # input of shape (dataset_n_bands T H W) output of shape (encoder_n_bands T H W)
-        if len(image.shape) == 3:
-            # Add a time dimension so preprocessing can work on consistent images
-            image = image.unsqueeze(
-                1
-            )  # (dataset_n_bands H W)-> (dataset_n_bands 1 H W)
-
-        if image.shape[1] != 1:
-            final_image = []
-            for i in range(image.shape[1]):
-                final_image.append(self.preprocess_single_timeframe(image[:, i, :, :]))
-            image = torch.stack(final_image, dim=1)
-        else:
-            image = self.preprocess_single_timeframe(image)
-
-        # OUTPUT SHAPE (encoder_n_bands T H W) (T = 1 in the case of single timeframe)
-        return image
-
-
-class BaseAugment(RichDataset):
-    """Base class for augmentations."""
-
-    def __init__(self, dataset: GeoFMDataset, encoder: Encoder) -> None:
-        """Augment item. Should call the dataset __getitem__ method which output a dictionary
-        with the keys "image", "target" and "metadata":
-            dict[str, torch.Tensor | dict[str, torch.Tensor]]: output dictionary following the format
-            {"image":
-                {
-                encoder_modality_1: torch.Tensor of shape (C T H W) (T=1 if single timeframe),
-                ...
-                encoder_modality_N: torch.Tensor of shape (C T H W) (T=1 if single timeframe),
-                 },
-            "target": torch.Tensor of shape (H W),
-             "metadata": dict}.
+    def __call__(
+        self, data: dict[str, torch.Tensor | dict[str, torch.Tensor]]
+    ) -> dict[str, torch.Tensor | dict[str, torch.Tensor]]:
+        """Filter redundant bands from the data.
         Args:
             index (int): index of data.
-
         Returns:
             dict[str, torch.Tensor | dict[str, torch.Tensor]]: output dictionary following the format
             {"image":
@@ -330,262 +166,94 @@ class BaseAugment(RichDataset):
             "target": torch.Tensor of shape (H W),
              "metadata": dict}.
         """
-        super().__init__(dataset, encoder)
+        data = self.preprocessor(data)
+
+        data["image"] = {k: data["image"][k][self.used_bands_indices[k]] for k in self.out_bands.keys()}
+
+        return data
 
 
-class Tile(BaseAugment):
+class BandPadding(BasePreprocessor):
+    """Intialize the BandPadding.
+    Args:
+        dataset (GeoFMDataset): dataset used.
+        encoder (Encoder): encoder used.
+        fill_value (float): fill value for padding.
+    """
     def __init__(
-        self, dataset: GeoFMDataset, encoder: Encoder, min_overlap: int = 0
+            self,
+            preprocessor: BasePreprocessor,
+            fill_value: float = 0.0
     ) -> None:
-        """Initialize the Tiling augmentation.
-
+        """Intialize the BandPadding.
         Args:
             dataset (GeoFMDataset): dataset used.
             encoder (Encoder): encoder used.
-            min_overlap (int, optional): minimum overlap between tiles. Defaults to 0.
+            fill_value (float): fill value for padding.
         """
-        super().__init__(dataset, encoder)
-        self.min_overlap = min_overlap
-        # Should be the _largest_ image in the dataset to avoid problems mentioned in __getitem__
-        self.input_size = self.dataset.img_size
-        self.output_size = self.encoder.input_size
-        if self.output_size == self.input_size:
-            self.tiles_per_dim = 1
-        elif self.output_size > self.input_size:
-            raise ValueError(
-                f"Can't tile inputs if dataset.img_size={self.input_size} < encoder.input_size={self.output_size}, use ResizeToEncoder instead."
+        super().__init__(preprocessor)
+        self.out_bands = preprocessor.encoder_bands
+
+        self.fill_value = fill_value
+
+        # list of length dataset_n_bands with True if the band is used in the encoder
+        # and is available in the dataset
+        self.avail_bands_indices, self.used_bands_indices = {}, {}
+        for k in self.encoder_bands:
+            self.avail_bands_indices[k] = torch.tensor(
+                [self.encoder_bands[k].index(b) for b in self.encoder_bands[k] if b in self.in_bands[k]], dtype=torch.long
             )
-        elif self.min_overlap >= self.input_size:
-            raise ValueError("min_overlap >= dataset.img_size")
-        elif self.min_overlap >= self.input_size:
-            raise ValueError("min_overlap >= encoder.input_size")
-        else:
-            self.tiles_per_dim = math.ceil(
-                (self.input_size - self.min_overlap)
-                / (self.output_size - self.min_overlap)
+            self.used_bands_indices[k] = torch.tensor(
+                [self.in_bands[k].index(b) for b in self.encoder_bands[k] if b in self.in_bands[k]], dtype=torch.long
             )
+            size = (len(self.encoder_bands[k]),)
+            self.data_mean[k] = torch.full(size, fill_value=fill_value, dtype=torch.float)
+            self.data_std[k] = torch.ones(size, dtype=torch.float)
+            self.data_min[k] = torch.full(size, fill_value=fill_value, dtype=torch.float)
+            self.data_max[k] = torch.full(size, fill_value=fill_value, dtype=torch.float)
 
-        logging.getLogger().info(
-            f"Tiling {self.input_size}x{self.input_size} input images to {self.tiles_per_dim * self.tiles_per_dim} {self.output_size}x{self.output_size} output images."
-        )
+            self.data_mean[k][self.avail_bands_indices[k]] = preprocessor.data_mean[k][self.used_bands_indices[k]]
+            self.data_std[k][self.avail_bands_indices[k]] = preprocessor.data_std[k][self.used_bands_indices[k]]
+            self.data_min[k][self.avail_bands_indices[k]] = preprocessor.data_min[k][self.used_bands_indices[k]]
+            self.data_max[k][self.avail_bands_indices[k]] = preprocessor.data_max[k][self.used_bands_indices[k]]
 
-        self.h_spacing_cache = [None] * super().__len__()
-        self.w_spacing_cache = [None] * super().__len__()
-
-        self.data_cache = (None, None)
-
-    def __getitem__(
-        self, index: int
+    def __call__(
+        self, data: dict[str, torch.Tensor | dict[str, torch.Tensor]]
     ) -> dict[str, torch.Tensor | dict[str, torch.Tensor]]:
-        """Apply Tiling to the data.
-        Args:
-            index (int): index of data.
 
-        Returns:
-            dict[str, torch.Tensor | dict[str, torch.Tensor]]: output dictionary following the format
-            {"image":
-                {
-                encoder_modality_1: torch.Tensor of shape (C T H W) (T=1 if single timeframe),
-                ...
-                encoder_modality_N: torch.Tensor of shape (C T H W) (T=1 if single timeframe),
-                 },
-            "target": torch.Tensor of shape (H W),
-             "metadata": dict}.
-        """
-        if self.tiles_per_dim == 1:
-            return self.dataset[index]
-
-        dataset_index = math.floor(index / (self.tiles_per_dim * self.tiles_per_dim))
-        data = self.dataset[dataset_index]
-        # Calculate tile coordinates
-        tile_index = index % (self.tiles_per_dim * self.tiles_per_dim)
-        h_index = math.floor(tile_index / self.tiles_per_dim)
-        w_index = tile_index % self.tiles_per_dim
-        # Use the actual image size so we can handle data that's not always uniform.
-        # This means that min_overlap might not always be respected.
-        # Also, in case there was insufficient overlap (or tiles_per_dim=1) sepcified, we'll crop the image and lose info.
-        input_h, input_w = data["image"][next(iter(data["image"].keys()))].shape[-2:]
-
-        # Calculate the sizes of the labeled parts seperately to deal with aliasing when
-        # tile spacing values are not exact integers
-        if not self.h_spacing_cache[dataset_index]:
-            float_spacing = np.linspace(
-                0, input_h - self.output_size, self.tiles_per_dim
-            )
-            rounded_spacing = float_spacing.round().astype(int)
-            labeled_sizes = np.ediff1d(rounded_spacing, to_end=self.output_size)
-            self.h_spacing_cache[dataset_index] = (rounded_spacing, labeled_sizes)
-        if not self.w_spacing_cache[dataset_index]:
-            float_spacing = np.linspace(
-                0, input_w - self.output_size, self.tiles_per_dim
-            )
-            rounded_spacing = float_spacing.round().astype(int)
-            labeled_sizes = np.ediff1d(rounded_spacing, to_end=self.output_size)
-            self.w_spacing_cache[dataset_index] = (rounded_spacing, labeled_sizes)
-
-        h_positions, h_labeled_sizes = self.h_spacing_cache[dataset_index]
-        w_positions, w_labeled_sizes = self.w_spacing_cache[dataset_index]
-
-        h, w = h_positions[h_index], w_positions[w_index]
-        h_labeled, w_labeled = h_labeled_sizes[h_index], w_labeled_sizes[w_index]
-
-        tiled_data = {"image": {}, "target": None}
-        tiled_data["image"] = {}
+        if self.preprocessor is not None:
+            data = self.preprocessor(data)
         for k, v in data["image"].items():
-            if k in self.encoder.input_bands:
-                tiled_data["image"][k] = v[
-                    ..., h : h + self.output_size, w : w + self.output_size
-                ].clone()
+            size = [len(self.encoder_bands[k])] + list(v.shape[1:])
+            data["image"][k] = torch.full(size, fill_value=self.fill_value, dtype=v.dtype)
+            data["image"][k][self.avail_bands_indices[k]] = v[self.used_bands_indices[k]]
 
-        # Place the mesaured part in the middle to help with tiling artefacts
-        h_label_offset = round((self.output_size - h_labeled) / 2)
-        w_label_offset = round((self.output_size - w_labeled) / 2)
-
-        # Crop target to size
-        tiled_data["target"] = data["target"][
-            ..., h : h + self.output_size, w : w + self.output_size
-        ].clone()
-
-        # Ignore overlapping borders
-        if h_index != 0:
-            tiled_data["target"][..., 0:h_label_offset, :] = self.dataset.ignore_index
-        if w_index != 0:
-            tiled_data["target"][..., 0:w_label_offset] = self.dataset.ignore_index
-        if h_index != self.tiles_per_dim - 1:
-            tiled_data["target"][..., self.output_size - h_label_offset :, :] = (
-                self.dataset.ignore_index
-            )
-        if w_index != self.tiles_per_dim - 1:
-            tiled_data["target"][..., self.output_size - w_label_offset :] = (
-                self.dataset.ignore_index
-            )
-
-        return tiled_data
-
-    def __len__(self):
-        return (super().__len__()) * (self.tiles_per_dim * self.tiles_per_dim)
-
-
-class RandomFlip(BaseAugment):
-    def __init__(
-        self,
-        dataset: GeoFMDataset,
-        encoder: Encoder,
-        ud_probability: float,
-        lr_probability: float,
-    ) -> None:
-        """Initialize the RandomFlip.
-        Args:
-            dataset (GeoFMDataset): dataset used.
-            encoder (Encoder): encoder used.
-            ud_probability (float): Up/Down augmentation probability.
-            lr_probability (float): Left/Right augmentation probability.
-        """
-        super().__init__(dataset, encoder)
-        self.ud_probability = ud_probability
-        self.lr_probability = lr_probability
-
-    def __getitem__(
-        self, index: int
-    ) -> dict[str, torch.Tensor | dict[str, torch.Tensor]]:
-        """Apply Random FLIP to the data.
-        Args:
-            index (int): index of data.
-        Returns:
-            dict[str, torch.Tensor | dict[str, torch.Tensor]]: output dictionary following the format
-            {"image":
-                {
-                encoder_modality_1: torch.Tensor of shape (C T H W) (T=1 if single timeframe),
-                ...
-                encoder_modality_N: torch.Tensor of shape (C T H W) (T=1 if single timeframe),
-                 },
-            "target": torch.Tensor of shape (H W),
-             "metadata": dict}.
-        """
-        data = self.dataset[index]
-        if random.random() < self.lr_probability:
-            for k, v in data["image"].items():
-                if k in self.encoder.input_bands:
-                    data["image"][k] = torch.fliplr(v)
-            data["target"] = torch.fliplr(data["target"])
-        if random.random() < self.ud_probability:
-            for k, v in data["image"].items():
-                if k in self.encoder.input_bands:
-                    data["image"][k] = torch.flipud(v)
-            data["target"] = torch.flipud(data["target"])
         return data
 
-
-class GammaAugment(BaseAugment):
+class NormalizeMeanStd(BasePreprocessor):
     def __init__(
-        self,
-        dataset: GeoFMDataset,
-        encoder: Encoder,
-        probability: float,
-        gamma_range: float,
-    ) -> None:
-        """Initialize the GammaAugment.
-        Args:
-            dataset (GeoFMDataset): dataset used.
-            encoder (Encoder): encoder used.
-            probability (float): probability of applying the augmentation.
-            gamma_range (float): gamma range.
-        """
-        super().__init__(dataset, encoder)
-        self.probability = probability
-        self.gamma_range = gamma_range
-
-    def __getitem__(
-        self, index: int
-    ) -> dict[str, torch.Tensor | dict[str, torch.Tensor]]:
-        """Apply Gamma Augment to the data.
-        Args:
-            index (int): index of data.
-        Returns:
-            dict[str, torch.Tensor | dict[str, torch.Tensor]]: output dictionary following the format
-            {"image":
-                {
-                encoder_modality_1: torch.Tensor of shape (C T H W) (T=1 if single timeframe),
-                ...
-                encoder_modality_N: torch.Tensor of shape (C T H W) (T=1 if single timeframe),
-                 },
-            "target": torch.Tensor of shape (H W),
-             "metadata": dict}.
-        """
-
-        data = self.dataset[index]
-        # WARNING: Test this bit of code
-        if random.random() < self.probability:
-            for k, v in data["image"].items() and k in self.encoder.input_bands:
-                data["image"][k] = torch.pow(v, random.uniform(*self.gamma_range))
-        return data
-
-
-class NormalizeMeanStd(BaseAugment):
-    def __init__(
-            self, 
-            dataset: GeoFMDataset, 
-            encoder: Encoder
+            self,
+            preprocessor: BasePreprocessor,
+            channel_dim: int = 0
     ) -> None:
         """Initialize the NormalizeMeanStd.
         Args:
             dataset (GeoFMDataset): dataset used.
             encoder (Encoder): encoder used.
         """
-        super().__init__(dataset, encoder)
-        self.data_mean_tensors = {}
-        self.data_std_tensors = {}
-        # Bands is a dict of {modality:[b1, b2, ...], ...} so it's keys are the modalaities in use
-        for modality in self.encoder.input_bands:
-            self.data_mean_tensors[modality] = torch.tensor(
-                self.dataset.data_mean[modality]
-            ).reshape((-1, 1, 1, 1))
-            self.data_std_tensors[modality] = torch.tensor(
-                self.dataset.data_std[modality]
-            ).reshape((-1, 1, 1, 1))
+        super().__init__(preprocessor)
+        self.data_mean_ = preprocessor.data_mean
+        self.data_std_ = preprocessor.data_std
 
-    def __getitem__(
-        self, index: int
+        self.data_mean = {k: torch.zeros_like(v) for k, v in self.data_mean_.items()}
+        self.data_std = {k: torch.ones_like(v) for k, v in self.data_std_.items()}
+        self.data_min = {k: (v-self.data_mean_[k])/self.data_std_[k] for k, v in preprocessor.data_min.items()}
+        self.data_max = {k: (v-self.data_mean_[k])/self.data_std_[k] for k, v in preprocessor.data_max.items()}
+
+        self.channel_dim = channel_dim
+
+    def __call__(
+        self, data: dict[str, torch.Tensor | dict[str, torch.Tensor]]
     ) -> dict[str, torch.Tensor | dict[str, torch.Tensor]]:
         """Apply Mean/Std Normalization to the data.
         Args:
@@ -601,254 +269,21 @@ class NormalizeMeanStd(BaseAugment):
             "target": torch.Tensor of shape (H W),
              "metadata": dict}.
         """
-        data = self.dataset[index]
-        for modality in self.encoder.input_bands:
-            data["image"][modality] = (
-                data["image"][modality] - self.data_mean_tensors[modality]
-            ) / self.data_std_tensors[modality]
+        data = self.preprocessor(data)
+
+        for modality in self.in_bands.keys():
+            statistic_shape = [1] * data["image"][modality].dim()
+            statistic_shape[self.channel_dim] = -1
+            data["image"][modality].sub_(self.data_mean_[modality].view(statistic_shape)).div_(self.data_std_[modality].view(statistic_shape))
         return data
 
 
-class NormalizeMinMax(BaseAugment):
+class RandomCrop(BasePreprocessor):
     def __init__(
         self,
-        dataset: GeoFMDataset,
-        encoder: Encoder,
-        data_min: torch.Tensor,
-        data_max: torch.Tensor,
-    ) -> None:
-        """Apply Min/Max Normalization to scale the data to the range [data_min, data_max].
-        Args:
-            dataset (GeoFMDataset): dataset used.
-            encoder (Encoder): encoder used.
-            data_min (torch.Tensor): data_min scalar tensor.
-            data_max (torch.Tensor): data_max scalar tensor.
-        """
-        super().__init__(dataset, encoder)
-        self.normalizers = {}
-        self.data_min_tensors = {}
-        self.data_max_tensors = {}
-        self.min = data_min
-        self.max = data_max
-        for modality in self.encoder.input_bands:
-            self.data_min_tensors[modality] = torch.tensor(
-                self.dataset.data_min[modality]
-            ).reshape((-1, 1, 1, 1))
-            self.data_max_tensors[modality] = torch.tensor(
-                self.dataset.data_max[modality]
-            ).reshape((-1, 1, 1, 1))
-
-    def __getitem__(
-        self, index: int
-    ) -> dict[str, torch.Tensor | dict[str, torch.Tensor]]:
-        """Apply Min/Max Normalization to the data.
-        Args:
-            index (int): index of data.
-        Returns:
-            dict[str, torch.Tensor | dict[str, torch.Tensor]]: output dictionary following the format
-            {"image":
-                {
-                encoder_modality_1: torch.Tensor of shape (C T H W) (T=1 if single timeframe),
-                ...
-                encoder_modality_N: torch.Tensor of shape (C T H W) (T=1 if single timeframe),
-                 },
-            "target": torch.Tensor of shape (H W),
-             "metadata": dict}.
-        """
-
-        data = self.dataset[index]
-        for modality in self.encoder.input_bands:
-            data["image"][modality] = (
-                (data["image"][modality] - self.data_min_tensors[modality])
-                * (self.max - self.min)
-                - self.min
-            ) / self.data_max_tensors[modality]
-        
-        return data
-    
-
-
-class ColorAugmentation(BaseAugment):
-    def __init__(
-        self,
-        dataset: GeoFMDataset,
-        encoder: Encoder,
-        brightness: float = 0,
-        contrast: float = 0,
-        clip: bool = False,
-        br_probability: float = 0,
-        ct_probability: float = 0,
-    ) -> None:
-        """Initialize the ColorAugmentation.
-        Args:
-            dataset (GeoFMDataset): dataset used.
-            encoder (Encoder): encoder used.
-            brightness (float, optional): brightness parameter. Defaults to 0.
-            contrast (float, optional): contrast. Defaults to 0.
-            clip (bool, optional): clip parameter. Defaults to False.
-            br_probability (float, optional): brightness augmentation probability.
-            Defaults to 0.
-            ct_probability (float, optional): contrast augmentation probability.
-            Defaults to 0.
-        """
-        super().__init__(dataset, encoder)
-        self.brightness = brightness
-        self.contrast = contrast
-        self.clip = clip
-        self.br_probability = br_probability
-        self.ct_probability = ct_probability
-
-    def adjust_brightness(
-        self, image: torch.Tensor, factor: float | torch.Tensor, clip_output: bool
-    ) -> torch.Tensor:
-        """Adjust the brightness of the image.
-        Args:
-            image (torch.Tensor): input image of shape (C T H W) (T=1 if single timeframe).
-            factor (float | torch.Tensor): adjustment factor.
-            clip_output (bool): whether to clip the output.
-        Returns:
-            torch.Tensor: output image of shape (C T H W) (T=1 if single timeframe).
-        """
-        if isinstance(factor, float):
-            factor = torch.as_tensor(factor, device=image.device, dtype=image.dtype)
-        while len(factor.shape) != len(image.shape):
-            factor = factor[..., None]
-
-        img_adjust = image + factor
-        if clip_output:
-            img_adjust = img_adjust.clamp(min=-1.0, max=1.0)
-
-        return img_adjust
-
-    def adjust_contrast(
-        self, image: torch.Tensor, factor: torch.Tensor | float, clip_output: bool
-    ) -> torch.Tensor:
-        """Adjust the contrast of the image.
-        Args:
-            image (torch.Tensor): image input of shape (C T H W) (T=1 if single timeframe).
-            factor (torch.Tensor | float): augmentation factor.
-            clip_output (bool): whether to clip the output.
-        Returns:
-            torch.Tensor: output image of shape (C T H W) (T=1 if single timeframe).
-        """
-        if isinstance(factor, float):
-            factor = torch.as_tensor(factor, device=image.device, dtype=image.dtype)
-        while len(factor.shape) != len(image.shape):
-            factor = factor[..., None]
-        assert factor >= 0, "Contrast factor must be positive"
-
-        img_adjust = image * factor
-        if clip_output:
-            img_adjust = img_adjust.clamp(min=-1.0, max=1.0)
-
-        return img_adjust
-
-    def __getitem__(
-        self, index: int
-    ) -> dict[str, torch.Tensor | dict[str, torch.Tensor]]:
-        """Apply ColorAugmentation to the data.
-        Args:
-            index (int): index of data.
-        Returns:
-            dict[str, torch.Tensor | dict[str, torch.Tensor]]: output dictionary following the format
-            {"image":
-                {
-                encoder_modality_1: torch.Tensor of shape (C T H W) (T=1 if single timeframe),
-                ...
-                encoder_modality_N: torch.Tensor of shape (C T H W) (T=1 if single timeframe),
-                 },
-            "target": torch.Tensor of shape (H W),
-             "metadata": dict}.
-        """
-        data = self.dataset[index]
-        for k, _ in data["image"].items():
-            if k in self.encoder.input_bands:
-                brightness = random.uniform(-self.brightness, self.brightness)
-                if random.random() < self.br_probability:
-                    data["image"][k] = self.adjust_brightness(
-                        data["image"][k], brightness, self.clip
-                    )
-
-        for k, _ in data["image"].items():
-            if k in self.encoder.input_bands:
-                if random.random() < self.ct_probability:
-                    contrast = random.uniform(1 - self.contrast, 1 + self.contrast)
-                    data["image"][k] = self.adjust_contrast(
-                        data["image"][k], contrast, self.clip
-                    )
-
-        return data
-
-
-class Resize(BaseAugment):
-    def __init__(self, dataset: GeoFMDataset, encoder: Encoder, size: int) -> None:
-        """Initialize the Resize augmentation.
-        Args:
-            dataset (GeoFMDataset): dataset used.
-            encoder (Encoder): encoder used.
-            size (int): size of the output image.
-        """
-        super().__init__(dataset, encoder)
-
-        self.size = (size, size)
-
-    def __getitem__(
-        self, index: int
-    ) -> dict[str, torch.Tensor | dict[str, torch.Tensor]]:
-        """Resize the data.
-        Args:
-            index (int): index of data.
-        Returns:
-            dict[str, torch.Tensor | dict[str, torch.Tensor]]: output dictionary following the format
-            {"image":
-                {
-                encoder_modality_1: torch.Tensor of shape (C T H W) (T=1 if single timeframe),
-                ...
-                encoder_modality_N: torch.Tensor of shape (C T H W) (T=1 if single timeframe),
-                 },
-            "target": torch.Tensor of shape (H W),
-             "metadata": dict}.
-        """
-        data = self.dataset[index]
-        for k, v in data["image"].items():
-            if k in self.encoder.input_bands:
-                data["image"][k] = T.Resize(self.size, interpolation=T.InterpolationMode.BILINEAR, antialias=True)(v)
-
-        if data["target"].ndim == 2:
-            data["target"] = data["target"].unsqueeze(0)
-            data["target"] = T.Resize(
-                self.size, interpolation=T.InterpolationMode.NEAREST
-            )(data["target"])
-            data["target"] = data["target"].squeeze(0)
-        else:
-            data["target"] = T.Resize(
-                self.size, interpolation=T.InterpolationMode.NEAREST
-            )(data["target"])
-
-        return data
-
-
-class ResizeToEncoder(Resize):
-    def __init__(self, dataset: GeoFMDataset, encoder: Encoder) -> None:
-        """Initialize the ResizeToEncoder augmentation.
-        Resize input data to the encoder input size.
-        Args:
-            dataset (GeoFMDataset): dataset used.
-            encoder (Encoder): encoder used.
-        """
-        super().__init__(dataset, encoder, encoder.input_size)
-
-
-class RandomCrop(BaseAugment):
-    def __init__(
-        self,
-        dataset: GeoFMDataset,
-        encoder: Encoder,
-        size: int,
-        padding: str | None = None,
+        preprocessor: BasePreprocessor,
+        size,
         pad_if_needed: bool = False,
-        fill: int = 0,
-        padding_mode: str = "constant",
     ) -> None:
         """Initialize the RandomCrop augmentation.
         Args:
@@ -860,15 +295,52 @@ class RandomCrop(BaseAugment):
             fill (int, optional): value for padding. Defaults to 0.
             padding_mode (str, optional): padding mode. Defaults to "constant".
         """
-        super().__init__(dataset, encoder)
-        self.size = size
-        self.padding = padding
-        self.pad_if_needed = pad_if_needed
-        self.fill = fill
-        self.padding_mode = padding_mode
+        super().__init__(preprocessor)
 
-    def __getitem__(
-        self, index: int
+        self.size = tuple(_setup_size(size, error_msg="Please provide only two dimensions (h, w) for size."))
+        self.pad_if_needed = pad_if_needed
+
+    @staticmethod
+    def get_params(input_size: Tuple[int, int], output_size: Tuple[int, int]) -> Tuple[int, int, int, int]:
+        """Get parameters for ``crop`` for a random crop.
+
+        Args:
+            input_size (tuple): input size of the data.
+            output_size (tuple): Expected output size of the crop.
+
+        Returns:
+            tuple: params (i, j, h, w) to be passed to ``crop`` for random crop.
+        """
+        h, w = input_size
+        th, tw = output_size
+        if h < th or w < tw:
+            raise ValueError(f"Required crop size {(th, tw)} is larger than input image size {(h, w)}")
+
+        if w == tw and h == th:
+            return 0, 0, h, w
+
+        i = torch.randint(0, h - th + 1, size=(1,)).item()
+        j = torch.randint(0, w - tw + 1, size=(1,)).item()
+        return i, j, th, tw
+
+    def check_pad(self, data: dict[str, torch.Tensor | dict[str, torch.Tensor]],
+    ) -> Tuple[dict[str, torch.Tensor | dict[str, torch.Tensor]], int, int]:
+        _, t, height, width = data["image"][list(data["image"].keys())[0]].shape
+
+        if height < self.size[0] or width < self.size[1]:
+            pad_img = max(self.size[0] - height, 0), max(self.size[1] - width, 0)
+            height, width = height + 2 * pad_img[0], width + 2 * pad_img[1]
+            for k, v in data["image"].items():
+                padded_img = self.preprocessor.data_mean[k].reshape(-1, 1, 1, 1).repeat(1, t, height, width)
+                padded_img[:, :, pad_img[0]:-pad_img[0], pad_img[1]:-pad_img[1]] = v
+                data["image"][k] = padded_img
+
+            data["target"] = TF.pad(data["target"], padding=padded_img, fill=self.ignore_index, padding_mode='constant')
+
+        return data, height, width
+
+    def __call__(
+        self, data: dict[str, torch.Tensor | dict[str, torch.Tensor]]
     ) -> dict[str, torch.Tensor | dict[str, torch.Tensor]]:
         """Random crop the data.
         Args:
@@ -884,29 +356,31 @@ class RandomCrop(BaseAugment):
             "target": torch.Tensor of shape (H W),
              "metadata": dict}.
         """
-        data = self.dataset[index]
-        # Use the first image to determine parameters
-        i, j, h, w = T.RandomCrop.get_params(
-            data["image"][list(data["image"].keys())[0]],
-            output_size=(self.size, self.size),
+        data = self.preprocessor(data)
+        self.check_size(data)
+
+        if self.pad_if_needed:
+            data, height, width = self.check_pad(data)
+        else:
+            _, _, height, width = data["image"][list(data["image"].keys())[0]].shape
+
+        i, j, h, w = self.get_params(
+            input_size=(height, width),
+            output_size=self.size,
         )
+
         for k, v in data["image"].items():
-            if k in self.encoder.input_bands:
-                data["image"][k] = T.functional.crop(v, i, j, h, w)
-        data["target"] = T.functional.crop(data["target"], i, j, h, w)
+            data["image"][k] = TF.crop(v, i, j, h, w)
+
+        data["target"] = TF.crop(data["target"], i, j, h, w)
 
         return data
-
 
 class RandomCropToEncoder(RandomCrop):
     def __init__(
         self,
-        dataset: GeoFMDataset,
-        encoder: Encoder,
-        padding: str | None = None,
+        preprocessor: BasePreprocessor,
         pad_if_needed: bool = False,
-        fill: int = 0,
-        padding_mode: str = "constant",
     ) -> None:
         """Initialize the RandomCropToEncoder augmentation.
         Apply RandomCrop to the encoder input size.
@@ -918,26 +392,21 @@ class RandomCropToEncoder(RandomCrop):
             fill (int, optional): value for padding. Defaults to 0.
             padding_mode (str, optional): padding mode. Defaults to "constant".
         """
-        size = encoder.input_size
+        size = preprocessor.encoder_input_size
         super().__init__(
-            dataset, encoder, size, padding, pad_if_needed, fill, padding_mode
+            preprocessor, size, pad_if_needed
         )
 
 
-class ImportanceRandomCrop(BaseAugment):
+class ImportanceRandomCrop(RandomCrop):
     def __init__(
         self,
-        dataset: GeoFMDataset,
-        encoder: Encoder,
-        size: int,
-        padding: str | None = None,
+        preprocessor: BasePreprocessor,
+        size,
         pad_if_needed: bool = False,
-        fill: int = 0,
-        padding_mode: str = "constant",
-        n_crops: int = 10,
+        num_trials: int = 10,
     ) -> None:
-        """Initialize the ImportanceRandomCrop.
-
+        """Initialize the RandomCrop augmentation.
         Args:
             dataset (GeoFMDataset): dataset used.
             encoder (Encoder): encoder used.
@@ -946,47 +415,54 @@ class ImportanceRandomCrop(BaseAugment):
             pad_if_needed (bool, optional): whether to pad. Defaults to False.
             fill (int, optional): value for padding. Defaults to 0.
             padding_mode (str, optional): padding mode. Defaults to "constant".
-            n_crops (int, optional): number of crops. Defaults to 10.
         """
-        super().__init__(dataset, encoder)
-        self.size = size
-        self.padding = padding
+        super().__init__(preprocessor)
+
+        self.size = tuple(_setup_size(size, error_msg="Please provide only two dimensions (h, w) for size."))
         self.pad_if_needed = pad_if_needed
-        self.fill = fill
-        self.padding_mode = padding_mode
-        self.n_crops = n_crops
+        self.num_trials = num_trials
+        self.class_weight = 1 / self.class_distribution
 
-    def __getitem__(self, index):
-        data = self.dataset[index]
 
-        # dataset needs to provide a weighting layer
-        weight = torch.zeros_like(data["target"]).float()
-        for i, freq in enumerate(self.distribution):
-            weight[data["target"] == i] = 1 - freq
-        weight[data["target"] == self.ignore_index] = 1e-6
-        # candidates for random crop
-        crop_candidates, crop_weights = [], []
-        for _ in range(self.n_crops):
-            i, j, h, w = T.RandomCrop.get_params(
-                data["image"][
-                    list(data["image"].keys())[0]
-                ],  # Use the first image to determine parameters
-                output_size=(self.size, self.size),
-            )
-            crop_candidates.append((i, j, h, w))
+    def __call__(
+        self, data: dict[str, torch.Tensor | dict[str, torch.Tensor]]
+    ) -> dict[str, torch.Tensor | dict[str, torch.Tensor]]:
+        """Random crop the data.
+        Args:
+            index (int): index of data.
+        Returns:
+            dict[str, torch.Tensor | dict[str, torch.Tensor]]: output dictionary following the format
+            {"image":
+                {
+                encoder_modality_1: torch.Tensor of shape (C T H W) (T=1 if single timeframe),
+                ...
+                encoder_modality_N: torch.Tensor of shape (C T H W) (T=1 if single timeframe),
+                 },
+            "target": torch.Tensor of shape (H W),
+             "metadata": dict}.
+        """
+        data = self.preprocessor(data)
+        self.check_size(data)
 
-            crop_weight = T.functional.crop(weight, i, j, h, w)
-            crop_weights.append(torch.sum(crop_weight).item())
+        if self.pad_if_needed:
+            data, height, width = self.check_pad(data)
+        else:
+            _, _, height, width = data["image"][list(data["image"].keys())[0]].shape
 
-        crop_weights = np.array(crop_weights) 
-        crop_weights = crop_weights / np.sum(crop_weights)
-        crop_idx = np.random.choice(self.n_crops, p=crop_weights)
+        valid = data["target"] != self.ignore_index
+        weight_map = torch.full(size=data["target"].shape, fill_value=1e-6, dtype=torch.float)
+        weight_map[valid] = self.class_weight[data["target"][valid]]
+
+        crop_candidates = [self.get_params(input_size=(height, width), output_size=self.size) for _ in range(self.num_trials)]
+        crop_weights = [weight_map[c[0]:c[0]+c[2], c[1]:c[1]+c[3]].sum()/(c[2]*c[3]) for c in crop_candidates]
+
+        crop_idx = np.random.choice(self.num_trials, p=np.asarray(crop_weights))
         i, j, h, w = crop_candidates[crop_idx]
 
         for k, v in data["image"].items():
-            if k in self.encoder.input_bands:
-                data["image"][k] = T.functional.crop(v, i, j, h, w)
-        data["target"] = T.functional.crop(data["target"], i, j, h, w)
+            data["image"][k] = TF.crop(v, i, j, h, w)
+
+        data["target"] = TF.crop(data["target"], i, j, h, w)
 
         return data
 
@@ -994,35 +470,201 @@ class ImportanceRandomCrop(BaseAugment):
 class ImportanceRandomCropToEncoder(ImportanceRandomCrop):
     def __init__(
         self,
-        dataset: GeoFMDataset,
-        encoder: Encoder,
-        padding: str | None = None,
+        preprocessor: BasePreprocessor,
         pad_if_needed: bool = False,
-        fill: int = 0,
-        padding_mode: str = "constant",
-        n_crops: int = 10,
+        num_trials: int = 10,
     ) -> None:
-        """Initialize the ImportanceRandomCropToEncoder.
-        Initialize the ImportanceRandomCrop augmentation to the encoder input size.
-
+        """Initialize the RandomCropToEncoder augmentation.
+        Apply RandomCrop to the encoder input size.
         Args:
             dataset (GeoFMDataset): dataset used.
             encoder (Encoder): encoder used.
-            size (int): crop size.
             padding (str | None, optional): image padding. Defaults to None.
-            pad_if_needed (bool, optional): whether to pad. Defaults to False.
+            pad_if_needed (bool, optional): whether to pad or not. Defaults to False.
             fill (int, optional): value for padding. Defaults to 0.
             padding_mode (str, optional): padding mode. Defaults to "constant".
-            n_crops (int, optional): number of crops. Defaults to 10.
         """
-        size = encoder.input_size
+        size = preprocessor.encoder_input_size
         super().__init__(
-            dataset=dataset,
-            encoder=encoder,
-            size=size,
-            padding=padding,
-            pad_if_needed=pad_if_needed,
-            fill=fill,
-            padding_mode=padding_mode,
-            n_crops=n_crops,
+            preprocessor, size, pad_if_needed, num_trials
         )
+
+class Resize(BasePreprocessor):
+    def __init__(
+            self,
+            preprocessor: BasePreprocessor,
+            size,
+            interpolation=T.InterpolationMode.BILINEAR,
+            antialias: Optional[bool] = True,
+            resize_target: bool = True,
+    ) -> None:
+        super().__init__(preprocessor)
+
+        if not isinstance(size, (int, Sequence)):
+            raise TypeError(f"Size should be int or sequence. Got {type(size)}")
+        if isinstance(size, Sequence) and len(size) not in (1, 2):
+            raise ValueError("If size is a sequence, it should have 1 or 2 values")
+        self.size = _setup_size(size, error_msg="Please provide only two dimensions (h, w) for size.")
+
+        if isinstance(interpolation, int):
+            interpolation = TF._interpolation_modes_from_int(interpolation)
+
+        self.interpolation = interpolation
+        self.antialias = antialias
+        self.resize_target = resize_target
+
+    def __call__(
+        self, data: dict[str, torch.Tensor | dict[str, torch.Tensor]]
+    ) -> dict[str, torch.Tensor | dict[str, torch.Tensor]]:
+
+        data = self.preprocessor(data)
+
+        for k, v in data["image"].items():
+            data["image"][k] = TF.resize(data["image"][k], self.size, interpolation=self.interpolation, antialias=self.antialias)
+
+        if self.resize_target:
+            if torch.is_floating_point(data["target"]):
+                data["target"] = TF.resize(data["target"].unsqueeze(0), size=self.size, interpolation=T.InterpolationMode.BILINEAR).squeeze(0)
+            else:
+                data["target"] = TF.resize(data["target"].unsqueeze(0), size=self.size, interpolation=T.InterpolationMode.NEAREST).squeeze(0)
+
+        return data
+
+class ResizeToEncoder(Resize):
+    def __init__(self,
+                 preprocessor: BasePreprocessor,
+                 interpolation=T.InterpolationMode.BILINEAR,
+                 antialias: Optional[bool] = True,
+                 resize_target: bool = True,
+                 ) -> None:
+        """Initialize the ResizeToEncoder augmentation.
+        Resize input data to the encoder input size.
+        Args:
+            dataset (GeoFMDataset): dataset used.
+            encoder (Encoder): encoder used.
+        """
+        super().__init__(preprocessor, preprocessor.encoder_input_size, interpolation, antialias, resize_target)
+
+
+class RandomResizedCrop(BasePreprocessor):
+    def __init__(self,
+                 preprocessor: BasePreprocessor,
+                 size,
+                 scale: Tuple[float, float] = (0.08, 1.0),
+                 ratio: Tuple[float, float] = (0.75, 1.3333333333333333),
+                 interpolation=T.InterpolationMode.BILINEAR,
+                 antialias: Optional[bool] = True,
+                 resize_target: bool = True,
+                 )-> None:
+        super().__init__(preprocessor)
+        self.size = _setup_size(size, error_msg="Please provide only two dimensions (h, w) for size.")
+
+        if not isinstance(scale, Sequence):
+            raise TypeError("Scale should be a sequence")
+        if not isinstance(ratio, Sequence):
+            raise TypeError("Ratio should be a sequence")
+        if (scale[0] > scale[1]) or (ratio[0] > ratio[1]):
+            raise ValueError("Scale and ratio should be of kind (min, max)")
+
+        if isinstance(interpolation, int):
+            interpolation = TF._interpolation_modes_from_int(interpolation)
+
+        self.interpolation = interpolation
+        self.antialias = antialias
+        self.scale = scale
+        self.ratio = ratio
+        self.resize_target = resize_target
+
+    @staticmethod
+    def get_params(input_size: Tuple[int, int], scale: List[float], ratio: List[float]) -> Tuple[int, int, int, int]:
+        """Get parameters for ``crop`` for a random sized crop.
+
+        Args:
+            img (PIL Image or Tensor): Input image.
+            scale (list): range of scale of the origin size cropped
+            ratio (list): range of aspect ratio of the origin aspect ratio cropped
+
+        Returns:
+            tuple: params (i, j, h, w) to be passed to ``crop`` for a random
+            sized crop.
+        """
+        height, width = input_size
+        area = height * width
+
+        log_ratio = torch.log(torch.tensor(ratio))
+        for _ in range(10):
+            target_area = area * torch.empty(1).uniform_(scale[0], scale[1]).item()
+            aspect_ratio = torch.exp(torch.empty(1).uniform_(log_ratio[0], log_ratio[1])).item()
+
+            w = int(round(math.sqrt(target_area * aspect_ratio)))
+            h = int(round(math.sqrt(target_area / aspect_ratio)))
+
+            if 0 < w <= width and 0 < h <= height:
+                i = torch.randint(0, height - h + 1, size=(1,)).item()
+                j = torch.randint(0, width - w + 1, size=(1,)).item()
+                return i, j, h, w
+
+        # Fallback to central crop
+        in_ratio = float(width) / float(height)
+        if in_ratio < min(ratio):
+            w = width
+            h = int(round(w / min(ratio)))
+        elif in_ratio > max(ratio):
+            h = height
+            w = int(round(h * max(ratio)))
+        else:  # whole image
+            w = width
+            h = height
+        i = (height - h) // 2
+        j = (width - w) // 2
+        return i, j, h, w
+
+    def __call__(
+        self, data: dict[str, torch.Tensor | dict[str, torch.Tensor]]
+    ) -> dict[str, torch.Tensor | dict[str, torch.Tensor]]:
+
+        data = self.preprocessor(data)
+        self.check_size(data)
+
+        _, t, h_img, w_img = data["image"][list(data["image"].keys())[0]].shape
+
+        i, j, h, w = self.get_params((h_img, w_img), self.scale, self.ratio)
+
+        for k, v in data["image"].items():
+            data["image"][k] = TF.resized_crop(data["image"][k], i, j, h, w, self.size, self.interpolation, antialias=self.antialias)
+
+        if self.resize_target:
+            if torch.is_floating_point(data["target"]):
+                data["target"] = TF.resized_crop(data["target"].unsqueeze(0), i, j, h, w, self.size, T.InterpolationMode.BILINEAR).squeeze(0)
+            else:
+                data["target"] = TF.resized_crop(data["target"].unsqueeze(0), i, j, h, w, self.size, T.InterpolationMode.NEAREST).squeeze(0)
+
+        else:
+            data["target"] = TF.crop(data["target"], i, j, h, w)
+
+        return data
+
+class RandomResizedCropToEncoder(RandomResizedCrop):
+    def __init__(self,
+                 preprocessor: BasePreprocessor,
+                 scale: Tuple[float, float] = (0.08, 1.0),
+                 ratio: Tuple[float, float] = (0.75, 1.3333333333333333),
+                 interpolation=T.InterpolationMode.BILINEAR,
+                 antialias: Optional[bool] = True,
+                 resize_target: bool = True,
+                 ) -> None:
+        super().__init__(preprocessor, preprocessor.encoder_input_size, scale, ratio, interpolation, antialias, resize_target)
+
+
+
+def _setup_size(size, error_msg):
+    if isinstance(size, numbers.Number):
+        return int(size), int(size)
+
+    if isinstance(size, Sequence) and len(size) == 1:
+        return size[0], size[0]
+
+    if len(size) != 2:
+        raise ValueError(error_msg)
+
+    return size

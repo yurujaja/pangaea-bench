@@ -435,7 +435,7 @@ class SatlasNet_Encoder(Encoder):
             embed_dim=768,  # will be overwritten by the backbone
             output_dim=output_dim,
             multi_temporal=False if "_SI_" in model_identifier else True,
-            multi_temporal_output=False,
+            multi_temporal_fusion=False if "_SI_" in model_identifier else True,
             download_url=download_url,
         )
 
@@ -540,11 +540,12 @@ class SatlasNet_Encoder(Encoder):
 
         self.parameters_warning(missing, incompatible_shape, logger)
 
-    def forward(self, imgs):
+    def simple_forward(self, image):
         # Define forward pass
+        if not self.multi_temporal:
+            image = self.squeeze_temporal_dimension(image)
 
-        x = imgs["optical"].squeeze(2)
-        x = self.backbone(x)
+        x = self.backbone(image["optical"])
 
         if self.fpn:
             x = self.fpn(x)

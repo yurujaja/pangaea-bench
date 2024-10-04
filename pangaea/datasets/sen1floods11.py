@@ -9,6 +9,7 @@ import torch
 
 from pangaea.datasets.utils import download_bucket_concurrently
 from pangaea.datasets.base import GeoFMDataset
+from pangaea.engine.data_preprocessor import BasePreprocessor
 
 class Sen1Floods11(GeoFMDataset):
 
@@ -31,7 +32,8 @@ class Sen1Floods11(GeoFMDataset):
         data_max: dict[str, list[str]],
         download_url: str,
         auto_download: bool,
-        gcs_bucket: str, 
+        gcs_bucket: str,
+        preprocessor: BasePreprocessor = None
     ):
         """Initialize the Sen1Floods11 dataset.
         Link: https://github.com/cloudtostreet/Sen1Floods11
@@ -85,23 +87,9 @@ class Sen1Floods11(GeoFMDataset):
             data_max=data_max,
             download_url=download_url,
             auto_download=auto_download,
+            preprocessor=preprocessor
         )
 
-        self.root_path = root_path
-        self.classes = classes
-        self.split = split
-
-        self.data_mean = data_mean
-        self.data_std = data_std
-        self.data_min = data_min
-        self.data_max = data_max
-        self.classes = classes
-        self.img_size = img_size
-        self.distribution = distribution
-        self.num_classes = num_classes
-        self.ignore_index = ignore_index
-        self.download_url = download_url
-        self.auto_download = auto_download
         
         self.split_mapping = {'train': 'train', 'val': 'valid', 'test': 'test'}
 
@@ -165,6 +153,9 @@ class Sen1Floods11(GeoFMDataset):
                 "timestamp": timestamp,
             }
         }
+        if self.preprocessor is not None:
+            output = self.preprocessor(output)
+
         return output
 
     @staticmethod
