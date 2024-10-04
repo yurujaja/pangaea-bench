@@ -540,8 +540,10 @@ class SatlasNet_Encoder(Encoder):
 
         self.parameters_warning(missing, incompatible_shape, logger)
 
-    def native_forward(self, image):
+    def simple_forward(self, image):
         # Define forward pass
+        if not self.multi_temporal:
+            image = self.squeeze_temporal_dimension(image)
 
         x = self.backbone(image["optical"])
 

@@ -118,7 +118,7 @@ class Encoder(nn.Module):
         for param in self.parameters():
             param.requires_grad = False
 
-    def native_forward(self, img: dict[str, torch.Tensor]) -> list[torch.Tensor]:
+    def simple_forward(self, img: dict[str, torch.Tensor]) -> list[torch.Tensor]:
         """Compute the forward pass of the encoder.
 
         Args:
@@ -135,10 +135,10 @@ class Encoder(nn.Module):
     def forward(self, image: dict[str, torch.Tensor]) -> list[torch.Tensor]:
         b, c, t, h, w = image[list(image.keys())[0]].shape
         if self.multi_temporal:
-            return self.native_forward(image)
+            return self.simple_forward(image)
         else:
             if t == 1:
-                return self.native_forward(image)
+                return self.simple_forward(image)
             else:
                 return self.naive_multi_temporal_forward(image)
 

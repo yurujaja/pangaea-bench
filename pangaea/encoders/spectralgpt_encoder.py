@@ -162,7 +162,7 @@ class SpectralGPT_Encoder(Encoder):
         self.load_state_dict(pretrained_encoder, strict=False)
         self.parameters_warning(missing, incompatible_shape, logger)
 
-    def native_forward(self, image: dict[str, torch.Tensor]) -> list[torch.Tensor]:
+    def simple_forward(self, image: dict[str, torch.Tensor]) -> list[torch.Tensor]:
         # input image of shape B C H W
         x = image["optical"]#.unsqueeze(-3)  # B C H W -> B C 1 H W
 

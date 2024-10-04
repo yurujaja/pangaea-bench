@@ -3,6 +3,8 @@ import os
 import time
 from pathlib import Path
 import math
+import wandb
+
 
 import torch
 import torch.nn.functional as F
@@ -46,6 +48,7 @@ class Evaluator:
         sliding_inference_batch: int = None,
         use_wandb: bool = False,
     ) -> None:
+        self.rank = int(os.environ["RANK"])
         self.val_loader = val_loader
         self.logger = logging.getLogger()
         self.exp_dir = exp_dir
@@ -57,13 +60,10 @@ class Evaluator:
         self.ignore_index = self.val_loader.dataset.ignore_index
         self.num_classes = len(self.classes)
         self.max_name_len = max([len(name) for name in self.classes])
+
         self.use_wandb = use_wandb
 
 
-        if use_wandb:
-            import wandb
-
-            self.wandb = wandb
 
     def evaluate(
         self,
@@ -183,6 +183,7 @@ class SegEvaluator(Evaluator):
         )
 
         for batch_idx, data in enumerate(tqdm(self.val_loader, desc=tag)):
+
             image, target = data["image"], data["target"]
             image = {k: v.to(self.device) for k, v in image.items()}
             target = target.to(self.device)
@@ -291,7 +292,7 @@ class SegEvaluator(Evaluator):
         self.logger.info(macc_str)
 
         if self.use_wandb:
-            self.wandb.log(
+            wandb.log(
                 {
                     f"{self.split}_mIoU": metrics["mIoU"],
                     f"{self.split}_mF1": metrics["mF1"],
@@ -396,4 +397,4 @@ class RegEvaluator(Evaluator):
         self.logger.info(header+mse+rmse)
 
         if self.use_wandb:
-            self.wandb.log({f"{self.split}_MSE": metrics["MSE"], f"{self.split}_RMSE": metrics["RMSE"]})
+            wandb.log({f"{self.split}_MSE": metrics["MSE"], f"{self.split}_RMSE": metrics["RMSE"]})

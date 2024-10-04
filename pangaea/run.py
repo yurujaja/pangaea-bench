@@ -3,6 +3,7 @@ import pathlib
 import pprint
 import random
 import time
+import wandb
 
 import hydra
 import torch
@@ -56,6 +57,8 @@ def main(cfg: DictConfig) -> None:
     fix_seed(cfg.seed)
     # distributed training variables
     rank = int(os.environ["RANK"])
+    cfg.task.trainer.use_wandb = cfg.task.trainer.use_wandb and rank == 0
+    cfg.task.evaluator.use_wandb = cfg.task.evaluator.use_wandb and rank == 0
     local_rank = int(os.environ["LOCAL_RANK"])
     device = torch.device("cuda", local_rank)
 
@@ -72,8 +75,7 @@ def main(cfg: DictConfig) -> None:
         config_log_dir = exp_dir / "configs"
         config_log_dir.mkdir(exist_ok=True)
         # init wandb
-        if cfg.task.trainer.use_wandb and rank == 0:
-            import wandb
+        if cfg.task.trainer.use_wandb:
 
             wandb_cfg = OmegaConf.to_container(cfg, resolve=True)
             wandb.init(
@@ -91,8 +93,7 @@ def main(cfg: DictConfig) -> None:
         # load training config
         cfg_path = exp_dir / "configs" / "config.yaml"
         cfg = OmegaConf.load(cfg_path)
-        if cfg.task.trainer.use_wandb and rank == 0:
-            import wandb
+        if cfg.task.trainer.use_wandb:
 
             wandb_cfg = OmegaConf.to_container(cfg, resolve=True)
             wandb.init(

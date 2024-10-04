@@ -46,7 +46,7 @@ class UNet(Encoder):
         self.in_conv = InConv(self.in_channels, self.topology[0], DoubleConv)
         self.encoder = UNet_Encoder(self.topology)
 
-    def native_forward(self, image):
+    def simple_forward(self, image):
         image = self.squeeze_temporal_dimension(image)
 
         feat = self.in_conv(image["optical"])

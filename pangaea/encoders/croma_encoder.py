@@ -83,7 +83,7 @@ class CROMA_OPTICAL_Encoder(Encoder):
             dim=self.embed_dim, depth=self.encoder_depth, in_channels=self.s2_channels
         )
 
-    def native_forward(self, image):
+    def simple_forward(self, image):
 
         image = self.squeeze_temporal_dimension(image)
 
@@ -202,7 +202,7 @@ class CROMA_SAR_Encoder(Encoder):
             in_channels=self.s1_channels,
         )
 
-    def native_forward(self, image):
+    def simple_forward(self, image):
         # output = []
         image = self.squeeze_temporal_dimension(image)
 

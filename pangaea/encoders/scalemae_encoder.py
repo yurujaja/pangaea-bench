@@ -149,7 +149,7 @@ class ScaleMAE_Encoder(Encoder):
         self.load_state_dict(pretrained_encoder, strict=False)
         self.parameters_warning(missing, incompatible_shape, logger)
 
-    def native_forward(self, image):
+    def simple_forward(self, image):
         image = self.squeeze_temporal_dimension(image)
 
         B, _, h, w = image["optical"].shape

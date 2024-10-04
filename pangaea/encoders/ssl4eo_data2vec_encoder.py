@@ -483,7 +483,7 @@ class SSL4EO_Data2Vec_Encoder(Encoder):
     def no_weight_decay(self):
         return {"pos_embed", "cls_token"}
 
-    def native_forward(self, image):
+    def simple_forward(self, image):
         image = self.squeeze_temporal_dimension(image)
         x = self.patch_embed(image["optical"])
         batch_size, seq_len, _ = x.size()

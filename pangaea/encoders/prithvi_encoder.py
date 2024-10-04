@@ -159,7 +159,7 @@ class Prithvi_Encoder(Encoder):
             nn.init.constant_(m.bias, 0)
             nn.init.constant_(m.weight, 1.0)
 
-    def native_forward(self, image):
+    def simple_forward(self, image):
         # embed patches
         x = self.patch_embed(image["optical"])
 

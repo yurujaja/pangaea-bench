@@ -363,7 +363,7 @@ class SSL4EO_DINO_Encoder(Encoder):
 
         return self.pos_drop(x)
 
-    def native_forward(self, image):
+    def simple_forward(self, image):
         image = self.squeeze_temporal_dimension(image)
 
         x = self.prepare_tokens(image["optical"])
