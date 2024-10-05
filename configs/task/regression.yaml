@@ -16,6 +16,7 @@ trainer:
   ckpt_interval: 20
   eval_interval: 5
   log_interval: 5
+  best_metric_key: MSE
   use_wandb: ${use_wandb}
 
 evaluator:

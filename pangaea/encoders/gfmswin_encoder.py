@@ -646,6 +646,7 @@ class GFMSwin_Encoder(Encoder):
             embed_dim=embed_dim,
             output_dim=output_dim,
             multi_temporal=False,
+            multi_temporal_output=False,
             download_url=download_url,
         )
 
@@ -934,4 +935,3 @@ def remap_pretrained_keys_swin(model, checkpoint_model):
         del checkpoint_model[k]
 
     return checkpoint_model
-

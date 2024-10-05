@@ -435,6 +435,7 @@ class SatlasNet_Encoder(Encoder):
             embed_dim=768,  # will be overwritten by the backbone
             output_dim=output_dim,
             multi_temporal=False if "_SI_" in model_identifier else True,
+            multi_temporal_output=False,
             download_url=download_url,
         )
 

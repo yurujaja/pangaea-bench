@@ -34,6 +34,7 @@ wave_list:
     ASC_VH: 3.75
     DSC_VV: 3.75
     DSC_VH: 3.75
+    VV-VH: 3.75
   
 output_layers:
   - 3

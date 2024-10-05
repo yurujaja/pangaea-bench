@@ -165,12 +165,12 @@ This document provides a detailed overview of the datasets used in this reposito
     ```
    torchrun --nnodes=1 --nproc_per_node=1 pangaea/run.py \
    --config-name=train \
-   dataset=spacenet7 \
+   dataset=spacenet7cd \
    encoder=remoteclip \
    decoder=seg_siamupernet_conc\
    preprocessing=seg_default \
    criterion=cross_entropy \
-   task=segmentation
+   task=change_detection
   ```
 
 ###  AI4SmallFarms

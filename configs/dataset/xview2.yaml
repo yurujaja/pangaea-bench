@@ -4,7 +4,7 @@ root_path: ./data/xView2
 download_url: https://the-dataset-is-not-publicly-available.com
 auto_download: False
 img_size: 1024
-multi_temporal: 2
+multi_temporal: False
 multi_modal: False
 
 # classes
