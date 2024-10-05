@@ -14,7 +14,7 @@ trainer:
   n_epochs: 80
   precision: fp32
   ckpt_interval: 20
-  eval_interval: 1
+  eval_interval: 5
   log_interval: 5
   best_metric_key: IoU
   use_wandb: ${use_wandb}

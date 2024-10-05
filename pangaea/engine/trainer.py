@@ -10,7 +10,7 @@ import torch.nn as nn
 from torch.nn import functional as F
 from torch.optim.lr_scheduler import LRScheduler
 from torch.optim.optimizer import Optimizer
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Subset
 from pangaea.utils.logger import RunningAverageMeter, sec_to_hm
 
 
@@ -77,6 +77,10 @@ class Trainer:
         self.training_metrics = {}
         self.best_ckpt = None
         self.best_metric_comp = operator.gt
+        if isinstance(self.train_loader.dataset, Subset):
+            self.num_classes = self.train_loader.dataset.dataset.num_classes
+        else:
+            self.num_classes = self.train_loader.dataset.num_classes
 
         assert precision in [
             "fp32",
@@ -270,7 +274,7 @@ class Trainer:
         """
         curr_metric = eval_metrics[self.best_metric_key]
         if isinstance(curr_metric, list):
-            curr_metric = curr_metric[0] if self.train_loader.dataset.num_classes == 1 else np.mean(curr_metric)
+            curr_metric = curr_metric[0] if self.num_classes == 1 else np.mean(curr_metric)
         if self.best_metric_comp(curr_metric, self.best_metric):
             self.best_metric = curr_metric
             self.best_ckpt = self.get_checkpoint(epoch)
