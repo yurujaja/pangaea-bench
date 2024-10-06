@@ -299,16 +299,17 @@ class RegEvaluator(Evaluator):
         model.eval()
 
         tag = f'Evaluating {model_name} on {self.split} set'
-
+        mse = 0.0
         for batch_idx, data in enumerate(tqdm(self.val_loader, desc=tag)):
             image, target = data['image'], data['target']
             image = {k: v.to(self.device) for k, v in image.items()}
             target = target.to(self.device)
 
             logits = model(image, output_shape=target.shape[-2:]).squeeze(dim=1)
-            mse = F.mse_loss(logits, target)
-
-        metrics = {"MSE" : mse.item(), "RMSE" : torch.sqrt(mse).item()}
+            loss = F.mse_loss(logits, target)
+            mse +=loss
+        mse_avg = mse / len(self.val_loader)
+        metrics = {"MSE" : mse_avg.item(), "RMSE" : torch.sqrt(mse_avg).item()}
         self.log_metrics(metrics)
 
         used_time = time.time() - t
