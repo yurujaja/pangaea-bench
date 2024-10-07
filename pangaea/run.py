@@ -10,7 +10,7 @@ from hydra.conf import HydraConf
 from hydra.core.hydra_config import HydraConfig
 from hydra.utils import instantiate
 from omegaconf import DictConfig, OmegaConf
-from torch.utils.data import DataLoader, Dataset, Subset
+from torch.utils.data import DataLoader, Dataset
 from torch.utils.data.distributed import DistributedSampler
 
 from pangaea.decoders.base import Decoder
@@ -25,8 +25,9 @@ from pangaea.utils.utils import (
     get_generator,
     seed_worker,
 )
-from pangaea.utils.stratification import stratify_single_dataset_indices
+from pangaea.utils.subset_sampler import get_subset_indices
 from pangaea.datasets.base import GeoFMSubset
+
 
 def get_exp_name(hydra_config: HydraConf) -> str:
     """Create a unique experiment name based on the choices made in the config.
@@ -140,11 +141,6 @@ def main(cfg: DictConfig) -> None:
     # training
     if train_run:
 
-        # Step 1: Stratify the dataset to get indices
-        # labeled_train_idx, _ = stratify_single_dataset_indices(train_dataset, num_classes=2, label_fraction=0.5, num_bins=3)
-        # Step 2: Use Subset to filter the dataset with stratified indices
-        # train_dataset = Subset(train_dataset, labeled_train_idx)
-
         for preprocess in cfg.preprocessing.train:
             train_dataset: Dataset = instantiate(
                 preprocess, dataset=train_dataset, encoder=encoder
@@ -153,27 +149,25 @@ def main(cfg: DictConfig) -> None:
             val_dataset: Dataset = instantiate(
                 preprocess, dataset=val_dataset, encoder=encoder
             )
-        if 0 < cfg.limited_label < 1:
-            # n_train_samples = len(train_dataset)
-            # indices = random.sample(
-            #     range(n_train_samples), int(n_train_samples * cfg.limited_label)
-            # )
-            
-            # Stratify train dataset
-            indices, _ = stratify_single_dataset_indices(train_dataset, num_classes=cfg.dataset.num_classes, label_fraction=cfg.limited_label, num_bins=3, logger=logger)
-            train_dataset = GeoFMSubset(train_dataset, indices)
 
-            # Stratify validation dataset
-            indices, _ = stratify_single_dataset_indices(val_dataset, num_classes=cfg.dataset.num_classes, label_fraction=cfg.limited_label, num_bins=3, logger=logger)
-            val_dataset = GeoFMSubset(val_dataset, indices)
+        if 0 < cfg.limited_label_train < 1:
+            indices = get_subset_indices(
+                train_dataset, strategy=cfg.limited_label_strategy, 
+                label_fraction=cfg.limited_label_train, num_bins=cfg.stratification_bins, logger=logger
+            )
+            train_dataset = GeoFMSubset(train_dataset, indices)
             
-            logger.info(
-                f"Created a subset of the train and val dataset, with {cfg.limited_label * 100}% of the labels available\n"
+        if 0 < cfg.limited_label_val < 1:
+            indices = get_subset_indices(
+                val_dataset, strategy=cfg.limited_label_strategy, 
+                label_fraction=cfg.limited_label_val, num_bins=cfg.stratification_bins, logger=logger
+            )
+            val_dataset = GeoFMSubset(val_dataset, indices)
+                
+        logger.info(
                 f"Total number of train patches: {len(train_dataset)}\n"
                 f"Total number of validation patches: {len(val_dataset)}\n"
             )
-        else:
-            logger.info("The entire train dataset will be used.")
 
         # get train val data loaders
         train_loader = DataLoader(

@@ -101,7 +101,7 @@ We provide several ways to install the dependencies.
 
 ## 🏋️ Training
 
-To run experiments, please refer to `configs/train.yaml`. In it, in addition to some basic info about training (e.g. `finetune` for fine-tuning also the encoder, `limited_label` to train the model on a stratified subset of labels, `num_workers`, `batch_size` and so on), there are 5 different basic configs:
+To run experiments, please refer to `configs/train.yaml`. In it, in addition to some basic info about training (e.g. `finetune` for fine-tuning also the encoder, `limited_label_train` to train the model on a stratified subset of labels, `num_workers`, `batch_size` and so on), there are 5 different basic configs:
 - `dataset`: Information of downstream datasets such as image size, band_statistics, classes etc.
 - `decoder`: Downstream task decoder fine-tuning related parameters, like the type of architecture (e.g. UPerNet), which multi-temporal strategy to use, and other related hparams (e.g. nr of channels)
 - `encoder`: GFM encoder related parameters. `output_layers` is used for which layers are used for Upernet decoder.  
@@ -136,7 +136,7 @@ torchrun --nnodes=1 --nproc_per_node=1 pangaea/run.py \
    task=segmentation
 ```
 
-If you want to overwrite some parameters (e.g. turn off wandbe, and changing batch size and the path to the dataset):
+If you want to overwrite some parameters (e.g. turn off wandbe, change batch size and the path to the dataset, and use 50% stratified sampled subset for training):
 ```
 torchrun --nnodes=1 --nproc_per_node=1 pangaea/run.py \
    --config-name=train \
@@ -148,7 +148,9 @@ torchrun --nnodes=1 --nproc_per_node=1 pangaea/run.py \
    task=segmentation \
    dataset.root_path= /path/to/the/dataset/hlsburnscars \
    batch_size=16 \
-   use_wandb=False
+   use_wandb=False \
+   limited_label_train=0.5 \
+   limited_label_strategy=stratified
 ```
 
 #### Multi-Temporal Semantic Segmentation
