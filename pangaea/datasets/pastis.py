@@ -10,7 +10,7 @@ from datetime import datetime
 import geopandas as gpd
 import numpy as np
 import pandas as pd
-import rasterio
+import tifffile
 import torch
 from einops import rearrange
 
@@ -203,17 +203,15 @@ class Pastis(GeoFMDataset):
 
         for modality in self.modalities:
             if modality == "aerial":
-                with rasterio.open(
-                    os.path.join(
+                path = os.path.join(
                         self.path,
                         "DATA_SPOT/PASTIS_SPOT6_RVB_1M00_2019/SPOT6_RVB_1M00_2019_"
                         + str(name)
                         + ".tif",
-                    )
-                ) as f:
-                    output["aerial"] = split_image(
-                        torch.FloatTensor(f.read()), self.nb_split, part
-                    )
+                    ) 
+                output["aerial"] = split_image(
+                    torch.FloatTensor(tifffile.imread(path).transpose(2,0,1), self.nb_split, part)
+                )
             elif modality == "s1-median":
                 modality_name = "s1a"
                 images = split_image(

@@ -1,6 +1,6 @@
 import os
 import numpy as np
-import rasterio
+import tifffile
 import torch
 # from torch.utils.data import Dataset
 # from torchvision import transforms
@@ -154,19 +154,19 @@ class DynamicEarthNet(GeoFMDataset):
         cur_images, cur_dates = [], []
         if self.mode == 'daily':
             for i in range(1, self.all_days[index][0]+1):
-                img = rasterio.open(os.path.join(self.root_path, self.all_days[index][i][0][1:]))
-                red = img.read(3)
-                green = img.read(2)
-                blue = img.read(1)
-                nir = img.read(4)
+                with tifffile.TiffFile.open(os.path.join(self.root_path, self.all_days[index][i][0][1:])) as img:
+                    red = img.pages[2].asarray()
+                    green = img.pages[1].asarray()
+                    blue = img.pages[0].asarray()
+                    nir = img.pages[3].asarray()
                 image = np.dstack((red, green, blue, nir))
                 cur_images.append(np.expand_dims(np.asarray(image, dtype=np.float32), axis=0)) # np.array already\
                 cur_dates.append(self.all_days[index][i][1])
 
             image_stack = np.concatenate(cur_images, axis=0)
             dates = torch.from_numpy(np.array(cur_dates, dtype=np.int32))
-            label = rasterio.open(os.path.join(self.root_path, self.labels[index][1:]))
-            label = label.read()
+            label = tifffile.imread(os.path.join(self.root_path, self.labels[index][1:]))
+            label = label.transpose(2, 0, 1)
             mask = np.zeros((label.shape[1], label.shape[2]), dtype=np.int32)
 
             for i in range(self.num_classes + 1):
@@ -180,17 +180,17 @@ class DynamicEarthNet(GeoFMDataset):
         else:
             for i in range(len(self.dates)):
                 # read .tif
-                img = rasterio.open(os.path.join(self.root_path, self.planet_day[index][i][1:]))
-                red = img.read(3)
-                green = img.read(2)
-                blue = img.read(1)
-                nir = img.read(4)
+                with tifffile.TiffFile.open(os.path.join(self.root_path, self.planet_day[index][i][1:])) as img:
+                    red = img.pages[2].asarray()
+                    green = img.pages[1].asarray()
+                    blue = img.pages[0].asarray()
+                    nir = img.pages[3].asarray()
                 image = np.dstack((red, green, blue, nir))
                 cur_images.append(np.expand_dims(np.asarray(image, dtype=np.float32), axis=0))   # np.array already\
             image_stack = np.concatenate(cur_images, axis=0)
             dates = torch.from_numpy(np.array(self.planet_day[index][len(self.dates):], dtype=np.int32))
-            label = rasterio.open(os.path.join(self.root_path, self.labels[index][1:]))
-            label = label.read()
+            label = tifffile.imread(os.path.join(self.root_path, self.labels[index][1:]))
+            label = label.transpose(2, 0, 1)
             mask = np.zeros((label.shape[1], label.shape[2]), dtype=np.int32)
 
             for i in range(self.num_classes + 1):

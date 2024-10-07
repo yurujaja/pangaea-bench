@@ -13,7 +13,8 @@ import gdown
 
 import json
 from glob import glob
-import rasterio
+import cv2
+import tifffile
 import numpy as np
 
 import torch
@@ -214,17 +215,17 @@ class AbstractSN7(GeoFMDataset):
     def load_planet_mosaic(self, aoi_id: str, year: int, month: int) -> np.ndarray:
         folder = self.root_path / 'train' / aoi_id / 'images_masked'
         file = folder / f'global_monthly_{year}_{month:02d}_mosaic_{aoi_id}.tif'
-        with rasterio.open(str(file), mode='r') as src:
-            img = src.read(out_shape=(self.sn7_img_size, self.sn7_img_size), resampling=rasterio.enums.Resampling.nearest)
-        # 4th band (last oen) is alpha band
-        img = img[:-1]
+        img = tifffile.imread(file)
+        img = cv2.resize(img, dsize=(self.sn7_img_size, self.sn7_img_size), interpolation=cv2.INTER_NEAREST_EXACT)
+        # 4th band (last one) is alpha band
+        img = img.transpose(2, 0, 1)[:-1]
         return img.astype(np.float32)
 
     def load_building_label(self, aoi_id: str, year: int, month: int) -> np.ndarray:
         folder = self.root_path / 'train' / aoi_id / 'labels_raster'
         file = folder / f'global_monthly_{year}_{month:02d}_mosaic_{aoi_id}_Buildings.tif'
-        with rasterio.open(str(file), mode='r') as src:
-            label = src.read(out_shape=(self.sn7_img_size, self.sn7_img_size), resampling=rasterio.enums.Resampling.nearest)
+        label = tifffile.imread(file)
+        label = cv2.resize(label, dsize=(self.sn7_img_size, self.sn7_img_size), interpolation=cv2.INTER_NEAREST_EXACT)
         label = (label > 0).squeeze()
         return label.astype(np.int64)
 

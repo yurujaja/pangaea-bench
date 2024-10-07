@@ -2,7 +2,6 @@ import os
 import time
 import torch
 import numpy as np
-import rasterio
 import random
 from glob import glob
 

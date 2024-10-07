@@ -2,7 +2,6 @@ import os
 import time
 import torch
 import numpy as np
-# import rasterio
 import tifffile as tiff
 from typing import Sequence, Dict, Any, Union, Literal, Tuple
 from sklearn.model_selection import train_test_split
