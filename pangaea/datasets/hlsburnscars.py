@@ -2,21 +2,17 @@ import os
 import time
 import torch
 import numpy as np
-# import rasterio
 import tifffile as tiff
-from typing import Sequence, Dict, Any, Union, Literal, Tuple
+from typing import Sequence, Tuple
 from sklearn.model_selection import train_test_split
 from glob import glob
 
 import torch
-import torchvision.transforms.functional as TF
-import torchvision.transforms as T
 
 import pathlib
 import urllib
 import tarfile
 
-# from utils.registry import DATASET_REGISTRY
 from pangaea.datasets.utils import DownloadProgressBar
 from pangaea.datasets.base import GeoFMDataset
 
@@ -164,6 +160,20 @@ class HLSBurnScars(GeoFMDataset):
 
         return output
 
+    
+    @staticmethod
+    def get_stratified_train_val_split(all_files) -> Tuple[Sequence[int], Sequence[int]]:
+
+       # Fixed stratified sample to split data into train/val. 
+       # This keeps 90% of datapoints belonging to an individual event in the training set and puts the remaining 10% in the validation set. 
+        disaster_names = list(
+            map(lambda path: pathlib.Path(path).name.split("_")[0], all_files))
+        train_idxs, val_idxs = train_test_split(np.arange(len(all_files)),
+                                                test_size=0.1,
+                                                random_state=23,
+                                                stratify=disaster_names)
+        return {"train": train_idxs, "val": val_idxs}
+    
     @staticmethod
     def download(self, silent=False):
         output_path = pathlib.Path(self.root_path)
@@ -196,5 +206,3 @@ class HLSBurnScars(GeoFMDataset):
             print("done.")
 
         os.remove(output_path / temp_file_name)
-
-

@@ -127,6 +127,7 @@ class GeoFMSubset(Subset):
         self.dataset_name = getattr(dataset, 'dataset_name', None)
         self.root_path = getattr(dataset, 'root_path', None)
         self.auto_download = getattr(dataset, 'auto_download', None)
+        self.download_url = getattr(dataset, 'download_url', None)
         self.img_size = getattr(dataset, 'img_size', None)
         self.multi_temporal = getattr(dataset, 'multi_temporal', None)
         self.multi_modal = getattr(dataset, 'multi_modal', None)
