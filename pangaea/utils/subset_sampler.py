@@ -25,7 +25,7 @@ def calculate_regression_distributions(dataset):
     # Adding a progress bar for dataset processing
     for idx in tqdm(range(len(dataset)), desc="Calculating regression distributions per sample"):
         target = dataset[idx]['target']
-        mean_value = target.mean().item()  # Example for mean; adjust as needed for other metrics
+        mean_value = target.mean().item()  # Example for patch-wise mean; adjust as needed for other metrics
         distributions.append(mean_value)
 
     return np.array(distributions)
@@ -79,16 +79,33 @@ def stratify_regression_dataset_indices(dataset, label_fraction=1.0, num_bins=3,
 
     # Step 2: Bin the regression distributions
     binned_distributions = bin_regression_distributions(regression_distributions, num_bins=num_bins, logger=logger)
-    
-    # Step 3: Sort the indices based on binned distributions for stratification
-    sorted_indices = np.argsort(binned_distributions)
-    
-    # Step 4: Select a subset of labeled data with progress tracking
-    num_labeled = int(len(dataset) * label_fraction)
-    labeled_idx = sorted_indices[:num_labeled]
-    unlabeled_idx = sorted_indices[num_labeled:]
 
-    return labeled_idx, unlabeled_idx
+    # Step 3: Prep a dictionary to hold indices for each bin
+    indices_per_bin = {i: [] for i in range(num_bins)}
+
+    # Step 4: Populate the indices per bin
+    for index, bin_index in enumerate(binned_distributions):
+        if bin_index in indices_per_bin:
+            indices_per_bin[bin_index].append(index)
+    
+    # Step 5: Select fraction of indices from each bin
+    selected_idx = []
+    for bin_index, indices in indices_per_bin.items():
+        num_to_select = int(max(1, len(indices)*label_fraction) ) # To ensure at least one index is selected
+        selected_idx.extend(np.random.choice(indices, num_to_select, replace=False))        
+    other_idx = list(set(range(len(dataset))) - set(selected_idx))
+    
+    return selected_idx, other_idx
+    
+    # # Step 3: Sort the indices based on binned distributions for stratification
+    # sorted_indices = np.argsort(binned_distributions)
+    
+    # # Step 4: Select a subset of labeled data with progress tracking
+    # num_labeled = int(len(dataset) * label_fraction)
+    # labeled_idx = sorted_indices[:num_labeled]
+    # unlabeled_idx = sorted_indices[num_labeled:]
+
+    # return labeled_idx, unlabeled_idx
 
 
 # Function to get subset indices based on the strategy, supporting both classification and regression
