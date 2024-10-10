@@ -1,3 +1,4 @@
+import copy
 import logging
 import operator
 import os
@@ -193,7 +194,7 @@ class Trainer:
             "scaler": self.scaler.state_dict(),
             "epoch": epoch,
         }
-        return checkpoint
+        return copy.deepcopy(checkpoint)
 
     def save_model(
         self,
