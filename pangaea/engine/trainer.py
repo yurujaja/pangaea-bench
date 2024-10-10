@@ -4,13 +4,14 @@ import operator
 import os
 import pathlib
 import time
+import numpy as np
 
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
 from torch.optim.lr_scheduler import LRScheduler
 from torch.optim.optimizer import Optimizer
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Subset
 from pangaea.utils.logger import RunningAverageMeter, sec_to_hm
 
 
@@ -31,6 +32,7 @@ class Trainer:
         ckpt_interval: int,
         eval_interval: int,
         log_interval: int,
+        best_metric_key: str,
     ):
         """Initialize the Trainer.
 
@@ -49,6 +51,7 @@ class Trainer:
             ckpt_interval (int): interval to save the checkpoint.
             eval_interval (int): interval to evaluate the model.
             log_interval (int): interval to log the training information.
+            best_metric_key (str): metric that determines best checkpoints.
         """
         self.rank = int(os.environ["RANK"])
         self.criterion = criterion
@@ -66,6 +69,7 @@ class Trainer:
         self.ckpt_interval = ckpt_interval
         self.eval_interval = eval_interval
         self.log_interval = log_interval
+        self.best_metric_key = best_metric_key
 
         self.training_stats = {
             name: RunningAverageMeter(length=self.batch_per_epoch)
@@ -73,8 +77,11 @@ class Trainer:
         }
         self.training_metrics = {}
         self.best_ckpt = None
-        self.best_metric_key = None
         self.best_metric_comp = operator.gt
+        if isinstance(self.train_loader.dataset, Subset):
+            self.num_classes = self.train_loader.dataset.dataset.num_classes
+        else:
+            self.num_classes = self.train_loader.dataset.num_classes
 
         assert precision in [
             "fp32",
@@ -266,8 +273,11 @@ class Trainer:
             eval_metrics (dict[float, list[float]]): metrics computed by the evaluator on the validation set.
             epoch (int): number of the epoch.
         """
-        if self.best_metric_comp(eval_metrics[self.best_metric_key], self.best_metric):
-            self.best_metric = eval_metrics[self.best_metric_key]
+        curr_metric = eval_metrics[self.best_metric_key]
+        if isinstance(curr_metric, list):
+            curr_metric = curr_metric[0] if self.num_classes == 1 else np.mean(curr_metric)
+        if self.best_metric_comp(curr_metric, self.best_metric):
+            self.best_metric = curr_metric
             self.best_ckpt = self.get_checkpoint(epoch)
 
     @torch.no_grad()
@@ -363,6 +373,7 @@ class SegTrainer(Trainer):
         ckpt_interval: int,
         eval_interval: int,
         log_interval: int,
+        best_metric_key: str,
     ):
         """Initialize the Trainer for segmentation task.
         Args:
@@ -380,6 +391,7 @@ class SegTrainer(Trainer):
             ckpt_interval (int): interval to save the checkpoint.
             eval_interval (int): interval to evaluate the model.
             log_interval (int): interval to log the training information.
+            best_metric_key (str): metric that determines best checkpoints.
         """
         super().__init__(
             model=model,
@@ -396,13 +408,13 @@ class SegTrainer(Trainer):
             ckpt_interval=ckpt_interval,
             eval_interval=eval_interval,
             log_interval=log_interval,
+            best_metric_key=best_metric_key,
         )
 
         self.training_metrics = {
             name: RunningAverageMeter(length=100) for name in ["Acc", "mAcc", "mIoU"]
         }
         self.best_metric = float("-inf")
-        self.best_metric_key = "mIoU"
         self.best_metric_comp = operator.gt
 
     def compute_loss(self, logits: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
@@ -487,6 +499,7 @@ class RegTrainer(Trainer):
         ckpt_interval: int,
         eval_interval: int,
         log_interval: int,
+        best_metric_key: str,
     ):
         """Initialize the Trainer for regression task.
         Args:
@@ -504,6 +517,7 @@ class RegTrainer(Trainer):
             ckpt_interval (int): interval to save the checkpoint.
             eval_interval (int): interval to evaluate the model.
             log_interval (int): interval to log the training information.
+            best_metric_key (str): metric that determines best checkpoints.
         """
         super().__init__(
             model=model,
@@ -520,13 +534,13 @@ class RegTrainer(Trainer):
             ckpt_interval=ckpt_interval,
             eval_interval=eval_interval,
             log_interval=log_interval,
+            best_metric_key=best_metric_key,
         )
 
         self.training_metrics = {
             name: RunningAverageMeter(length=100) for name in ["MSE"]
         }
         self.best_metric = float("inf")
-        self.best_metric_key = "MSE"
         self.best_metric_comp = operator.lt
 
     def compute_loss(self, logits: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
