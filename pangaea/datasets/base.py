@@ -1,5 +1,5 @@
 import torch
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, Subset
 import os
 
 class GeoFMDataset(Dataset):
@@ -115,3 +115,34 @@ class GeoFMDataset(Dataset):
             NotImplementedError: raise if the method is not implemented
         """
         raise NotImplementedError
+
+
+class GeoFMSubset(Subset):
+    """Custom subset class that retains dataset attributes."""
+
+    def __init__(self, dataset, indices):
+        super().__init__(dataset, indices)
+        
+        # Copy relevant attributes from the original dataset
+        self.dataset_name = getattr(dataset, 'dataset_name', None)
+        self.root_path = getattr(dataset, 'root_path', None)
+        self.auto_download = getattr(dataset, 'auto_download', None)
+        self.download_url = getattr(dataset, 'download_url', None)
+        self.img_size = getattr(dataset, 'img_size', None)
+        self.multi_temporal = getattr(dataset, 'multi_temporal', None)
+        self.multi_modal = getattr(dataset, 'multi_modal', None)
+        self.ignore_index = getattr(dataset, 'ignore_index', None)
+        self.num_classes = getattr(dataset, 'num_classes', None)
+        self.classes = getattr(dataset, 'classes', None)
+        self.distribution = getattr(dataset, 'distribution', None)
+        self.bands = getattr(dataset, 'bands', None)
+        self.data_mean = getattr(dataset, 'data_mean', None)
+        self.data_std = getattr(dataset, 'data_std', None)
+        self.data_min = getattr(dataset, 'data_min', None)
+        self.data_max = getattr(dataset, 'data_max', None)
+        self.split = getattr(dataset, 'split', None)
+
+    def filter_by_indices(self, indices):
+        """Apply filtering by indices directly in this subset."""
+        return GeoFMSubset(self.dataset, indices)
+

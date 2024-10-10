@@ -1,3 +1,4 @@
+import copy
 import logging
 import operator
 import os
@@ -77,10 +78,7 @@ class Trainer:
         self.training_metrics = {}
         self.best_ckpt = None
         self.best_metric_comp = operator.gt
-        if isinstance(self.train_loader.dataset, Subset):
-            self.num_classes = self.train_loader.dataset.dataset.num_classes
-        else:
-            self.num_classes = self.train_loader.dataset.num_classes
+        self.num_classes = self.train_loader.dataset.num_classes
 
         assert precision in [
             "fp32",
@@ -200,7 +198,7 @@ class Trainer:
             "scaler": self.scaler.state_dict(),
             "epoch": epoch,
         }
-        return checkpoint
+        return copy.deepcopy(checkpoint)
 
     def save_model(
         self,
