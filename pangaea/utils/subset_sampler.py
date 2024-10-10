@@ -24,8 +24,6 @@ def calculate_class_distributions(dataset: GeoFMDataset|GeoFMSubset):
             class_counts = [(target == i).sum().item() for i in range(num_classes)]
             class_ratios = [count / total_pixels for count in class_counts]
             class_distributions.append(class_ratios)
-    
-    print(np.mean(class_distributions, axis=0))
 
     return np.array(class_distributions)
 
@@ -67,6 +65,37 @@ def balance_seg_indices(
         label_fraction=1.0, 
         num_bins=3, 
         logger=None):
+    """
+    Balances and selects indices from a segmentation dataset based on the specified strategy.
+
+    Args:
+    dataset : GeoFMDataset | GeoFMSubset
+        The dataset from which to select indices, typically containing geospatial segmentation data.
+    
+    strategy : str
+        The strategy to use for selecting indices. Options include:
+        - "stratified": Proportionally selects indices from each class bin based on the class distribution.
+        - "oversampled": Prioritizes and selects indices from bins with lower class representation.
+    
+    label_fraction : float, optional, default=1.0
+        The fraction of labels (indices) to select from each class or bin. Values should be between 0 and 1.
+    
+    num_bins : int, optional, default=3
+        The number of bins to divide the class distributions into, used for stratification or oversampling.
+    
+    logger : object, optional
+        A logger object for tracking progress or logging messages (e.g., `logging.Logger`)
+
+    ------
+    
+    Returns:
+    selected_idx : list of int
+        The indices of the selected samples based on the strategy and label fraction.
+
+    other_idx : list of int
+        The remaining indices that were not selected.
+
+    """
     # Calculate class distributions with progress tracking
     class_distributions = calculate_class_distributions(dataset)
 
@@ -103,6 +132,38 @@ def balance_reg_indices(
         label_fraction=1.0, 
         num_bins=3, 
         logger=None):
+
+    """
+    Balances and selects indices from a regression dataset based on the specified strategy.
+
+    Args:
+    dataset : GeoFMDataset | GeoFMSubset
+        The dataset from which to select indices, typically containing geospatial regression data.
+    
+    strategy : str
+        The strategy to use for selecting indices. Options include:
+        - "stratified": Proportionally selects indices from each bin based on the binned regression distributions.
+        - "oversampled": Prioritizes and selects indices from bins with lower representation.
+    
+    label_fraction : float, optional, default=1.0
+        The fraction of indices to select from each bin. Values should be between 0 and 1.
+    
+    num_bins : int, optional, default=3
+        The number of bins to divide the regression distributions into, used for stratification or oversampling.
+    
+    logger : object, optional
+        A logger object for tracking progress or logging messages (e.g., `logging.Logger`). If None, no logging is performed.
+    
+    ------
+    
+    Returns:
+    selected_idx : list of int
+        The indices of the selected samples based on the strategy and label fraction.
+
+    other_idx : list of int
+        The remaining indices that were not selected.
+
+    """
 
     regression_distributions = calculate_regression_distributions(dataset)
     binned_distributions = bin_regression_distributions(regression_distributions, num_bins=num_bins, logger=logger)
