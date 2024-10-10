@@ -182,7 +182,7 @@ def balance_reg_indices(
             num_to_select = int(max(1, len(indices) * label_fraction))  # Ensure at least one index is selected
             selected_idx.extend(np.random.choice(indices, num_to_select, replace=False))
     elif strategy == "oversampled":
-        # Prioritize the bins with the lowest values
+        # Prioritize the bins with the lowest values. Can change to prioritize high values ( ex: high biomass samples) 
         sorted_indices = np.argsort(binned_distributions)
         selected_idx = sorted_indices[:int(len(dataset) * label_fraction)]
 
