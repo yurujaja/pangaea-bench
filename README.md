@@ -265,7 +265,7 @@ torchrun --nnodes=1 --nproc_per_node=1 pangaea/run.py \
    --config-name=train \
    dataset=sen1floods11 \
    encoder=unet_encoder \
-   decoder=unet \
+   decoder=seg_unet \
    preprocessing=seg_default \
    criterion=cross_entropy \
    task=segmentation \
