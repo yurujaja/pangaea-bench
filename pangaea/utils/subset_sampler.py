@@ -63,19 +63,19 @@ def stratify_classification_dataset_indices(dataset, num_classes, label_fraction
     # Combine the bins for each class to create unique bin identifiers
     combined_bins = np.apply_along_axis(lambda row: ''.join(map(str, row)), axis=1, arr=binned_distributions)
 
-    # Populate the dictionary with indices based on combined bin identifiers
+    # Step 4: Populate the dictionary with indices based on combined bin identifiers
     for idx, bin_id in enumerate(combined_bins):
         if bin_id not in indices_per_bin:
             indices_per_bin[bin_id] = []
         indices_per_bin[bin_id].append(idx)
 
-    # Step 4: Select a proportion of indices from each bin
+    # Step 5: Select a fraction of indices from each bin
     selected_idx = []
     for bin_id, indices in indices_per_bin.items():
         num_to_select = int(max(1, len(indices) * label_fraction))  # Ensure at least one index is selected
         selected_idx.extend(np.random.choice(indices, num_to_select, replace=False))
 
-    # Step 5: Determine the remaining indices not selected
+    # Step 6: List the remaining unselected indices
     other_idx = list(set(range(len(dataset))) - set(selected_idx))
 
     return selected_idx, other_idx
@@ -97,12 +97,13 @@ def stratify_regression_dataset_indices(dataset, label_fraction=1.0, num_bins=3,
         if bin_index in indices_per_bin:
             indices_per_bin[bin_index].append(index)
 
-    # Step 5: Select fraction of indices from each bin
+    # Step 5: Select a fraction of indices from each bin
     selected_idx = []
     for bin_index, indices in indices_per_bin.items():
         num_to_select = int(max(1, len(indices) * label_fraction))  # Ensure at least one index is selected
         selected_idx.extend(np.random.choice(indices, num_to_select, replace=False))
-
+        
+    # Step 6: List the remaining unselected indices
     other_idx = list(set(range(len(dataset))) - set(selected_idx))
 
     return selected_idx, other_idx
