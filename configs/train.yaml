@@ -14,8 +14,9 @@ finetune: false
 ckpt_dir: null
 limited_label_train: 1
 limited_label_val: 1
-limited_label_strategy: stratified_classification  # stratified_regression, random
+limited_label_strategy: stratified  # Options: stratified, oversampled, random
 stratification_bins: 3 #  number of bins for stratified sampling, only for stratified
+
 
 
 defaults:

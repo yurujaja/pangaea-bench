@@ -29,21 +29,30 @@ from pangaea.utils.subset_sampler import get_subset_indices
 from pangaea.datasets.base import GeoFMSubset
 
 
-def get_exp_name(hydra_config: HydraConf) -> str:
+def get_exp_info(hydra_config: HydraConf) -> str:
     """Create a unique experiment name based on the choices made in the config.
 
     Args:
         hydra_config (HydraConf): hydra config.
 
     Returns:
-        str: experiment name.
+        str: experiment information.
     """
     choices = OmegaConf.to_container(hydra_config.runtime.choices)
     timestamp = time.strftime("%Y%m%d_%H%M%S", time.localtime())
     fm = choices["encoder"]
     decoder = choices["decoder"]
     ds = choices["dataset"]
-    return f"{timestamp}-{fm}-{decoder}-{ds}"
+    task = choices["task"]
+    exp_info = {
+        "timestamp": timestamp,
+        "fm": fm,
+        "decoder": decoder,
+        "ds": ds,
+        "task": task,
+        "exp_name": f"{timestamp}_{fm}_{decoder}_{ds}",
+    }
+    return exp_info
 
 
 @hydra.main(version_base=None, config_path="../configs", config_name="train")
@@ -66,7 +75,9 @@ def main(cfg: DictConfig) -> None:
     # true if training else false
     train_run = cfg.train
     if train_run:
-        exp_name = get_exp_name(HydraConfig.get())
+        exp_info = get_exp_info(HydraConfig.get())
+        exp_name = exp_info["exp_name"]
+        task_name = exp_info["task"]
         exp_dir = pathlib.Path(cfg.work_dir) / exp_name
         exp_dir.mkdir(parents=True, exist_ok=True)
         logger_path = exp_dir / "train.log"
@@ -152,14 +163,14 @@ def main(cfg: DictConfig) -> None:
 
         if 0 < cfg.limited_label_train < 1:
             indices = get_subset_indices(
-                train_dataset, strategy=cfg.limited_label_strategy, 
+                train_dataset, task=task_name, strategy=cfg.limited_label_strategy, 
                 label_fraction=cfg.limited_label_train, num_bins=cfg.stratification_bins, logger=logger
             )
             train_dataset = GeoFMSubset(train_dataset, indices)
             
         if 0 < cfg.limited_label_val < 1:
             indices = get_subset_indices(
-                val_dataset, strategy=cfg.limited_label_strategy, 
+                val_dataset, task=task_name, strategy=cfg.limited_label_strategy, 
                 label_fraction=cfg.limited_label_val, num_bins=cfg.stratification_bins, logger=logger
             )
             val_dataset = GeoFMSubset(val_dataset, indices)

@@ -78,10 +78,7 @@ class Trainer:
         self.training_metrics = {}
         self.best_ckpt = None
         self.best_metric_comp = operator.gt
-        if isinstance(self.train_loader.dataset, Subset):
-            self.num_classes = self.train_loader.dataset.dataset.num_classes
-        else:
-            self.num_classes = self.train_loader.dataset.num_classes
+        self.num_classes = self.train_loader.dataset.num_classes
 
         assert precision in [
             "fp32",
