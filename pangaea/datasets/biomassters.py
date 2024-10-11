@@ -2,8 +2,7 @@ import numpy as np
 import torch
 import pandas as pd
 import pathlib
-import rasterio
-from tifffile import imread
+import tifffile
 from os.path import join as opj
 
 from pangaea.datasets.utils import read_tif
@@ -23,7 +22,7 @@ def read_imgs(multi_temporal, temp , fname, data_dir, img_size):
 
         s1_filepath = data_dir.joinpath(s1_fname)
         if s1_filepath.exists():
-            img_s1 = imread(s1_filepath)
+            img_s1 = tifffile.imread(s1_filepath)
             m = img_s1 == -9999
             img_s1 = img_s1.astype('float32')
             img_s1 = np.where(m, 0, img_s1)
@@ -32,7 +31,7 @@ def read_imgs(multi_temporal, temp , fname, data_dir, img_size):
         
         s2_filepath = data_dir.joinpath(s2_fname)
         if s2_filepath.exists():
-            img_s2 = imread(s2_filepath)
+            img_s2 = tifffile.imread(s2_filepath)
             img_s2 = img_s2.astype('float32')
         else:            
             img_s2 = np.zeros((img_size, img_size) + (11,), dtype='float32')
@@ -155,8 +154,7 @@ class BioMassters(GeoFMDataset):
         fname = str(chip_id)+'_agbm.tif'
         
         imgs_s1, imgs_s2, mask = read_imgs(self.multi_temporal, self.temp, fname, self.dir_features, self.img_size)
-        with rasterio.open(self.dir_labels.joinpath(fname)) as lbl:
-            target = lbl.read(1)
+        target = tifffile.imread(self.dir_labels.joinpath(fname), key=0)
         target = np.nan_to_num(target)
 
         imgs_s1 = torch.from_numpy(imgs_s1).float()

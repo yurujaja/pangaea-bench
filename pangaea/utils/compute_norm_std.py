@@ -1,7 +1,7 @@
 import glob
 import numpy as np
 import os
-import rasterio
+import tifffile
 
 
 def compute_norm_std(split_file_path, data_root_path):
@@ -26,9 +26,9 @@ def compute_norm_std(split_file_path, data_root_path):
 
     data_list = []
     for img in path:
-        with rasterio.open(img) as src:
-            data = src.read()
-            data = np.nan_to_num(data)
+        data = tifffile.imread(img)
+        data = data.transpose(2, 0, 1)
+        data = np.nan_to_num(data)
 
         data = data.reshape((2, -1))
         data_list.append(data)

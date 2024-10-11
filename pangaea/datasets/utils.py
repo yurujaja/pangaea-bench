@@ -1,6 +1,6 @@
 import os
 import tqdm
-import rasterio
+import tifffile
 import pathlib
 import concurrent.futures
 from google.cloud.storage import Client
@@ -83,14 +83,5 @@ def download_bucket_concurrently(bucket_name, destination_directory=""):
 
 
 def read_tif(file: pathlib.Path):
-    with rasterio.open(file) as dataset:
-        arr = dataset.read()  # (bands X height X width)
-    return arr.transpose((1, 2, 0))
-
-
-def read_tif_with_metadata(file: pathlib.Path):
-    with rasterio.open(file) as dataset:
-        arr = dataset.read()  # (bands X height X width)
-        transform = dataset.transform
-        crs = dataset.crs
-    return arr.transpose((1, 2, 0)), transform, crs
+    arr = tifffile.imread(file)
+    return arr.transpose(2, 0, 1)
