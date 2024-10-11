@@ -152,7 +152,7 @@ class LTAE2d(nn.Module):
 
         attn = attn.view(self.n_head, sz_b, h, w, seq_len).permute(
             0, 1, 4, 2, 3
-        )  # head x b x t x h x w
+        ).contiguous()  # head x b x t x h x w
 
         if self.return_att:
             return out, attn
