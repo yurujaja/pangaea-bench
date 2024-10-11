@@ -7,7 +7,7 @@ from tifffile import imread
 from os.path import join as opj
 
 from pangaea.datasets.utils import read_tif
-from pangaea.datasets.base import GeoFMDataset
+from pangaea.datasets.base import RawGeoFMDataset
 
 def read_imgs(multi_temporal, temp , fname, data_dir, img_size):
     imgs_s1, imgs_s2, mask = [], [], []
@@ -49,7 +49,7 @@ def read_imgs(multi_temporal, temp , fname, data_dir, img_size):
     imgs_s2 = np.stack(imgs_s2, axis=1)
     return imgs_s1, imgs_s2, mask
 
-class BioMassters(GeoFMDataset):
+class BioMassters(RawGeoFMDataset):
     def __init__(
         self,
         split: str,

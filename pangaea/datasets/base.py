@@ -2,7 +2,9 @@ import torch
 from torch.utils.data import Dataset, Subset
 import os
 
-class GeoFMDataset(Dataset):
+from pangaea.engine.data_preprocessor import Preprocessor
+
+class RawGeoFMDataset(Dataset):
     """Base class for all datasets."""
 
     def __init__(
@@ -117,30 +119,69 @@ class GeoFMDataset(Dataset):
         raise NotImplementedError
 
 
+class GeoFMDataset(Dataset):
+    """Base class for all datasets."""
+
+    def __init__(
+        self,
+        dataset: RawGeoFMDataset,
+        preprocessor: Preprocessor = None,
+    ):
+        """Initializes the dataset.
+
+        Args:
+
+        """
+        super().__init__()
+        self.__dict__.update(dataset.__dict__)
+        self.raw_dataset = dataset
+        self.preprocessor = preprocessor
+
+
+
+    def __len__(self) -> int:
+        """Returns the length of the dataset.
+
+        Returns:
+            int: length of the dataset
+        """
+
+        return len(self.raw_dataset)
+
+    def __getitem__(self, i: int) -> dict[str, torch.Tensor | dict[str, torch.Tensor]]:
+        """Returns the i-th item of the dataset.
+
+        Args:
+            i (int): index of the item
+
+        Raises:
+            NotImplementedError: raise if the method is not implemented
+
+        Returns:
+            dict[str, torch.Tensor | dict[str, torch.Tensor]]: output dictionary follwing the format
+            {"image":
+                {
+                "optical": torch.Tensor of shape (C H W) (or (C T H W) if multi-temporal dataset),
+                 "sar": torch.Tensor of shape (C H W) (or (C T H W) if multi-temporal dataset)
+                 },
+            "target": torch.Tensor of shape (H W),
+             "metadata": dict}.
+        """
+
+        output = self.raw_dataset[i]
+        if self.preprocessor is not None:
+            output = self.preprocessor(output)
+
+        return output
+
 class GeoFMSubset(Subset):
     """Custom subset class that retains dataset attributes."""
 
     def __init__(self, dataset, indices):
         super().__init__(dataset, indices)
-        
+
         # Copy relevant attributes from the original dataset
-        self.dataset_name = getattr(dataset, 'dataset_name', None)
-        self.root_path = getattr(dataset, 'root_path', None)
-        self.auto_download = getattr(dataset, 'auto_download', None)
-        self.download_url = getattr(dataset, 'download_url', None)
-        self.img_size = getattr(dataset, 'img_size', None)
-        self.multi_temporal = getattr(dataset, 'multi_temporal', None)
-        self.multi_modal = getattr(dataset, 'multi_modal', None)
-        self.ignore_index = getattr(dataset, 'ignore_index', None)
-        self.num_classes = getattr(dataset, 'num_classes', None)
-        self.classes = getattr(dataset, 'classes', None)
-        self.distribution = getattr(dataset, 'distribution', None)
-        self.bands = getattr(dataset, 'bands', None)
-        self.data_mean = getattr(dataset, 'data_mean', None)
-        self.data_std = getattr(dataset, 'data_std', None)
-        self.data_min = getattr(dataset, 'data_min', None)
-        self.data_max = getattr(dataset, 'data_max', None)
-        self.split = getattr(dataset, 'split', None)
+        self.__dict__.update(dataset.__dict__)
 
     def filter_by_indices(self, indices):
         """Apply filtering by indices directly in this subset."""

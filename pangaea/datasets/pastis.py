@@ -14,7 +14,7 @@ import rasterio
 import torch
 from einops import rearrange
 
-from pangaea.datasets.base import GeoFMDataset
+from pangaea.datasets.base import RawGeoFMDataset
 
 
 def prepare_dates(date_dict, reference_date):
@@ -64,7 +64,7 @@ def split_image(image_tensor, nb_split, id):
         ].float()
 
 
-class Pastis(GeoFMDataset):
+class Pastis(RawGeoFMDataset):
     def __init__(
         self,
         split: str,

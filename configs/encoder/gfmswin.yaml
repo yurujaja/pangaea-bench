@@ -7,7 +7,6 @@ in_chans: 3
 t_patch_size: 3
 depth: 12
 embed_dim: 128
-output_dim: 1024
 img_size: 192    # fixed to 192 to avoid interpolation in checkpoints which leads to drop in performance
 depths: [ 2, 2, 18, 2 ]  
 num_heads: [ 4, 8, 16, 32 ]
@@ -28,3 +27,8 @@ output_layers:
   - 2
   - 3
 
+output_dim:
+  - 256
+  - 512
+  - 1024
+  - 1024

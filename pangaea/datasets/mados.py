@@ -18,14 +18,14 @@ import torchvision.transforms.functional as TF
 import torchvision.transforms as T
 
 from pangaea.datasets.utils import DownloadProgressBar
-from pangaea.datasets.base import GeoFMDataset
+from pangaea.datasets.base import RawGeoFMDataset
 
 ###############################################################
 # MADOS DATASET                                               #
 ###############################################################
 
 # @DATASET_REGISTRY.register()
-class MADOS(GeoFMDataset):
+class MADOS(RawGeoFMDataset):
     def __init__(
         self,
         split: str,

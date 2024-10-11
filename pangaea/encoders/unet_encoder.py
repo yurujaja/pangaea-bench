@@ -25,6 +25,7 @@ class UNet(Encoder):
         input_bands: dict[str, list[str]],
         input_size: int,
         topology: Sequence[int],
+        output_dim: int | list[int],
         download_url: str,
         encoder_weights: str | None = None,
     ):
@@ -35,8 +36,10 @@ class UNet(Encoder):
             input_size=input_size,
             embed_dim=0,
             output_dim=0,
+            output_layers=output_layers,
             multi_temporal=False,  # single time frame
             multi_temporal_output=False,
+            pyramid_output=True,
             download_url=download_url,
         )
 

@@ -5,9 +5,11 @@ use_wandb: false
 wandb_run_id: null
 
 # TRAINING
-num_workers: 1
-batch_size: 32
+num_workers: 4
+batch_size: 8
 
+test_num_workers: 4
+test_batch_size: 2
 
 # EXPERIMENT
 finetune: false

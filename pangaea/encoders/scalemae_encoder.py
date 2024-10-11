@@ -54,6 +54,7 @@ class ScaleMAE_Encoder(Encoder):
         input_size: int,
         input_bands: dict[str, list[str]],
         output_layers: int | list[int],
+        output_dim: int | list[int],
         download_url: str,
         embed_dim: int = 1024,
         patch_size: int = 16,
@@ -71,9 +72,11 @@ class ScaleMAE_Encoder(Encoder):
             input_bands=input_bands,
             input_size=input_size,
             embed_dim=embed_dim,
-            output_dim=embed_dim,
+            output_layers=output_layers,
+            output_dim=output_dim,
             multi_temporal=False,
             multi_temporal_output=False,
+            pyramid_output=False,
             download_url=download_url,
         )
 

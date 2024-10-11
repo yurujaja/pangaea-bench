@@ -57,9 +57,11 @@ class Encoder(nn.Module):
         input_bands: dict[str, list[str]],
         input_size: int,
         embed_dim: int,
-        output_dim: int,
+        output_layers: list[int],
+        output_dim: int | list[int],
         multi_temporal: bool,
         multi_temporal_output: bool,
+        pyramid_output: bool,
         encoder_weights: str | Path,
         download_url: str,
     ) -> None:
@@ -82,10 +84,13 @@ class Encoder(nn.Module):
         self.input_bands = input_bands
         self.input_size = input_size
         self.embed_dim = embed_dim
-        self.output_dim = output_dim
+        self.output_layers = output_layers
+        self.output_dim = [output_dim for _ in output_layers] if isinstance(output_dim, int) else output_dim
         self.encoder_weights = encoder_weights
         self.multi_temporal = multi_temporal
         self.multi_temporal_output = multi_temporal_output
+
+        self.pyramid_output = pyramid_output
         self.download_url = download_url
 
         # download_model if necessary
@@ -101,6 +106,11 @@ class Encoder(nn.Module):
             NotImplementedError: raise if the method is not implemented.
         """
         raise NotImplementedError
+
+    def enforce_single_temporal(self):
+        return
+        #self.multi_temporal = False
+        #self.multi_temporal_fusion = False
 
     def parameters_warning(
         self,

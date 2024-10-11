@@ -26,7 +26,7 @@ from pangaea.utils.utils import (
     seed_worker,
 )
 from pangaea.utils.subset_sampler import get_subset_indices
-from pangaea.datasets.base import GeoFMSubset
+from pangaea.datasets.base import GeoFMSubset, GeoFMDataset, RawGeoFMDataset
 
 
 def get_exp_info(hydra_config: HydraConf) -> str:
@@ -121,12 +121,6 @@ def main(cfg: DictConfig) -> None:
     logger.info("The experiment is stored in %s\n" % exp_dir)
     logger.info(f"Device used: {device}")
 
-    # get datasets
-    train_dataset: Dataset = instantiate(cfg.dataset, split="train")
-    val_dataset: Dataset = instantiate(cfg.dataset, split="val")
-    test_dataset: Dataset = instantiate(cfg.dataset, split="test")
-    logger.info("Built {} dataset.".format(cfg.dataset.dataset_name))
-
     encoder: Encoder = instantiate(cfg.encoder)
     encoder.load_encoder_weights(logger)
     logger.info("Built {}.".format(encoder.model_name))
@@ -151,15 +145,20 @@ def main(cfg: DictConfig) -> None:
 
     # training
     if train_run:
+        # get preprocessor
+        train_preprocessor = instantiate(cfg.preprocessing.train, dataset_cfg=cfg.dataset, encoder_cfg=cfg.encoder,
+                                         _recursive_=False)
+        val_preprocessor = instantiate(cfg.preprocessing.val, dataset_cfg=cfg.dataset, encoder_cfg=cfg.encoder,
+                                       _recursive_=False)
 
-        for preprocess in cfg.preprocessing.train:
-            train_dataset: Dataset = instantiate(
-                preprocess, dataset=train_dataset, encoder=encoder
-            )
-        for preprocess in cfg.preprocessing.test:
-            val_dataset: Dataset = instantiate(
-                preprocess, dataset=val_dataset, encoder=encoder
-            )
+        # get datasets
+        raw_train_dataset: RawGeoFMDataset = instantiate(cfg.dataset, split="train")
+        raw_val_dataset: RawGeoFMDataset = instantiate(cfg.dataset, split="val")
+        train_dataset = GeoFMDataset(raw_train_dataset, train_preprocessor)
+        val_dataset = GeoFMDataset(raw_val_dataset, val_preprocessor)
+
+        logger.info("Built {} dataset.".format(cfg.dataset.dataset_name))
+
 
         if 0 < cfg.limited_label_train < 1:
             indices = get_subset_indices(
@@ -198,8 +197,8 @@ def main(cfg: DictConfig) -> None:
         val_loader = DataLoader(
             val_dataset,
             sampler=DistributedSampler(val_dataset),
-            batch_size=cfg.batch_size,
-            num_workers=cfg.num_workers,
+            batch_size=cfg.test_batch_size,
+            num_workers=cfg.test_num_workers,
             pin_memory=True,
             persistent_workers=False,
             worker_init_fn=seed_worker,
@@ -237,16 +236,18 @@ def main(cfg: DictConfig) -> None:
         trainer.train()
 
     # Evaluation
-    for preprocess in cfg.preprocessing.test:
-        test_dataset: Dataset = instantiate(
-            preprocess, dataset=test_dataset, encoder=encoder
-        )
+    test_preprocessor = instantiate(cfg.preprocessing.test, dataset_cfg=cfg.dataset, encoder_cfg=cfg.encoder,
+                                        _recursive_=False)
+
+        # get datasets
+    raw_test_dataset: RawGeoFMDataset = instantiate(cfg.dataset, split="test")
+    test_dataset = GeoFMDataset(raw_test_dataset, test_preprocessor)
 
     test_loader = DataLoader(
         test_dataset,
         sampler=DistributedSampler(test_dataset),
-        batch_size=cfg.batch_size,
-        num_workers=cfg.num_workers,
+        batch_size=cfg.test_batch_size,
+        num_workers=cfg.test_num_workers,
         pin_memory=True,
         persistent_workers=False,
         drop_last=False,

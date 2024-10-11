@@ -25,3 +25,5 @@ output_layers:
   - 11
   - 15
   - 23
+
+output_dim: 1024

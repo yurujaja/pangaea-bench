@@ -8,9 +8,9 @@ import rasterio
 import torch
 
 from pangaea.datasets.utils import download_bucket_concurrently
-from pangaea.datasets.base import GeoFMDataset
+from pangaea.datasets.base import RawGeoFMDataset
 
-class Sen1Floods11(GeoFMDataset):
+class Sen1Floods11(RawGeoFMDataset):
 
     def __init__(
         self,

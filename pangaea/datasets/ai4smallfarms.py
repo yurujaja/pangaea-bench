@@ -8,10 +8,10 @@ import torch
 from pyDataverse.api import DataAccessApi, NativeApi
 from tifffile import imread
 
-from pangaea.datasets.base import GeoFMDataset
+from pangaea.datasets.base import RawGeoFMDataset
 
 
-class AI4SmallFarms(GeoFMDataset):
+class AI4SmallFarms(RawGeoFMDataset):
     def __init__(
         self,
         split: str,

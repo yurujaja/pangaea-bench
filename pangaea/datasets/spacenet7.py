@@ -23,7 +23,7 @@ import torchvision.transforms as T
 from abc import abstractmethod
 
 from pangaea.datasets.utils import DownloadProgressBar
-from pangaea.datasets.base import GeoFMDataset
+from pangaea.datasets.base import RawGeoFMDataset
 # from utils.registry import DATASET_REGISTRY
 
 # train/val/test split from https://doi.org/10.3390/rs15215135
@@ -98,7 +98,7 @@ SN7_TEST = [
 # SPACENET 7 DATASET                                             #
 ###############################################################
 
-class AbstractSN7(GeoFMDataset):
+class AbstractSN7(RawGeoFMDataset):
 
     def __init__(
         self,

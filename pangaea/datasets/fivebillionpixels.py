@@ -19,9 +19,9 @@ import urllib
 import tarfile
 from pangaea.datasets.utils import DownloadProgressBar
 
-from pangaea.datasets.base import GeoFMDataset
+from pangaea.datasets.base import RawGeoFMDataset
 
-class FiveBillionPixels(GeoFMDataset):
+class FiveBillionPixels(RawGeoFMDataset):
     def __init__(
         self,
         split: str,

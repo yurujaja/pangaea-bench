@@ -6,3 +6,9 @@ topology: [64, 128, 256, 512,]
 
 input_bands: ${dataset.bands}
 
+output_dim:
+  - 64
+  - 128
+  - 256
+  - 512
+

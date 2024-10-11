@@ -12,12 +12,12 @@ import pandas as pd
 
 import torch
 
-from pangaea.datasets.base import GeoFMDataset
+from pangaea.datasets.base import RawGeoFMDataset
 # from utils.registry import DATASET_REGISTRY
 
 
 # @DATASET_REGISTRY.register()
-class CropTypeMappingSouthSudan(GeoFMDataset):
+class CropTypeMappingSouthSudan(RawGeoFMDataset):
     def __init__(
         self,
         split: str,

@@ -418,7 +418,8 @@ class SatlasNet_Encoder(Encoder):
         self,
         input_bands: dict[str, list[str]],
         input_size: int,
-        output_dim: int,
+        output_dim: int | list[int],
+        output_layers: int | list[int],
         model_identifier: str,
         encoder_weights: str | Path,
         download_url: str,
@@ -433,9 +434,11 @@ class SatlasNet_Encoder(Encoder):
             input_bands=input_bands,
             input_size=input_size,
             embed_dim=768,  # will be overwritten by the backbone
+            output_layers=output_layers,
             output_dim=output_dim,
             multi_temporal=False if "_SI_" in model_identifier else True,
             multi_temporal_output=False,
+            pyramid_output=True,
             download_url=download_url,
         )
 
@@ -450,7 +453,6 @@ class SatlasNet_Encoder(Encoder):
         self.multi_image = model_info["multi_image"]
         self.backbone_arch = model_info["backbone"]
 
-        self.out_dim = self.output_dim
 
         self.backbone = self._initialize_backbone(
             self.in_chans, self.backbone_arch, self.multi_image
@@ -542,9 +544,12 @@ class SatlasNet_Encoder(Encoder):
 
     def forward(self, imgs):
         # Define forward pass
+        print(imgs["optical"].shape)
+        if not isinstance(self.backbone, AggregationBackbone):
+            print(xx)
+            imgs["optical"] = imgs["optical"].squeeze(2)
 
-        x = imgs["optical"].squeeze(2)
-        x = self.backbone(x)
+        x = self.backbone(imgs["optical"])
 
         if self.fpn:
             x = self.fpn(x)
@@ -552,8 +557,6 @@ class SatlasNet_Encoder(Encoder):
 
         output = []
         for i in range(len(x)):
-            B, C, H, W = x[i].shape
-            out = x[i].repeat(1, self.out_dim // C, 1, 1)
-            output.append(out)
+            output.append(x[i])
 
         return output
