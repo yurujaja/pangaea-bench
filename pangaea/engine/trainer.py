@@ -152,17 +152,19 @@ class Trainer:
 
             self.optimizer.zero_grad()
 
-            if not torch.isnan(loss):
-                self.scaler.scale(loss).backward()
-                self.scaler.step(self.optimizer)
-                self.scaler.update()
-                self.training_stats['loss'].update(loss.item())
-                with torch.no_grad():
-                    self.compute_logging_metrics(logits, target)
-                if (batch_idx + 1) % self.log_interval == 0:
-                    self.log(batch_idx + 1, epoch)
-            else:
-                self.logger.warning("Skip batch {} because of nan loss".format(batch_idx + 1))
+            if not torch.isfinite(loss):
+                raise FloatingPointError(
+                    f"Rank {self.rank} got infinite/NaN loss at batch {batch_idx} of epoch {epoch}!"
+                )
+
+            self.scaler.scale(loss).backward()
+            self.scaler.step(self.optimizer)
+            self.scaler.update()
+            self.training_stats['loss'].update(loss.item())
+            with torch.no_grad():
+                self.compute_logging_metrics(logits, target)
+            if (batch_idx + 1) % self.log_interval == 0:
+                self.log(batch_idx + 1, epoch)
 
             self.lr_scheduler.step()
 
