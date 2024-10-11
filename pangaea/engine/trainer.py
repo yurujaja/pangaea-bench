@@ -102,7 +102,7 @@ class Trainer:
         # end_time = time.time()
         for epoch in range(self.start_epoch, self.n_epochs):
             # train the network for one epoch
-            if epoch > 0 and epoch % self.eval_interval == 0:
+            if epoch % self.eval_interval == 0:
                 metrics, used_time = self.evaluator(self.model, f"epoch {epoch}")
                 self.training_stats["eval_time"].update(used_time)
                 self.set_best_checkpoint(metrics, epoch)
