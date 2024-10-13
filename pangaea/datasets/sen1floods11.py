@@ -14,8 +14,24 @@ class Sen1Floods11(RawGeoFMDataset):
 
     def __init__(
         self,
-        gcs_bucket: str,
-        **kwargs
+        split: str,
+        dataset_name: str,
+        multi_modal: bool,
+        multi_temporal: int,
+        root_path: str,
+        classes: list,
+        num_classes: int,
+        ignore_index: int,
+        img_size: int,
+        bands: dict[str, list[str]],
+        distribution: list[int],
+        data_mean: dict[str, list[str]],
+        data_std: dict[str, list[str]],
+        data_min: dict[str, list[str]],
+        data_max: dict[str, list[str]],
+        download_url: str,
+        auto_download: bool,
+        gcs_bucket: str, 
     ):
         """Initialize the Sen1Floods11 dataset.
         Link: https://github.com/cloudtostreet/Sen1Floods11
@@ -51,12 +67,45 @@ class Sen1Floods11(RawGeoFMDataset):
 
         self.gcs_bucket = gcs_bucket
 
-        super(Sen1Floods11, self).__init__(**kwargs)
+        super(Sen1Floods11, self).__init__(
+            split=split,
+            dataset_name=dataset_name,
+            multi_modal=multi_modal,
+            multi_temporal=multi_temporal,
+            root_path=root_path,
+            classes=classes,
+            num_classes=num_classes,
+            ignore_index=ignore_index,
+            img_size=img_size,
+            bands=bands,
+            distribution=distribution,
+            data_mean=data_mean,
+            data_std=data_std,
+            data_min=data_min,
+            data_max=data_max,
+            download_url=download_url,
+            auto_download=auto_download,
+        )
 
+        self.root_path = root_path
+        self.classes = classes
+        self.split = split
+
+        self.data_mean = data_mean
+        self.data_std = data_std
+        self.data_min = data_min
+        self.data_max = data_max
+        self.classes = classes
+        self.img_size = img_size
+        self.distribution = distribution
+        self.num_classes = num_classes
+        self.ignore_index = ignore_index
+        self.download_url = download_url
+        self.auto_download = auto_download
         
         self.split_mapping = {'train': 'train', 'val': 'valid', 'test': 'test'}
 
-        split_file = os.path.join(self.root_path, "v1.1", f"splits/flood_handlabeled/flood_{self.split_mapping[self.split]}_data.csv")
+        split_file = os.path.join(self.root_path, "v1.1", f"splits/flood_handlabeled/flood_{self.split_mapping[split]}_data.csv")
         metadata_file = os.path.join(self.root_path, "v1.1", "Sen1Floods11_Metadata.geojson")
         data_root = os.path.join(self.root_path, "v1.1", "data/flood_events/HandLabeled/")
 
@@ -104,19 +153,18 @@ class Sen1Floods11(RawGeoFMDataset):
 
         s2_image = torch.from_numpy(s2_image).float()
         s1_image = torch.from_numpy(s1_image).float()   
-        target = torch.from_numpy(target).long()
+        target = torch.from_numpy(target)
 
         output = {
             'image': {
-                'optical': s2_image.unsqueeze(1),
-                'sar' : s1_image.unsqueeze(1),
+                'optical': s2_image,
+                'sar' : s1_image,
             },
             'target': target,
             'metadata': {
                 "timestamp": timestamp,
             }
         }
-
         return output
 
     @staticmethod
