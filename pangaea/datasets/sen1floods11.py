@@ -153,18 +153,19 @@ class Sen1Floods11(RawGeoFMDataset):
 
         s2_image = torch.from_numpy(s2_image).float()
         s1_image = torch.from_numpy(s1_image).float()   
-        target = torch.from_numpy(target)
+        target = torch.from_numpy(target).long()
 
         output = {
             'image': {
-                'optical': s2_image,
-                'sar' : s1_image,
+                'optical': s2_image.unsqueeze(1),
+                'sar' : s1_image.unsqueeze(1),
             },
             'target': target,
             'metadata': {
                 "timestamp": timestamp,
             }
         }
+        
         return output
 
     @staticmethod
@@ -174,5 +175,4 @@ class Sen1Floods11(RawGeoFMDataset):
                 print("Sen1Floods11 Dataset folder exists, skipping downloading dataset.")
             return
         download_bucket_concurrently(self.gcs_bucket, self.root_path)
-
 
