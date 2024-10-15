@@ -177,16 +177,16 @@ We have designed the repo to allow for using your own datasets with minimal effo
 1. **Implement a Dataset Class**:
 
    - In the `pangaea/datasets/` directory, create a new Python file named after your dataset (e.g., `my_dataset.py`).
-   - Implement a class that inherits from `GeoFMDataset`. You can check it in `pangaea/datasets/base.py`.
+   - Implement a class that inherits from `RawGeoFMDataset`. You can check it in `pangaea/datasets/base.py`.
    - Be sure that your dataset is instantiated with all the required parameters from the `GeoFMDataset`. You can also add new parameters.
    - Implement the required methods: `__init__`, `__len__`, `__getitem__`, and `download` (if applicable, otherwise a `NotImplementedError is raised`).
    - **Example**:
 
      ```python
      import torch
-     from pangaea.datasets.base import GeoFMDataset
+     from pangaea.datasets.base import RawGeoFMDataset
 
-     class MyDataset(GeoFMDataset):
+     class MyDataset(RawGeoFMDataset):
           def __init__(
              self,
              split: str,
@@ -236,6 +236,25 @@ We have designed the repo to allow for using your own datasets with minimal effo
              return len(self.file_list)
 
          def __getitem__(self, index):
+            """Returns the i-th item of the dataset.
+
+            Args:
+                i (int): index of the item
+
+            Raises:
+                NotImplementedError: raise if the method is not implemented
+
+            Returns:
+                dict[str, torch.Tensor | dict[str, torch.Tensor]]: output dictionary follwing the format
+                {"image":
+                    {
+                    "optical": torch.Tensor of shape (C T H W) (where T=1 if single-temporal dataset),
+                     "sar": torch.Tensor of shape (C T H W) (where T=1 if single-temporal dataset),
+                     },
+                "target": torch.Tensor of shape (H W) of type torch.int64 for segmentation, torch.float for
+                regression datasets.,
+                 "metadata": dict}.
+            """
              # Load your data and labels here
              image = ...  # Load image
              target = ...  # Load target label or mask
