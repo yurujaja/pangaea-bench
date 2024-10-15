@@ -85,7 +85,11 @@ class Encoder(nn.Module):
         self.input_size = input_size
         self.embed_dim = embed_dim
         self.output_layers = output_layers
-        self.output_dim = [output_dim for _ in output_layers] if isinstance(output_dim, int) else output_dim
+        self.output_dim = (
+            [output_dim for _ in output_layers]
+            if isinstance(output_dim, int)
+            else list(output_dim)
+        )
         self.encoder_weights = encoder_weights
         self.multi_temporal = multi_temporal
         self.multi_temporal_output = multi_temporal_output
@@ -109,8 +113,8 @@ class Encoder(nn.Module):
 
     def enforce_single_temporal(self):
         return
-        #self.multi_temporal = False
-        #self.multi_temporal_fusion = False
+        # self.multi_temporal = False
+        # self.multi_temporal_fusion = False
 
     def parameters_warning(
         self,
