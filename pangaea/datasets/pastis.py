@@ -141,31 +141,15 @@ class Pastis(RawGeoFMDataset):
             folds = [4]
         else:
             folds = [5]
-
-        self.dataset_name = dataset_name
-        self.bands = bands
-        self.split = split
-        self.path = root_path
-        self.data_mean = data_mean
-        self.data_std = data_std
-        self.data_min = data_min
-        self.data_max = data_max
-        self.classes = classes
-        self.img_size = img_size
-        self.distribution = distribution
-
-        self.num_classes = num_classes
-        self.ignore_index = ignore_index
-        self.grid_size = multi_temporal
-        self.download_url = download_url
-        self.auto_download = auto_download
         self.modalities = ["s2", "aerial", "s1-asc"]
         self.nb_split = 1
 
         reference_date = "2018-09-01"
         self.reference_date = datetime(*map(int, reference_date.split("-")))
 
-        self.meta_patch = gpd.read_file(os.path.join(self.path, "metadata.geojson"))
+        self.meta_patch = gpd.read_file(
+            os.path.join(self.root_path, "metadata.geojson")
+        )
 
         self.num_classes = 20
 
@@ -193,19 +177,16 @@ class Pastis(RawGeoFMDataset):
         part = i % (self.nb_split * self.nb_split)
         label = torch.from_numpy(
             np.load(
-                os.path.join(self.path, "ANNOTATIONS/TARGET_" + str(name) + ".npy")
+                os.path.join(self.root_path, "ANNOTATIONS/TARGET_" + str(name) + ".npy")
             )[0].astype(np.int32)
         )
-        # remove void class
-        label[label == 19] = self.ignore_index
-        # label = label[1:-1]  # remove Background and Void classes
         output = {"label": label, "name": name}
 
         for modality in self.modalities:
             if modality == "aerial":
                 with rasterio.open(
                     os.path.join(
-                        self.path,
+                        self.root_path,
                         "DATA_SPOT/PASTIS_SPOT6_RVB_1M00_2019/SPOT6_RVB_1M00_2019_"
                         + str(name)
                         + ".tif",
@@ -220,7 +201,7 @@ class Pastis(RawGeoFMDataset):
                     torch.from_numpy(
                         np.load(
                             os.path.join(
-                                self.path,
+                                self.root_path,
                                 "DATA_{}".format(modality_name.upper()),
                                 "{}_{}.npy".format(modality_name.upper(), name),
                             )
@@ -237,7 +218,7 @@ class Pastis(RawGeoFMDataset):
                     torch.from_numpy(
                         np.load(
                             os.path.join(
-                                self.path,
+                                self.root_path,
                                 "DATA_{}".format(modality_name.upper()),
                                 "{}_{}.npy".format(modality_name.upper(), name),
                             )
@@ -254,7 +235,7 @@ class Pastis(RawGeoFMDataset):
                     torch.from_numpy(
                         np.load(
                             os.path.join(
-                                self.path,
+                                self.root_path,
                                 "DATA_{}".format(modality_name.upper()),
                                 "{}_{}.npy".format(modality_name.upper(), name),
                             )
@@ -286,7 +267,7 @@ class Pastis(RawGeoFMDataset):
                     torch.from_numpy(
                         np.load(
                             os.path.join(
-                                self.path,
+                                self.root_path,
                                 "DATA_{}".format(modality_name.upper()),
                                 "{}_{}.npy".format(modality_name.upper(), name),
                             )
@@ -319,7 +300,7 @@ class Pastis(RawGeoFMDataset):
                         torch.from_numpy(
                             np.load(
                                 os.path.join(
-                                    self.path,
+                                    self.root_path,
                                     "DATA_{}".format(modality_name.upper()),
                                     "{}_{}.npy".format(modality_name.upper(), name),
                                 )
@@ -337,7 +318,7 @@ class Pastis(RawGeoFMDataset):
                         torch.from_numpy(
                             np.load(
                                 os.path.join(
-                                    self.path,
+                                    self.root_path,
                                     "DATA_{}".format(modality.upper()),
                                     "{}_{}.npy".format(modality.upper(), name),
                                 )
@@ -360,17 +341,17 @@ class Pastis(RawGeoFMDataset):
         optical_ts = rearrange(output["s2"], "t c h w -> c t h w")
         sar_ts = rearrange(output["s1-asc"], "t c h w -> c t h w")
 
-        if self.grid_size == 1:
+        if self.multi_temporal == 1:
             # we only take the last frame
             optical_ts = optical_ts[:, -1]
             sar_ts = sar_ts[:, -1]
         else:
             # select evenly spaced samples
             optical_indexes = torch.linspace(
-                0, optical_ts.shape[1] - 1, self.grid_size, dtype=torch.long
+                0, optical_ts.shape[1] - 1, self.multi_temporal, dtype=torch.long
             )
             sar_indexes = torch.linspace(
-                0, sar_ts.shape[1] - 1, self.grid_size, dtype=torch.long
+                0, sar_ts.shape[1] - 1, self.multi_temporal, dtype=torch.long
             )
 
             optical_ts = optical_ts[:, optical_indexes]
@@ -381,7 +362,7 @@ class Pastis(RawGeoFMDataset):
                 "optical": optical_ts.to(torch.float32),
                 "sar": sar_ts.to(torch.float32),
             },
-            "target": output["label"],
+            "target": output["label"].to(torch.int64),
             "metadata": {},
         }
 
