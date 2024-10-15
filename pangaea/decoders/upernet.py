@@ -279,16 +279,15 @@ class SegMTUPerNet(SegUPerNet):
             self.tmap = None
         else:
             if self.multi_temporal_strategy == "ltae":
+                ltae_in_channels = max(decoder_in_channels)
                 # if the encoder output channels vary we must use an adaptor before the LTAE
-                ltae_in_channels = max(encoder.output_dim)
-                if ltae_in_channels != min(encoder.output_dim):
+                if decoder_in_channels != encoder.output_dim:
                     self.ltae_adaptor = LTAEChannelAdaptor(
                         in_channels=encoder.output_dim,
                         out_channels=decoder_in_channels,
                     )
                 else:
                     self.ltae_adaptor = lambda x: x
-
                 self.tmap = LTAE2d(
                     positional_encoding=False,
                     in_channels=ltae_in_channels,
@@ -514,6 +513,7 @@ class RegUPerNet(Decoder):
         channels: int,
         pool_scales=(1, 2, 3, 6),
         feature_multiplier: int = 1,
+        in_channels: list[int] | None = None,
     ):
         super().__init__(
             encoder=encoder,
@@ -529,7 +529,12 @@ class RegUPerNet(Decoder):
         self.input_layers = self.encoder.output_layers
         self.input_layers_num = len(self.input_layers)
 
-        self.in_channels = [dim * feature_multiplier for dim in self.encoder.output_dim]
+        if in_channels is None:
+            self.in_channels = [
+                dim * feature_multiplier for dim in self.encoder.output_dim
+            ]
+        else:
+            self.in_channels = [dim * feature_multiplier for dim in in_channels]
 
         if self.encoder.pyramid_output:
             rescales = [1 for _ in range(self.input_layers_num)]
@@ -684,28 +689,51 @@ class RegMTUPerNet(RegUPerNet):
         pool_scales=(1, 2, 3, 6),
         feature_multiplier: int = 1,
     ):
+        decoder_in_channels = self.get_decoder_in_channels(
+            multi_temporal_strategy, encoder
+        )
         super().__init__(
             encoder=encoder,
             finetune=finetune,
             channels=channels,
             pool_scales=pool_scales,
             feature_multiplier=feature_multiplier,
+            in_channels=decoder_in_channels,
         )
         self.model_name = "Reg_MT_UPerNet"
         self.multi_temporal = multi_temporal
         self.multi_temporal_strategy = multi_temporal_strategy
 
         if self.multi_temporal_strategy == "ltae":
+            ltae_in_channels = max(decoder_in_channels)
+            # if the encoder output channels vary we must use an adaptor before the LTAE
+            if decoder_in_channels != encoder.output_dim:
+                self.ltae_adaptor = LTAEChannelAdaptor(
+                    in_channels=encoder.output_dim,
+                    out_channels=decoder_in_channels,
+                )
+            else:
+                self.ltae_adaptor = lambda x: x
             self.tmap = LTAE2d(
                 positional_encoding=False,
-                in_channels=encoder.output_dim,
-                mlp=[encoder.output_dim, encoder.output_dim],
-                d_model=encoder.output_dim,
+                in_channels=ltae_in_channels,
+                mlp=[ltae_in_channels, ltae_in_channels],
+                d_model=ltae_in_channels,
             )
         elif self.multi_temporal_strategy == "linear":
             self.tmap = nn.Linear(self.multi_temporal, 1)
         else:
             self.tmap = None
+
+    def get_decoder_in_channels(
+        self, multi_temporal_strategy: str | None, encoder: Encoder
+    ) -> list[int]:
+        if multi_temporal_strategy == "ltae":
+            # if the encoder output channels vary we must use an adaptor before the LTAE
+            ltae_in_channels = max(encoder.output_dim)
+            if ltae_in_channels != min(encoder.output_dim):
+                return [ltae_in_channels for _ in encoder.output_dim]
+        return encoder.output_dim
 
     def forward(
         self, img: dict[str, torch.Tensor], output_shape: torch.Size | None = None
@@ -733,12 +761,12 @@ class RegMTUPerNet(RegUPerNet):
             feats = [list(i) for i in zip(*feats)]
             feats = [torch.stack(feat_layers, dim=2) for feat_layers in feats]
 
-        if self.multi_temporal_strategy is not None:
-            for i in range(len(feats)):
-                if self.multi_temporal_strategy == "ltae":
-                    feats[i] = self.tmap(feats[i])
-                elif self.multi_temporal_strategy == "linear":
-                    feats[i] = self.tmap(feats[i].permute(0, 1, 3, 4, 2)).squeeze(-1)
+        if self.tmap is not None:
+            if self.multi_temporal_strategy == "ltae":
+                feats = self.ltae_adaptor(feats)
+                feats = [self.tmap(f) for f in feats]
+            elif self.multi_temporal_strategy == "linear":
+                feats = [self.tmap(f.permute(0, 1, 3, 4, 2)).squeeze(-1) for f in feats]
 
         feat = self.neck(feats)
         feat = self._forward_feature(feat)
