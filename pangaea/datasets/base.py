@@ -1,8 +1,10 @@
-import torch
-from torch.utils.data import Dataset, Subset
 import os
 
+import torch
+from torch.utils.data import Dataset, Subset
+
 from pangaea.engine.data_preprocessor import Preprocessor
+
 
 class RawGeoFMDataset(Dataset):
     """Base class for all datasets."""
@@ -101,10 +103,11 @@ class RawGeoFMDataset(Dataset):
             dict[str, torch.Tensor | dict[str, torch.Tensor]]: output dictionary follwing the format
             {"image":
                 {
-                "optical": torch.Tensor of shape (C H W) (or (C T H W) if multi-temporal dataset),
-                 "sar": torch.Tensor of shape (C H W) (or (C T H W) if multi-temporal dataset)
+                "optical": torch.Tensor of shape (C T H W) (where T=1 if single-temporal dataset),
+                 "sar": torch.Tensor of shape (C T H W) (where T=1 if single-temporal dataset),
                  },
-            "target": torch.Tensor of shape (H W),
+            "target": torch.Tensor of shape (H W) of type torch.int64 for segmentation, torch.float for
+            regression datasets.,
              "metadata": dict}.
         """
         raise NotImplementedError
@@ -137,8 +140,6 @@ class GeoFMDataset(Dataset):
         self.raw_dataset = dataset
         self.preprocessor = preprocessor
 
-
-
     def __len__(self) -> int:
         """Returns the length of the dataset.
 
@@ -161,10 +162,11 @@ class GeoFMDataset(Dataset):
             dict[str, torch.Tensor | dict[str, torch.Tensor]]: output dictionary follwing the format
             {"image":
                 {
-                "optical": torch.Tensor of shape (C H W) (or (C T H W) if multi-temporal dataset),
-                 "sar": torch.Tensor of shape (C H W) (or (C T H W) if multi-temporal dataset)
+                "optical": torch.Tensor of shape (C T H W) (where T=1 if single-temporal dataset),
+                 "sar": torch.Tensor of shape (C T H W) (where T=1 if single-temporal dataset),
                  },
-            "target": torch.Tensor of shape (H W),
+            "target": torch.Tensor of shape (H W) of type torch.int64 for segmentation, torch.float for
+            regression datasets.,
              "metadata": dict}.
         """
 
@@ -173,6 +175,7 @@ class GeoFMDataset(Dataset):
             output = self.preprocessor(output)
 
         return output
+
 
 class GeoFMSubset(Subset):
     """Custom subset class that retains dataset attributes."""
@@ -186,4 +189,3 @@ class GeoFMSubset(Subset):
     def filter_by_indices(self, indices):
         """Apply filtering by indices directly in this subset."""
         return GeoFMSubset(self.dataset, indices)
-
