@@ -1,6 +1,5 @@
 import os
-import time
-import pathlib
+import time import pathlib
 import urllib.request
 import urllib.error
 import zipfile
@@ -160,6 +159,8 @@ class MADOS(RawGeoFMDataset):
         invalid_mask = torch.isnan(image)
         image[invalid_mask] = 0
 
+        # images must be of shape (C T H W)
+        image = image.unsqueeze(1)
 
         with rasterio.open(self.target_list[index], mode='r') as src:
             target = src.read(1)

@@ -121,6 +121,9 @@ class AI4SmallFarms(RawGeoFMDataset):
         invalid_mask = torch.isnan(image)
         image[invalid_mask] = 0
 
+        # output image shape (C T=1 H W)
+        image = image.unsqueeze(1)
+
         # Convert target to a boolean tensor
         target = target.bool()
 
