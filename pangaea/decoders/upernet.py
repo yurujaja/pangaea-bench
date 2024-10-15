@@ -475,7 +475,12 @@ class RegUPerNet(Decoder):
     """
 
     def __init__(
-        self, encoder: Encoder, finetune: bool, channels: int, pool_scales=(1, 2, 3, 6)
+        self, 
+        encoder: Encoder, 
+        finetune: bool, 
+        channels: int, 
+        pool_scales=(1, 2, 3, 6),
+        feature_multiplier: int = 1,
     ):
         super().__init__(
             encoder=encoder,
@@ -644,14 +649,16 @@ class RegMTUPerNet(RegUPerNet):
         multi_temporal: bool | int,
         multi_temporal_strategy: str | None,
         pool_scales=(1, 2, 3, 6),
+        feature_multiplier: int = 1,
     ):
         super().__init__(
             encoder=encoder,
             finetune=finetune,
             channels=channels,
             pool_scales=pool_scales,
+            feature_multiplier=feature_multiplier,
         )
-
+        self.model_name = "Reg_MT_UPerNet"
         self.multi_temporal = multi_temporal
         self.multi_temporal_strategy = multi_temporal_strategy
 

@@ -35,14 +35,15 @@ class UNet(Encoder):
             input_bands=input_bands,
             input_size=input_size,
             embed_dim=0,
-            output_dim=0,
-            output_layers=output_layers,
+            output_dim=output_dim,
+            output_layers=None,
             multi_temporal=False,  # single time frame
             multi_temporal_output=False,
             pyramid_output=True,
             download_url=download_url,
         )
 
+        # TODO: now only supports optical bands for single time frame
         self.in_channels = len(input_bands["optical"])  # number of optical bands
         self.topology = topology
 
@@ -91,7 +92,6 @@ class UNet_Encoder(nn.Module):
 
     def forward(self, x1: torch.Tensor) -> list:
         inputs = [x1]
-        # Downward U:
         for layer in self.down_seq.values():
             out = layer(inputs[-1])
             inputs.append(out)
