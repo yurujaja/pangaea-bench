@@ -562,7 +562,7 @@ class SN7CD(AbstractSN7):
         year_t1, month_t1 = timestamps[0]['year'], timestamps[0]['month']
         year_t2, month_t2 = timestamps[-1]['year'], timestamps[-1]['month']
         target = self.load_change_label(aoi_id, year_t1, month_t1, year_t2, month_t2)
-        target = torch.from_numpy(target)
+        target = torch.from_numpy(target).long()
 
         # cut to tile
         i, j = item['i'], item['j']

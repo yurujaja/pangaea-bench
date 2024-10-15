@@ -145,7 +145,7 @@ class CropTypeMappingSouthSudan(RawGeoFMDataset):
 
             label = np.load(os.path.join(self.root_path, self.country, 'truth', f'{self.country}_{loc_id}.npz'))['truth']
             label = self._mapping_label(label)
-            label = torch.from_numpy(label).float() 
+            label = torch.from_numpy(label).long()
 
             metadata = self.get_metadata(idx)
             
