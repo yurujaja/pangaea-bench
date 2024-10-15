@@ -1,6 +1,8 @@
 **/__pycache__/
 *.egg-info
 
+aaa_mystuff/
+work-dir/
 outputs/
 old_files/
 pretrained/

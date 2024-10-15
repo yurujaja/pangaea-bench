@@ -45,3 +45,8 @@ def get_best_model_ckpt_path(exp_dir: str | Path) -> str:
     return os.path.join(
         exp_dir, next(f for f in os.listdir(exp_dir) if f.endswith("_best.pth"))
     )
+
+def get_final_model_ckpt_path(exp_dir: str | Path) -> str:
+    return os.path.join(
+        exp_dir, next(f for f in os.listdir(exp_dir) if f.endswith("_final.pth"))
+    )
