@@ -6,6 +6,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+
 class PositionalEncoder(nn.Module):
     def __init__(self, d, T=1000, repeat=None, offset=0):
         super(PositionalEncoder, self).__init__()
@@ -34,6 +35,28 @@ class PositionalEncoder(nn.Module):
 
         return sinusoid_table
 
+
+class LTAEChannelAdaptor(nn.Module):
+    def __init__(self, in_channels: list[int], out_channels: list[int]) -> None:
+        super(LTAEChannelAdaptor, self).__init__()
+        self.convs = nn.ModuleList(
+            [
+                nn.Conv2d(in_c, out_c, 1)
+                for in_c, out_c in zip(in_channels, out_channels)
+            ]
+        )
+
+    def forward(self, features: list[torch.Tensor]) -> list[torch.Tensor]:
+        output = []
+        for c, f in zip(self.convs, features):
+            # for all frames
+            adapted_feature = []
+            # features of shape (B C T H W)
+            for t in range(f.shape[-3]):
+                adapted_feature.append(c(f[..., t, :, :]))
+
+            output.append(torch.stack(adapted_feature, -3))
+        return output
 
 
 class LTAE2d(nn.Module):
@@ -111,7 +134,7 @@ class LTAE2d(nn.Module):
         self.mlp = nn.Sequential(*layers)
         self.dropout = nn.Dropout(dropout)
 
-    def forward(self, x, batch_positions=None, pad_mask=None, return_comp=False):        
+    def forward(self, x, batch_positions=None, pad_mask=None, return_comp=False):
         sz_b, d, seq_len, h, w = x.shape
         x = x.permute(0, 2, 1, 3, 4)
         if pad_mask is not None:
@@ -150,9 +173,11 @@ class LTAE2d(nn.Module):
         out = self.out_norm(out) if self.out_norm is not None else out
         out = out.view(sz_b, h, w, -1).permute(0, 3, 1, 2)
 
-        attn = attn.view(self.n_head, sz_b, h, w, seq_len).permute(
-            0, 1, 4, 2, 3
-        ).contiguous()  # head x b x t x h x w
+        attn = (
+            attn.view(self.n_head, sz_b, h, w, seq_len)
+            .permute(0, 1, 4, 2, 3)
+            .contiguous()
+        )  # head x b x t x h x w
 
         if self.return_att:
             return out, attn
