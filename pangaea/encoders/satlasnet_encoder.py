@@ -544,9 +544,7 @@ class SatlasNet_Encoder(Encoder):
 
     def forward(self, imgs):
         # Define forward pass
-        print(imgs["optical"].shape)
         if not isinstance(self.backbone, AggregationBackbone):
-            print(xx)
             imgs["optical"] = imgs["optical"].squeeze(2)
 
         x = self.backbone(imgs["optical"])

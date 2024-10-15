@@ -205,17 +205,19 @@ class SpectralGPT_Encoder(Encoder):
             x = blk(x)
             if i in self.output_layers:
                 if self.cls_embed:
-                    x = x[:, 1:]
-                x = x.view(N, T, L, C).transpose(2, 3).flatten(1, 2)
+                    out = x[:, 1:]
+                else:
+                    out = x
+                out = out.view(N, T, L, C).transpose(2, 3).flatten(1, 2)
                 out = (
-                    x.permute(0, 2, 1)
+                    out.permute(0, 2, 1)
+                    .contiguous()
                     .view(
                         x.shape[0],
                         -1,
                         self.input_size // self.patch_size,
                         self.input_size // self.patch_size,
                     )
-                    .contiguous()
                 )
                 output.append(out)
 
