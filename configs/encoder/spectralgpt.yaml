@@ -3,7 +3,7 @@ encoder_weights: ./pretrained_models/SpectralGPT+.pth
 download_url: https://zenodo.org/records/8412455/files/SpectralGPT+.pth
 
 input_size: 128
-output_dim: 3072   # 768 * (in_chans / t_patch_size)
+
 in_chans: 12    # number of spectral bands
 t_patch_size: 3
 depth: 12
@@ -34,4 +34,5 @@ output_layers:
   - 7
   - 11
 
+output_dim: 3072   # 768 * (in_chans / t_patch_size)
 

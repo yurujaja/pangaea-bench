@@ -15,10 +15,10 @@ import urllib
 import tarfile
 
 from pangaea.datasets.utils import DownloadProgressBar
-from pangaea.datasets.base import GeoFMDataset
+from pangaea.datasets.base import RawGeoFMDataset
 
 
-class xView2(GeoFMDataset):
+class xView2(RawGeoFMDataset):
     def __init__(
         self,
         split: str,
@@ -163,7 +163,7 @@ class xView2(GeoFMDataset):
         img = torch.from_numpy(img.transpose((3, 0, 1, 2))).float()
         # img_pre = torch.from_numpy(img_pre.transpose((2, 0, 1))).float()
         # img_post = torch.from_numpy(img_post.transpose((2, 0, 1))).float()
-        msk = torch.from_numpy(msk).float()
+        msk = torch.from_numpy(msk).long()
 
 
         return {

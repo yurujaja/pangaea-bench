@@ -645,8 +645,10 @@ class GFMSwin_Encoder(Encoder):
             input_size=input_size,
             embed_dim=embed_dim,
             output_dim=output_dim,
+            output_layers=output_layers,
             multi_temporal=False,
             multi_temporal_output=False,
+            pyramid_output=True,
             download_url=download_url,
         )
 
@@ -662,7 +664,6 @@ class GFMSwin_Encoder(Encoder):
         self.num_features = int(embed_dim * 2 ** (self.num_layers - 1))
         self.mlp_ratio = mlp_ratio
         # self.use_norm = use_norm
-        self.out_dim = output_dim
         self.only_output_last = only_output_last
         # split image into non-overlapping patches
         self.patch_embed = PatchEmbed(
@@ -767,16 +768,9 @@ class GFMSwin_Encoder(Encoder):
         for i, layer in enumerate(self.layers):
             x = layer(x)
             B, L, C = x.shape
-            if not self.only_output_last:
-                if i in self.output_layers:
-                    out = x.reshape(B, C, int(L**0.5), int(L**0.5)).repeat(
-                        1, self.out_dim // C, 1, 1
-                    )
-                    out = out.view(B, self.out_dim, int(L**0.5), int(L**0.5))
-                    output.append(out)
-            else:
-                if i == self.num_layers - 1:
-                    output.extend([x.reshape(B, C, int(L**0.5), int(L**0.5))] * 4)
+            if i in self.output_layers:
+                out = x.transpose(1, 2).view(B, C,  int(L**0.5), int(L**0.5))
+                output.append(out)
 
         # if self.use_norm:
         #     x = self.norm(x)

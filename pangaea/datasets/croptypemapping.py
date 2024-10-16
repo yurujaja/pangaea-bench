@@ -12,12 +12,12 @@ import pandas as pd
 
 import torch
 
-from pangaea.datasets.base import GeoFMDataset
+from pangaea.datasets.base import RawGeoFMDataset
 # from utils.registry import DATASET_REGISTRY
 
 
 # @DATASET_REGISTRY.register()
-class CropTypeMappingSouthSudan(GeoFMDataset):
+class CropTypeMappingSouthSudan(RawGeoFMDataset):
     def __init__(
         self,
         split: str,
@@ -145,7 +145,7 @@ class CropTypeMappingSouthSudan(GeoFMDataset):
 
             label = np.load(os.path.join(self.root_path, self.country, 'truth', f'{self.country}_{loc_id}.npz'))['truth']
             label = self._mapping_label(label)
-            label = torch.from_numpy(label).float() 
+            label = torch.from_numpy(label).long()
 
             metadata = self.get_metadata(idx)
             

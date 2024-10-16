@@ -1,17 +1,18 @@
 # Source: https://github.com/cloudtostreet/Sen1Floods11
 
 import os
+
 import geopandas
 import numpy as np
 import pandas as pd
-import rasterio 
+import rasterio
 import torch
 
+from pangaea.datasets.base import RawGeoFMDataset
 from pangaea.datasets.utils import download_bucket_concurrently
-from pangaea.datasets.base import GeoFMDataset
 
-class Sen1Floods11(GeoFMDataset):
 
+class Sen1Floods11(RawGeoFMDataset):
     def __init__(
         self,
         split: str,
@@ -31,7 +32,7 @@ class Sen1Floods11(GeoFMDataset):
         data_max: dict[str, list[str]],
         download_url: str,
         auto_download: bool,
-        gcs_bucket: str, 
+        gcs_bucket: str,
     ):
         """Initialize the Sen1Floods11 dataset.
         Link: https://github.com/cloudtostreet/Sen1Floods11
@@ -45,10 +46,10 @@ class Sen1Floods11(GeoFMDataset):
             classes (list): classes of the dataset.
             num_classes (int): number of classes.
             ignore_index (int): index to ignore for metrics and loss.
-            img_size (int): size of the image. 
+            img_size (int): size of the image.
             bands (dict[str, list[str]]): bands of the dataset.
             distribution (list[int]): class distribution.
-            data_mean (dict[str, list[str]]): mean for each band for each modality. 
+            data_mean (dict[str, list[str]]): mean for each band for each modality.
             Dictionary with keys as the modality and values as the list of means.
             e.g. {"s2": [b1_mean, ..., bn_mean], "s1": [b1_mean, ..., bn_mean]}
             data_std (dict[str, list[str]]): str for each band for each modality.
@@ -102,12 +103,20 @@ class Sen1Floods11(GeoFMDataset):
         self.ignore_index = ignore_index
         self.download_url = download_url
         self.auto_download = auto_download
-        
-        self.split_mapping = {'train': 'train', 'val': 'valid', 'test': 'test'}
 
-        split_file = os.path.join(self.root_path, "v1.1", f"splits/flood_handlabeled/flood_{self.split_mapping[split]}_data.csv")
-        metadata_file = os.path.join(self.root_path, "v1.1", "Sen1Floods11_Metadata.geojson")
-        data_root = os.path.join(self.root_path, "v1.1", "data/flood_events/HandLabeled/")
+        self.split_mapping = {"train": "train", "val": "valid", "test": "test"}
+
+        split_file = os.path.join(
+            self.root_path,
+            "v1.1",
+            f"splits/flood_handlabeled/flood_{self.split_mapping[split]}_data.csv",
+        )
+        metadata_file = os.path.join(
+            self.root_path, "v1.1", "Sen1Floods11_Metadata.geojson"
+        )
+        data_root = os.path.join(
+            self.root_path, "v1.1", "data/flood_events/HandLabeled/"
+        )
 
         self.metadata = geopandas.read_file(metadata_file)
 
@@ -116,10 +125,16 @@ class Sen1Floods11(GeoFMDataset):
 
         file_list = [f.rstrip().split(",") for f in file_list]
 
-        self.s1_image_list = [os.path.join(data_root,  'S1Hand', f[0]) for f in file_list]
-        self.s2_image_list = [os.path.join(data_root,  'S2Hand', f[0].replace('S1Hand', 'S2Hand')) for f in file_list]
-        self.target_list = [os.path.join(data_root, 'LabelHand', f[1]) for f in file_list]
-
+        self.s1_image_list = [
+            os.path.join(data_root, "S1Hand", f[0]) for f in file_list
+        ]
+        self.s2_image_list = [
+            os.path.join(data_root, "S2Hand", f[0].replace("S1Hand", "S2Hand"))
+            for f in file_list
+        ]
+        self.target_list = [
+            os.path.join(data_root, "LabelHand", f[1]) for f in file_list
+        ]
 
     def __len__(self):
         return len(self.s1_image_list)
@@ -130,7 +145,9 @@ class Sen1Floods11(GeoFMDataset):
         if self.metadata[self.metadata["location"] == location].shape[0] != 1:
             date = pd.to_datetime("13-10-1998", dayfirst=True)
         else:
-            date = pd.to_datetime(self.metadata[self.metadata["location"] == location]["s2_date"].item())
+            date = pd.to_datetime(
+                self.metadata[self.metadata["location"] == location]["s2_date"].item()
+            )
         date_np = np.zeros((1, 3))
         date_np[0, 0] = date.year
         date_np[0, 1] = date.dayofyear - 1  # base 0
@@ -148,31 +165,32 @@ class Sen1Floods11(GeoFMDataset):
 
         with rasterio.open(self.target_list[index]) as src:
             target = src.read(1)
-        
+
         timestamp = self._get_date(index)
 
         s2_image = torch.from_numpy(s2_image).float()
-        s1_image = torch.from_numpy(s1_image).float()   
-        target = torch.from_numpy(target)
+        s1_image = torch.from_numpy(s1_image).float()
+        target = torch.from_numpy(target).long()
 
         output = {
-            'image': {
-                'optical': s2_image,
-                'sar' : s1_image,
+            "image": {
+                "optical": s2_image.unsqueeze(1),
+                "sar": s1_image.unsqueeze(1),
             },
-            'target': target,
-            'metadata': {
+            "target": target,
+            "metadata": {
                 "timestamp": timestamp,
-            }
+            },
         }
+
         return output
 
     @staticmethod
     def download(self, silent=False):
         if os.path.exists(self.root_path):
             if not silent:
-                print("Sen1Floods11 Dataset folder exists, skipping downloading dataset.")
+                print(
+                    "Sen1Floods11 Dataset folder exists, skipping downloading dataset."
+                )
             return
         download_bucket_concurrently(self.gcs_bucket, self.root_path)
-
-

@@ -1,7 +1,6 @@
 import os as os
 import pathlib
 import pprint
-import random
 import time
 
 import hydra
@@ -10,26 +9,26 @@ from hydra.conf import HydraConf
 from hydra.core.hydra_config import HydraConfig
 from hydra.utils import instantiate
 from omegaconf import DictConfig, OmegaConf
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
+from pangaea.datasets.base import GeoFMDataset, GeoFMSubset, RawGeoFMDataset
 from pangaea.decoders.base import Decoder
 from pangaea.encoders.base import Encoder
 from pangaea.engine.evaluator import Evaluator
 from pangaea.engine.trainer import Trainer
 from pangaea.utils.collate_fn import get_collate_fn
 from pangaea.utils.logger import init_logger
+from pangaea.utils.subset_sampler import get_subset_indices
 from pangaea.utils.utils import (
     fix_seed,
     get_best_model_ckpt_path,
     get_generator,
     seed_worker,
 )
-from pangaea.utils.subset_sampler import get_subset_indices
-from pangaea.datasets.base import GeoFMSubset
 
 
-def get_exp_info(hydra_config: HydraConf) -> str:
+def get_exp_info(hydra_config: HydraConf) -> dict[str, str]:
     """Create a unique experiment name based on the choices made in the config.
 
     Args:
@@ -121,12 +120,6 @@ def main(cfg: DictConfig) -> None:
     logger.info("The experiment is stored in %s\n" % exp_dir)
     logger.info(f"Device used: {device}")
 
-    # get datasets
-    train_dataset: Dataset = instantiate(cfg.dataset, split="train")
-    val_dataset: Dataset = instantiate(cfg.dataset, split="val")
-    test_dataset: Dataset = instantiate(cfg.dataset, split="test")
-    logger.info("Built {} dataset.".format(cfg.dataset.dataset_name))
-
     encoder: Encoder = instantiate(cfg.encoder)
     encoder.load_encoder_weights(logger)
     logger.info("Built {}.".format(encoder.model_name))
@@ -151,34 +144,54 @@ def main(cfg: DictConfig) -> None:
 
     # training
     if train_run:
+        # get preprocessor
+        train_preprocessor = instantiate(
+            cfg.preprocessing.train,
+            dataset_cfg=cfg.dataset,
+            encoder_cfg=cfg.encoder,
+            _recursive_=False,
+        )
+        val_preprocessor = instantiate(
+            cfg.preprocessing.val,
+            dataset_cfg=cfg.dataset,
+            encoder_cfg=cfg.encoder,
+            _recursive_=False,
+        )
 
-        for preprocess in cfg.preprocessing.train:
-            train_dataset: Dataset = instantiate(
-                preprocess, dataset=train_dataset, encoder=encoder
-            )
-        for preprocess in cfg.preprocessing.test:
-            val_dataset: Dataset = instantiate(
-                preprocess, dataset=val_dataset, encoder=encoder
-            )
+        # get datasets
+        raw_train_dataset: RawGeoFMDataset = instantiate(cfg.dataset, split="train")
+        raw_val_dataset: RawGeoFMDataset = instantiate(cfg.dataset, split="val")
+        train_dataset = GeoFMDataset(raw_train_dataset, train_preprocessor)
+        val_dataset = GeoFMDataset(raw_val_dataset, val_preprocessor)
+
+        logger.info("Built {} dataset.".format(cfg.dataset.dataset_name))
 
         if 0 < cfg.limited_label_train < 1:
             indices = get_subset_indices(
-                train_dataset, task=task_name, strategy=cfg.limited_label_strategy, 
-                label_fraction=cfg.limited_label_train, num_bins=cfg.stratification_bins, logger=logger
+                train_dataset,
+                task=task_name,
+                strategy=cfg.limited_label_strategy,
+                label_fraction=cfg.limited_label_train,
+                num_bins=cfg.stratification_bins,
+                logger=logger,
             )
             train_dataset = GeoFMSubset(train_dataset, indices)
-            
+
         if 0 < cfg.limited_label_val < 1:
             indices = get_subset_indices(
-                val_dataset, task=task_name, strategy=cfg.limited_label_strategy, 
-                label_fraction=cfg.limited_label_val, num_bins=cfg.stratification_bins, logger=logger
+                val_dataset,
+                task=task_name,
+                strategy=cfg.limited_label_strategy,
+                label_fraction=cfg.limited_label_val,
+                num_bins=cfg.stratification_bins,
+                logger=logger,
             )
             val_dataset = GeoFMSubset(val_dataset, indices)
-                
+
         logger.info(
-                f"Total number of train patches: {len(train_dataset)}\n"
-                f"Total number of validation patches: {len(val_dataset)}\n"
-            )
+            f"Total number of train patches: {len(train_dataset)}\n"
+            f"Total number of validation patches: {len(val_dataset)}\n"
+        )
 
         # get train val data loaders
         train_loader = DataLoader(
@@ -198,8 +211,8 @@ def main(cfg: DictConfig) -> None:
         val_loader = DataLoader(
             val_dataset,
             sampler=DistributedSampler(val_dataset),
-            batch_size=cfg.batch_size,
-            num_workers=cfg.num_workers,
+            batch_size=cfg.test_batch_size,
+            num_workers=cfg.test_num_workers,
             pin_memory=True,
             persistent_workers=False,
             worker_init_fn=seed_worker,
@@ -237,16 +250,22 @@ def main(cfg: DictConfig) -> None:
         trainer.train()
 
     # Evaluation
-    for preprocess in cfg.preprocessing.test:
-        test_dataset: Dataset = instantiate(
-            preprocess, dataset=test_dataset, encoder=encoder
-        )
+    test_preprocessor = instantiate(
+        cfg.preprocessing.test,
+        dataset_cfg=cfg.dataset,
+        encoder_cfg=cfg.encoder,
+        _recursive_=False,
+    )
+
+    # get datasets
+    raw_test_dataset: RawGeoFMDataset = instantiate(cfg.dataset, split="test")
+    test_dataset = GeoFMDataset(raw_test_dataset, test_preprocessor)
 
     test_loader = DataLoader(
         test_dataset,
         sampler=DistributedSampler(test_dataset),
-        batch_size=cfg.batch_size,
-        num_workers=cfg.num_workers,
+        batch_size=cfg.test_batch_size,
+        num_workers=cfg.test_num_workers,
         pin_memory=True,
         persistent_workers=False,
         drop_last=False,

@@ -5,7 +5,6 @@ download_url: null
 model_identifier: Sentinel2_SwinB_MI_MS # Multi-Image Multi-Spectral 
 fpn: False
 input_size: 128
-output_dim: 1024
 
 input_bands:
   optical:
@@ -23,3 +22,15 @@ input_bands:
     - B8
     - B11
     - B12
+
+output_layers:
+  - 0
+  - 1
+  - 2
+  - 3
+
+output_dim:
+  - 128
+  - 256
+  - 512
+  - 1024

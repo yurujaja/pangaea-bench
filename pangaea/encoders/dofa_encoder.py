@@ -180,6 +180,7 @@ class DOFA_Encoder(Encoder):
         input_bands: dict[str, list[str]],
         input_size: int,
         embed_dim: int,
+        output_dim: int | list[int],
         output_layers: int | list[int],
         wave_list: dict[str, dict[str, float]],
         download_url: str,
@@ -198,9 +199,11 @@ class DOFA_Encoder(Encoder):
             input_bands=input_bands,
             input_size=input_size,
             embed_dim=embed_dim,
-            output_dim=embed_dim,
+            output_layers=output_layers,
+            output_dim=output_dim,
             multi_temporal=False,
             multi_temporal_output=False,
+            pyramid_output=False,
             download_url=download_url,
         )
 
@@ -216,9 +219,7 @@ class DOFA_Encoder(Encoder):
             self.wave_list[m][bi] for m, b in self.input_bands.items() for bi in b
         ]
 
-        self.norm = norm_layer(
-            [embed_dim, (self.img_size // patch_size), (self.img_size // patch_size)]
-        )
+        self.norm = norm_layer(self.embed_dim)
 
         self.patch_embed = Dynamic_MLP_OFA(
             wv_planes=128, inter_dim=128, kernel_size=16, embed_dim=embed_dim
@@ -261,6 +262,8 @@ class DOFA_Encoder(Encoder):
         output = []
         for i, blk in enumerate(self.blocks):
             x = blk(x)
+            if i == len(self.blocks) - 1:
+                x = self.norm(x)
             if i in self.output_layers:
                 out = (
                     x[:, 1:]
@@ -273,8 +276,7 @@ class DOFA_Encoder(Encoder):
                     )
                     .contiguous()
                 )
-                if self.use_norm:
-                    out = self.norm(out)
+
                 output.append(out)
 
         return output

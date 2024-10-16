@@ -10,8 +10,8 @@ multi_modal: True
 #limited_label: False
 
 # classes
-ignore_index: 0
-num_classes: 19
+ignore_index: 19
+num_classes: 20
 classes: 
   - Background
   - Meadow
@@ -32,7 +32,7 @@ classes:
   - Orchard
   - Mixed Cereal
   - Sorghum
-  #- Void Label
+  - Void Label
 distribution:
   - 0.00000
   - 0.25675
@@ -53,7 +53,7 @@ distribution:
   - 0.02460
   - 0.00696
   - 0.00580
-  #- 0.29476
+  - 0.29476
 
 bands:
   optical:

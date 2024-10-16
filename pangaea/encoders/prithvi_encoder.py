@@ -45,6 +45,7 @@ class Prithvi_Encoder(Encoder):
         encoder_weights: str | Path,
         input_bands: dict[str, list[str]],
         input_size: int,
+        output_dim: int | list[int],
         output_layers: int | list[int],
         download_url: str,
         patch_size=16,
@@ -63,15 +64,18 @@ class Prithvi_Encoder(Encoder):
             input_bands=input_bands,
             input_size=input_size,
             embed_dim=embed_dim,
-            output_dim=embed_dim,
+            output_layers=output_layers,
+            output_dim=output_dim,
             multi_temporal=True,
             multi_temporal_output=True,
+            pyramid_output=False,
             download_url=download_url,
         )
 
         self.output_layers = output_layers
 
         self.img_size = self.input_size
+        self.tublet_size = tubelet_size
 
         if num_frames:
             self.num_frames = num_frames
@@ -192,6 +196,32 @@ class Prithvi_Encoder(Encoder):
 
         return output
 
+
+    def enforce_single_temporal(self):
+
+        self.num_frames = 1
+
+        self.patch_embed = PatchEmbed(
+            self.input_size,
+            self.patch_size,
+            1,
+            self.tublet_size,
+            self.in_chans,
+            self.embed_dim,
+        )
+        num_patches = self.patch_embed.num_patches
+        self.pos_embed = nn.Parameter(
+            torch.zeros(1, num_patches + 1, self.embed_dim), requires_grad=False
+        )
+
+        pos_embed = get_3d_sincos_pos_embed(
+            self.pos_embed.shape[-1], self.patch_embed.grid_size, cls_token=True
+        )
+        self.pos_embed.data.copy_(torch.from_numpy(pos_embed).float().unsqueeze(0))
+
+        # initialize patch_embed like nn.Linear (instead of nn.Conv2d)
+        w = self.patch_embed.proj.weight.data
+        torch.nn.init.xavier_uniform_(w.view([w.shape[0], -1]))
 
 class PatchEmbed(nn.Module):
     """Frames of 2D Images to Patch Embedding

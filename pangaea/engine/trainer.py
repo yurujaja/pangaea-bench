@@ -141,6 +141,7 @@ class Trainer:
             image, target = data["image"], data["target"]
             image = {modality: value.to(self.device) for modality, value in image.items()}
             target = target.to(self.device)
+
             self.training_stats["data_time"].update(time.time() - end_time)
 
             with torch.autocast(
@@ -151,17 +152,19 @@ class Trainer:
 
             self.optimizer.zero_grad()
 
-            if not torch.isnan(loss):
-                self.scaler.scale(loss).backward()
-                self.scaler.step(self.optimizer)
-                self.scaler.update()
-                self.training_stats['loss'].update(loss.item())
-                with torch.no_grad():
-                    self.compute_logging_metrics(logits, target)
-                if (batch_idx + 1) % self.log_interval == 0:
-                    self.log(batch_idx + 1, epoch)
-            else:
-                self.logger.warning("Skip batch {} because of nan loss".format(batch_idx + 1))
+            if not torch.isfinite(loss):
+                raise FloatingPointError(
+                    f"Rank {self.rank} got infinite/NaN loss at batch {batch_idx} of epoch {epoch}!"
+                )
+
+            self.scaler.scale(loss).backward()
+            self.scaler.step(self.optimizer)
+            self.scaler.update()
+            self.training_stats['loss'].update(loss.item())
+            with torch.no_grad():
+                self.compute_logging_metrics(logits, target)
+            if (batch_idx + 1) % self.log_interval == 0:
+                self.log(batch_idx + 1, epoch)
 
             self.lr_scheduler.step()
 
@@ -216,6 +219,7 @@ class Trainer:
             checkpoint (dict[str, dict  |  int] | None, optional): already prepared checkpoint dict. Defaults to None.
         """
         if self.rank != 0:
+            torch.distributed.barrier()
             return
         checkpoint = self.get_checkpoint(epoch) if checkpoint is None else checkpoint
         suffix = "_best" if is_best else "_final" if is_final else ""
@@ -224,6 +228,8 @@ class Trainer:
         self.logger.info(
             f"Epoch {epoch} | Training checkpoint saved at {checkpoint_path}"
         )
+        torch.distributed.barrier()
+        return
 
     def load_model(self, resume_path: str | pathlib.Path) -> None:
         """Load model from the checkpoint.
@@ -307,9 +313,8 @@ class Trainer:
         left_batch_all = (
             self.batch_per_epoch * (self.n_epochs - epoch - 1) + left_batch_this_epoch
         )
-        left_eval_times = (
-            self.n_epochs + 0.5
-        ) // self.eval_interval - self.training_stats["eval_time"].count
+        left_eval_times = ((self.n_epochs - 0.5) // self.eval_interval + 2
+                           - self.training_stats["eval_time"].count)
         left_time_this_epoch = sec_to_hm(
             left_batch_this_epoch * self.training_stats["batch_time"].avg
         )

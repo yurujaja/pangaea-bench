@@ -46,6 +46,7 @@ class SSL4EO_MAE_OPTICAL_Encoder(Encoder):
         input_size: int,
         input_bands: dict[str, list[str]],
         output_layers: int | list[int],
+        output_dim: int | list[int],
         download_url: str,
         embed_dim: int = 1024,
         patch_size: int = 16,
@@ -61,9 +62,11 @@ class SSL4EO_MAE_OPTICAL_Encoder(Encoder):
             input_bands=input_bands,
             input_size=input_size,
             embed_dim=embed_dim,
-            output_dim=embed_dim,
+            output_dim=output_dim,
+            output_layers=output_layers,
             multi_temporal=False,
             multi_temporal_output=False,
+            pyramid_output=False,
             download_url=download_url,
         )
 
@@ -198,6 +201,7 @@ class SSL4EO_MAE_SAR_Encoder(SSL4EO_MAE_OPTICAL_Encoder):
         input_size: int,
         input_bands: dict[str, list[str]],
         output_layers: int | list[int],
+        output_dim: int | list[int],
         download_url: str,
         embed_dim: int = 1024,
         patch_size: int = 16,
@@ -212,6 +216,7 @@ class SSL4EO_MAE_SAR_Encoder(SSL4EO_MAE_OPTICAL_Encoder):
             input_bands=input_bands,
             input_size=input_size,
             output_layers=output_layers,
+            output_dim=output_dim,
             embed_dim=embed_dim,
             patch_size=patch_size,
             in_chans=in_chans,
@@ -223,8 +228,7 @@ class SSL4EO_MAE_SAR_Encoder(SSL4EO_MAE_OPTICAL_Encoder):
         )
 
         self.model_name = "ssl4eo_mae_sar"
-        self.multi_temporal = False
-        self.output_dim = embed_dim
+
 
     def forward(self, image):
         # embed patches

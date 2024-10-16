@@ -1,6 +1,5 @@
 import os
-import time
-import pathlib
+import time import pathlib
 import urllib.request
 import urllib.error
 import zipfile
@@ -18,14 +17,14 @@ import torchvision.transforms.functional as TF
 import torchvision.transforms as T
 
 from pangaea.datasets.utils import DownloadProgressBar
-from pangaea.datasets.base import GeoFMDataset
+from pangaea.datasets.base import RawGeoFMDataset
 
 ###############################################################
 # MADOS DATASET                                               #
 ###############################################################
 
 # @DATASET_REGISTRY.register()
-class MADOS(GeoFMDataset):
+class MADOS(RawGeoFMDataset):
     def __init__(
         self,
         split: str,
@@ -160,6 +159,8 @@ class MADOS(GeoFMDataset):
         invalid_mask = torch.isnan(image)
         image[invalid_mask] = 0
 
+        # images must be of shape (C T H W)
+        image = image.unsqueeze(1)
 
         with rasterio.open(self.target_list[index], mode='r') as src:
             target = src.read(1)

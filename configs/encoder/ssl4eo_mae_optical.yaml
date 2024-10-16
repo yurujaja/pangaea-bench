@@ -32,3 +32,5 @@ output_layers:
   - 5
   - 7
   - 11
+
+output_dim: 384

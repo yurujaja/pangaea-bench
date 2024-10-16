@@ -43,6 +43,7 @@ class CROMA_OPTICAL_Encoder(Encoder):
         input_size: int,
         input_bands: dict[str, list[str]],
         output_layers: int | list[int],
+        output_dim: int | list[int],
         download_url: str,
         size="base",
     ):
@@ -52,9 +53,11 @@ class CROMA_OPTICAL_Encoder(Encoder):
             input_bands=input_bands,
             input_size=input_size,
             embed_dim=768,
-            output_dim=768,
+            output_dim=output_dim,
+            output_layers=output_layers,
             multi_temporal=False,
             multi_temporal_output=False,
+            pyramid_output=False,
             download_url=download_url,
         )
 
@@ -73,7 +76,6 @@ class CROMA_OPTICAL_Encoder(Encoder):
             self.num_heads = 16
             self.patch_size = 8
 
-        self.output_dim = self.embed_dim
         self.num_patches = int((self.img_size / 8) ** 2)
         self.s2_channels = 12  # fixed at 12 multispectral optical channels
         self.attn_bias = get_2dalibi(
@@ -156,6 +158,7 @@ class CROMA_SAR_Encoder(Encoder):
         input_size: int,
         input_bands: dict[str, list[str]],
         output_layers: int | list[int],
+        output_dim: int | list[int],
         download_url: str,
         size="base",
     ):
@@ -165,9 +168,11 @@ class CROMA_SAR_Encoder(Encoder):
             input_bands=input_bands,
             input_size=input_size,
             embed_dim=768,
-            output_dim=768,
+            output_layers=output_layers,
+            output_dim=output_dim,
             multi_temporal=False,
             multi_temporal_output=False,
+            pyramid_output=False,
             download_url=download_url,
         )
 
@@ -186,7 +191,6 @@ class CROMA_SAR_Encoder(Encoder):
             self.num_heads = 16
             self.patch_size = 8
 
-        self.output_dim = self.embed_dim
 
         self.num_patches = int((self.img_size / 8) ** 2)
         self.s1_channels = 2  # fixed at 2 SAR backscatter channels
@@ -277,8 +281,11 @@ class CROMA_JOINT_Encoder(Encoder):
         input_size: int,
         input_bands: dict[str, list[str]],
         output_layers: int | list[int],
+        output_dim: int | list[int],
         download_url: str,
+
         size="base",
+
     ):
         super().__init__(
             model_name="croma_joint",
@@ -286,9 +293,11 @@ class CROMA_JOINT_Encoder(Encoder):
             input_bands=input_bands,
             input_size=input_size,
             embed_dim=768,
-            output_dim=768,
+            output_layers=output_layers,
+            output_dim=output_dim,
             multi_temporal=False,
             multi_temporal_output=False,
+            pyramid_output=False,
             download_url=download_url,
         )
 
@@ -307,7 +316,6 @@ class CROMA_JOINT_Encoder(Encoder):
             self.num_heads = 16
             self.patch_size = 8
 
-        self.output_dim = self.embed_dim
 
         self.num_patches = int((self.img_size / 8) ** 2)
         self.s1_channels = 2  # fixed at 2 SAR backscatter channels

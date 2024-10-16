@@ -45,11 +45,11 @@ class SpectralGPT_Encoder(Encoder):
         input_size: int,
         input_bands: dict[str, list[str]],
         output_layers: int | list[int],
+        output_dim: int | list[int],
         download_url: str,
         in_chans: int = 3,
         t_patch_size: int = 3,
         patch_size: int = 16,
-        output_dim: int = 768,
         embed_dim: int = 768,
         depth: int = 12,
         num_heads: int = 12,
@@ -66,9 +66,11 @@ class SpectralGPT_Encoder(Encoder):
             input_bands=input_bands,
             input_size=input_size,
             embed_dim=embed_dim,
+            output_layers=output_layers,
             output_dim=output_dim,
             multi_temporal=False,
             multi_temporal_output=False,
+            pyramid_output=False,
             download_url=download_url,
         )
 
@@ -198,30 +200,24 @@ class SpectralGPT_Encoder(Encoder):
             pos_embed = self.pos_embed[:, :, :]
         x = x + pos_embed
 
-        # reshape to [N, T, L, C] or [N, T*L, C]
-        requires_t_shape = (
-            len(self.blocks) > 0  # support empty decoder
-            and hasattr(self.blocks[0].attn, "requires_t_shape")
-            and self.blocks[0].attn.requires_t_shape
-        )
-        if requires_t_shape:
-            x = x.view([N, T, L, C])
-
         output = []
         for i, blk in enumerate(self.blocks):
             x = blk(x)
             if i in self.output_layers:
                 if self.cls_embed:
-                    x = x[:, 1:]
+                    out = x[:, 1:]
+                else:
+                    out = x
+                out = out.view(N, T, L, C).transpose(2, 3).flatten(1, 2)
                 out = (
-                    x.permute(0, 2, 1)
+                    out.permute(0, 2, 1)
+                    .contiguous()
                     .view(
                         x.shape[0],
                         -1,
                         self.input_size // self.patch_size,
                         self.input_size // self.patch_size,
                     )
-                    .contiguous()
                 )
                 output.append(out)
 

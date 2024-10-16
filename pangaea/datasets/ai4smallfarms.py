@@ -8,10 +8,10 @@ import torch
 from pyDataverse.api import DataAccessApi, NativeApi
 from tifffile import imread
 
-from pangaea.datasets.base import GeoFMDataset
+from pangaea.datasets.base import RawGeoFMDataset
 
 
-class AI4SmallFarms(GeoFMDataset):
+class AI4SmallFarms(RawGeoFMDataset):
     def __init__(
         self,
         split: str,
@@ -120,6 +120,9 @@ class AI4SmallFarms(GeoFMDataset):
         # Handle invalid data if any
         invalid_mask = torch.isnan(image)
         image[invalid_mask] = 0
+
+        # output image shape (C T=1 H W)
+        image = image.unsqueeze(1)
 
         # Convert target to a boolean tensor
         target = target.bool()

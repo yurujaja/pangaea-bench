@@ -351,6 +351,7 @@ class RemoteCLIP_Encoder(Encoder):
         layers: int,
         mlp_ratio: float,
         output_layers: int | list[int],
+        output_dim: int | list[int],
         download_url: str,
         ls_init_value: float | None = None,
         patch_dropout: float = 0.0,
@@ -365,9 +366,11 @@ class RemoteCLIP_Encoder(Encoder):
             input_bands=input_bands,
             input_size=input_size,
             embed_dim=embed_dim,
-            output_dim=embed_dim,
+            output_layers=output_layers,
+            output_dim=output_dim,
             multi_temporal=False,
             multi_temporal_output=False,
+            pyramid_output=False,
             download_url=download_url,
         )
 

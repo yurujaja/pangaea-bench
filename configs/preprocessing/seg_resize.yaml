@@ -1,32 +1,23 @@
-train: 
-  - _target_: pangaea.engine.data_preprocessor.SegPreprocessor
-    # overwritten in run
-    dataset: null
-    encoder: null
+train:
+    _target_: pangaea.engine.data_preprocessor.Preprocessor
+    preprocessor_cfg:
+        - _target_: pangaea.engine.data_preprocessor.ResizeToEncoder
+        - _target_: pangaea.engine.data_preprocessor.BandFilter
+        - _target_: pangaea.engine.data_preprocessor.NormalizeMeanStd
+        - _target_: pangaea.engine.data_preprocessor.BandPadding
 
-  - _target_: pangaea.engine.data_preprocessor.NormalizeMeanStd
-    # overwritten in run
-    dataset: null
-    encoder: null
+val:
+    _target_: pangaea.engine.data_preprocessor.Preprocessor
+    preprocessor_cfg:
+        - _target_: pangaea.engine.data_preprocessor.ResizeToEncoder
+        - _target_: pangaea.engine.data_preprocessor.BandFilter
+        - _target_: pangaea.engine.data_preprocessor.NormalizeMeanStd
+        - _target_: pangaea.engine.data_preprocessor.BandPadding
 
-  - _target_: pangaea.engine.data_preprocessor.ResizeToEncoder
-    # overwritten in run
-    dataset: null
-    encoder: null
-
-test: 
-  - _target_: pangaea.engine.data_preprocessor.SegPreprocessor
-    # overwritten in run
-    dataset: null
-    encoder: null
-
-  - _target_: pangaea.engine.data_preprocessor.NormalizeMeanStd
-    # overwritten in run
-    dataset: null
-    encoder: null
-
-  - _target_: pangaea.engine.data_preprocessor.ResizeToEncoder
-    # overwritten in run
-    dataset: null
-    encoder: null
-
+test:
+    _target_: pangaea.engine.data_preprocessor.Preprocessor
+    preprocessor_cfg:
+        - _target_: pangaea.engine.data_preprocessor.ResizeToEncoder
+        - _target_: pangaea.engine.data_preprocessor.BandFilter
+        - _target_: pangaea.engine.data_preprocessor.NormalizeMeanStd
+        - _target_: pangaea.engine.data_preprocessor.BandPadding

@@ -1,23 +1,21 @@
 import os
+import pathlib
+import tarfile
 import time
-import torch
+import urllib
+from glob import glob
+from typing import Sequence, Tuple
+
 import numpy as np
 import tifffile as tiff
-from typing import Sequence, Tuple
-from sklearn.model_selection import train_test_split
-from glob import glob
-
 import torch
+from sklearn.model_selection import train_test_split
 
-import pathlib
-import urllib
-import tarfile
-
+from pangaea.datasets.base import RawGeoFMDataset
 from pangaea.datasets.utils import DownloadProgressBar
-from pangaea.datasets.base import GeoFMDataset
 
 
-class HLSBurnScars(GeoFMDataset):
+class HLSBurnScars(RawGeoFMDataset):
     def __init__(
         self,
         split: str,
@@ -38,7 +36,6 @@ class HLSBurnScars(GeoFMDataset):
         download_url: str,
         auto_download: bool,
     ):
-        
         """Initialize the HLSBurnScars dataset.
         Link: https://huggingface.co/datasets/ibm-nasa-geospatial/hls_burn_scars
 
@@ -51,10 +48,10 @@ class HLSBurnScars(GeoFMDataset):
             classes (list): classes of the dataset.
             num_classes (int): number of classes.
             ignore_index (int): index to ignore for metrics and loss.
-            img_size (int): size of the image. 
+            img_size (int): size of the image.
             bands (dict[str, list[str]]): bands of the dataset.
             distribution (list[int]): class distribution.
-            data_mean (dict[str, list[str]]): mean for each band for each modality. 
+            data_mean (dict[str, list[str]]): mean for each band for each modality.
             Dictionary with keys as the modality and values as the list of means.
             e.g. {"s2": [b1_mean, ..., bn_mean], "s1": [b1_mean, ..., bn_mean]}
             data_std (dict[str, list[str]]): str for each band for each modality.
@@ -69,7 +66,7 @@ class HLSBurnScars(GeoFMDataset):
             download_url (str): url to download the dataset.
             auto_download (bool): whether to download the dataset automatically.
         """
-        
+
         super(HLSBurnScars, self).__init__(
             split=split,
             dataset_name=dataset_name,
@@ -93,7 +90,7 @@ class HLSBurnScars(GeoFMDataset):
         self.root_path = root_path
         self.classes = classes
         self.split = split
-        
+
         self.data_mean = data_mean
         self.data_std = data_std
         self.data_min = data_min
@@ -106,10 +103,26 @@ class HLSBurnScars(GeoFMDataset):
         self.download_url = download_url
         self.auto_download = auto_download
 
-        self.split_mapping = {'train': 'training', 'val': 'validation', 'test': 'validation'}
+        self.split_mapping = {
+            "train": "training",
+            "val": "validation",
+            "test": "validation",
+        }
 
-        all_files = sorted(glob(os.path.join(self.root_path, self.split_mapping[self.split], '*merged.tif')))
-        all_targets = sorted(glob(os.path.join(self.root_path, self.split_mapping[self.split], '*mask.tif')))
+        all_files = sorted(
+            glob(
+                os.path.join(
+                    self.root_path, self.split_mapping[self.split], "*merged.tif"
+                )
+            )
+        )
+        all_targets = sorted(
+            glob(
+                os.path.join(
+                    self.root_path, self.split_mapping[self.split], "*mask.tif"
+                )
+            )
+        )
 
         if self.split != "test":
             split_indices = self.get_train_val_split(all_files)
@@ -123,18 +136,17 @@ class HLSBurnScars(GeoFMDataset):
             self.image_list = all_files
             self.target_list = all_targets
 
-    
     @staticmethod
     def get_train_val_split(all_files) -> Tuple[Sequence[int], Sequence[int]]:
-
-       # Fixed stratified sample to split data into train/val. 
-       # This keeps 90% of datapoints belonging to an individual event in the training set and puts the remaining 10% in the validation set. 
-        train_idxs, val_idxs = train_test_split(np.arange(len(all_files)),
-                                                test_size=0.1,
-                                                random_state=23,
-                                                )
+        # Fixed stratified sample to split data into train/val.
+        # This keeps 90% of datapoints belonging to an individual event in the training set and puts the remaining 10% in the validation set.
+        train_idxs, val_idxs = train_test_split(
+            np.arange(len(all_files)),
+            test_size=0.1,
+            random_state=23,
+        )
         return {"train": train_idxs, "val": val_idxs}
-        
+
     def __len__(self):
         return len(self.image_list)
 
@@ -150,17 +162,18 @@ class HLSBurnScars(GeoFMDataset):
         invalid_mask = image == 9999
         image[invalid_mask] = 0
 
+        # images must have (C T H W) shape
+        image = image.unsqueeze(1)
         output = {
-            'image': {
-                'optical': image,
+            "image": {
+                "optical": image,
             },
-            'target': target,
-            'metadata': {}
+            "target": target,
+            "metadata": {},
         }
 
         return output
 
-    
     @staticmethod
     def download(self, silent=False):
         output_path = pathlib.Path(self.root_path)
@@ -170,7 +183,9 @@ class HLSBurnScars(GeoFMDataset):
             os.makedirs(output_path, exist_ok=False)
         except FileExistsError:
             if not silent:
-                print("HLSBurnScars dataset folder exists, skipping downloading dataset.")
+                print(
+                    "HLSBurnScars dataset folder exists, skipping downloading dataset."
+                )
             return
 
         temp_file_name = f"temp_{hex(int(time.time()))}_hls_burn_scars.tar.gz"
@@ -179,17 +194,20 @@ class HLSBurnScars(GeoFMDataset):
         try:
             urllib.request.urlretrieve(url, output_path / temp_file_name, pbar)
         except urllib.error.HTTPError as e:
-            print('Error while downloading dataset: The server couldn\'t fulfill the request.')
-            print('Error code: ', e.code)
+            print(
+                "Error while downloading dataset: The server couldn't fulfill the request."
+            )
+            print("Error code: ", e.code)
             return
         except urllib.error.URLError as e:
-            print('Error while downloading dataset: Failed to reach a server.')
-            print('Reason: ', e.reason)
+            print("Error while downloading dataset: Failed to reach a server.")
+            print("Reason: ", e.reason)
             return
 
-        with tarfile.open(output_path / temp_file_name, 'r') as tar:
+        with tarfile.open(output_path / temp_file_name, "r") as tar:
             print(f"Extracting to {output_path} ...")
             tar.extractall(output_path)
             print("done.")
 
         os.remove(output_path / temp_file_name)
+
