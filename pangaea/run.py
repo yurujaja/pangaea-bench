@@ -1,7 +1,6 @@
 import os as os
 import pathlib
 import pprint
-import random
 import time
 
 import hydra
@@ -10,26 +9,26 @@ from hydra.conf import HydraConf
 from hydra.core.hydra_config import HydraConfig
 from hydra.utils import instantiate
 from omegaconf import DictConfig, OmegaConf
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
+from pangaea.datasets.base import GeoFMDataset, GeoFMSubset, RawGeoFMDataset
 from pangaea.decoders.base import Decoder
 from pangaea.encoders.base import Encoder
 from pangaea.engine.evaluator import Evaluator
 from pangaea.engine.trainer import Trainer
 from pangaea.utils.collate_fn import get_collate_fn
 from pangaea.utils.logger import init_logger
+from pangaea.utils.subset_sampler import get_subset_indices
 from pangaea.utils.utils import (
     fix_seed,
     get_best_model_ckpt_path,
     get_generator,
     seed_worker,
 )
-from pangaea.utils.subset_sampler import get_subset_indices
-from pangaea.datasets.base import GeoFMSubset, GeoFMDataset, RawGeoFMDataset
 
 
-def get_exp_info(hydra_config: HydraConf) -> str:
+def get_exp_info(hydra_config: HydraConf) -> dict[str, str]:
     """Create a unique experiment name based on the choices made in the config.
 
     Args:
@@ -146,10 +145,18 @@ def main(cfg: DictConfig) -> None:
     # training
     if train_run:
         # get preprocessor
-        train_preprocessor = instantiate(cfg.preprocessing.train, dataset_cfg=cfg.dataset, encoder_cfg=cfg.encoder,
-                                         _recursive_=False)
-        val_preprocessor = instantiate(cfg.preprocessing.val, dataset_cfg=cfg.dataset, encoder_cfg=cfg.encoder,
-                                       _recursive_=False)
+        train_preprocessor = instantiate(
+            cfg.preprocessing.train,
+            dataset_cfg=cfg.dataset,
+            encoder_cfg=cfg.encoder,
+            _recursive_=False,
+        )
+        val_preprocessor = instantiate(
+            cfg.preprocessing.val,
+            dataset_cfg=cfg.dataset,
+            encoder_cfg=cfg.encoder,
+            _recursive_=False,
+        )
 
         # get datasets
         raw_train_dataset: RawGeoFMDataset = instantiate(cfg.dataset, split="train")
@@ -159,25 +166,32 @@ def main(cfg: DictConfig) -> None:
 
         logger.info("Built {} dataset.".format(cfg.dataset.dataset_name))
 
-
         if 0 < cfg.limited_label_train < 1:
             indices = get_subset_indices(
-                train_dataset, task=task_name, strategy=cfg.limited_label_strategy, 
-                label_fraction=cfg.limited_label_train, num_bins=cfg.stratification_bins, logger=logger
+                train_dataset,
+                task=task_name,
+                strategy=cfg.limited_label_strategy,
+                label_fraction=cfg.limited_label_train,
+                num_bins=cfg.stratification_bins,
+                logger=logger,
             )
             train_dataset = GeoFMSubset(train_dataset, indices)
-            
+
         if 0 < cfg.limited_label_val < 1:
             indices = get_subset_indices(
-                val_dataset, task=task_name, strategy=cfg.limited_label_strategy, 
-                label_fraction=cfg.limited_label_val, num_bins=cfg.stratification_bins, logger=logger
+                val_dataset,
+                task=task_name,
+                strategy=cfg.limited_label_strategy,
+                label_fraction=cfg.limited_label_val,
+                num_bins=cfg.stratification_bins,
+                logger=logger,
             )
             val_dataset = GeoFMSubset(val_dataset, indices)
-                
+
         logger.info(
-                f"Total number of train patches: {len(train_dataset)}\n"
-                f"Total number of validation patches: {len(val_dataset)}\n"
-            )
+            f"Total number of train patches: {len(train_dataset)}\n"
+            f"Total number of validation patches: {len(val_dataset)}\n"
+        )
 
         # get train val data loaders
         train_loader = DataLoader(
@@ -236,10 +250,14 @@ def main(cfg: DictConfig) -> None:
         trainer.train()
 
     # Evaluation
-    test_preprocessor = instantiate(cfg.preprocessing.test, dataset_cfg=cfg.dataset, encoder_cfg=cfg.encoder,
-                                        _recursive_=False)
+    test_preprocessor = instantiate(
+        cfg.preprocessing.test,
+        dataset_cfg=cfg.dataset,
+        encoder_cfg=cfg.encoder,
+        _recursive_=False,
+    )
 
-        # get datasets
+    # get datasets
     raw_test_dataset: RawGeoFMDataset = instantiate(cfg.dataset, split="test")
     test_dataset = GeoFMDataset(raw_test_dataset, test_preprocessor)
 

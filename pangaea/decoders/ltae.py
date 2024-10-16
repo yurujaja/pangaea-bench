@@ -36,8 +36,15 @@ class PositionalEncoder(nn.Module):
         return sinusoid_table
 
 
+
 class LTAEChannelAdaptor(nn.Module):
     def __init__(self, in_channels: list[int], out_channels: list[int]) -> None:
+        """LTAEChannelAdaptor for adapting the number of channels of the input features.
+
+        Args:
+            in_channels (list[int]): list of the number of input channels
+            out_channels (list[int]): list of the number of output channels
+        """
         super(LTAEChannelAdaptor, self).__init__()
         self.convs = nn.ModuleList(
             [
@@ -47,6 +54,15 @@ class LTAEChannelAdaptor(nn.Module):
         )
 
     def forward(self, features: list[torch.Tensor]) -> list[torch.Tensor]:
+        """Adapter for the number of channels of the input features.
+
+        Args:
+            features (list[torch.Tensor]): list of features of shape (B C T H W)
+            from different layers of the encoder.
+
+        Returns:
+            list[torch.Tensor]: list of adapted features of shape (B C' T H W)
+        """
         output = []
         for c, f in zip(self.convs, features):
             # for all frames
