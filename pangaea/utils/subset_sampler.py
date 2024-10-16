@@ -40,12 +40,14 @@ def calculate_regression_distributions(dataset: GeoFMDataset|GeoFMSubset):
     return np.array(distributions)
 
 
-# Function to bin class distributions 
+# Function to bin class distributions using ceil
 def bin_class_distributions(class_distributions, num_bins=3, logger=None):
-    logger.info(f"Class distributions are being binned into {num_bins} categories")
+    logger.info(f"Class distributions are being binned into {num_bins} categories using ceil")
     
-    binned_distributions = np.digitize(class_distributions, np.linspace(0, 1, num_bins+1)) - 1
+    bin_edges = np.linspace(0, 1, num_bins + 1)[1]
+    binned_distributions = np.ceil(class_distributions / bin_edges).astype(int) - 1
     return binned_distributions
+
 
 
 # Function to bin regression distributions
