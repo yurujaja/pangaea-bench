@@ -1,5 +1,5 @@
 _target_: pangaea.encoders.ssl4eo_dino_encoder.SSL4EO_DINO_Encoder
-encoder_weights: ./pretrained_models/B13_vits16_dino_0099.pth
+encoder_weights: ./pretrained_models/B13_vits16_dino_0099_ckpt.pth
 download_url: https://drive.google.com/uc?id=1CseO5vvMReGlAulm5o4ZgbjUgj8VlAH7&export=download&confirm=yes
 
 embed_dim: 384
