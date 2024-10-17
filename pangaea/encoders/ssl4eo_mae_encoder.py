@@ -158,7 +158,7 @@ class SSL4EO_MAE_OPTICAL_Encoder(Encoder):
 
     def load_encoder_weights(self, logger: Logger) -> None:
         checkpoint = torch.load(self.encoder_weights, map_location="cpu")
-        pretrained_model = checkpoint["model"]
+        pretrained_model = checkpoint["state_dict"]
 
         k = pretrained_model.keys()
         pretrained_encoder = {}
