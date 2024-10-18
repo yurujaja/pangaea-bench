@@ -210,14 +210,12 @@ class SpectralGPT_Encoder(Encoder):
                     out = x
                 out = out.view(N, T, L, C).transpose(2, 3).flatten(1, 2)
                 out = (
-                    out.permute(0, 2, 1)
-                    .contiguous()
-                    .view(
+                    out.view(
                         x.shape[0],
                         -1,
                         self.input_size // self.patch_size,
                         self.input_size // self.patch_size,
-                    )
+                    ).contiguous()
                 )
                 output.append(out)
 
