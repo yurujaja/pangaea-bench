@@ -156,7 +156,7 @@ class GeoFMDataset(Dataset):
         self.raw_dataset = dataset
         self.preprocessor = preprocessor
         if replicate is not None and not isinstance(replicate, int) and replicate >= 1 :
-            raise ValueError(f"replicate must be in")
+            raise ValueError(f"replicate must be int and >=1")
         self.replicate = replicate if replicate is not None else 1
         
 
