@@ -299,7 +299,7 @@ We appreciate all contributions. Please refer to [Contributing Guidelines](.gith
 ## ⚠️ Warnings
 
 Some features are under construction:
- - the automatic download is working for all the datasets and models' weights but, respectively, **Five Billion Pixels**, **BioMassters**, and **GFM**.
+ - the automatic download is working for all the datasets and models' weights but, respectively, **Five Billion Pixels**, **BioMassters**, and **GFM**. The GFM pretrained model can be downloaded from [OneDrive](https://onedrive.live.com/?authkey=%21AIx%5FHoX7JG4Ai18&id=93B3D3BDA9EFE744%21100937&cid=93B3D3BDA9EFE744).
 
 
 ## 🧮 Some first results
