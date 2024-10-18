@@ -22,6 +22,7 @@ This document provides a detailed overview of the datasets used in this reposito
 ### MADOS
 
 - The code supports automatic downloading of the dataset into `./data` folder. 
+- Random cropping to encoder size is done with focus cropping. This avoids batches with no loss, caused by the high ratio of unlabeled pixels ion the dataset.
 - The basic experiment uses mean and std values for normalization and applies random cropping to align images with the size used for GFMs pretraining.
    Below is a CLI example for running the experiment with the RemoteClip pretrained encoder and UperNet segmentation decoder:
 
@@ -31,7 +32,7 @@ This document provides a detailed overview of the datasets used in this reposito
    dataset=mados \
    encoder=remoteclip \
    decoder=seg_upernet\
-   preprocessing=seg_default \
+   preprocessing=seg_focus_crop \
    criterion=cross_entropy \
    task=segmentation
   ```
