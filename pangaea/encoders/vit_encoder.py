@@ -38,7 +38,6 @@ class VIT_Encoder(Encoder):
                  mlp_ratio=4,
                  qkv_bias=True,
                  norm_layer=partial(nn.LayerNorm, eps=1e-6)):
-        print(input_size)
 
         Encoder.__init__(self,
                          model_name="vit_encoder",
