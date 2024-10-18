@@ -122,13 +122,29 @@ class RawGeoFMDataset(Dataset):
         raise NotImplementedError
 
 
+class GeoFMSubset(Subset):
+    """Custom subset class that retains dataset attributes."""
+
+    def __init__(self, dataset, indices):
+        super().__init__(dataset, indices)
+
+        # Copy relevant attributes from the original dataset
+        self.__dict__.update(dataset.__dict__)
+
+    def filter_by_indices(self, indices):
+        """Apply filtering by indices directly in this subset."""
+        return GeoFMSubset(self.dataset, indices)
+
+
+
 class GeoFMDataset(Dataset):
     """Base class for all datasets."""
 
     def __init__(
         self,
-        dataset: RawGeoFMDataset,
+        dataset: RawGeoFMDataset | GeoFMSubset,
         preprocessor: Preprocessor = None,
+        replicate: int = None,
     ):
         """Initializes the dataset.
 
@@ -139,6 +155,7 @@ class GeoFMDataset(Dataset):
         self.__dict__.update(dataset.__dict__)
         self.raw_dataset = dataset
         self.preprocessor = preprocessor
+        self.replicate = replicate if replicate is not None else 1
 
     def __len__(self) -> int:
         """Returns the length of the dataset.
@@ -147,7 +164,7 @@ class GeoFMDataset(Dataset):
             int: length of the dataset
         """
 
-        return len(self.raw_dataset)
+        return len(self.raw_dataset) * self.replicate
 
     def __getitem__(self, i: int) -> dict[str, torch.Tensor | dict[str, torch.Tensor]]:
         """Returns the i-th item of the dataset.
@@ -170,22 +187,9 @@ class GeoFMDataset(Dataset):
              "metadata": dict}.
         """
 
-        output = self.raw_dataset[i]
+        output = self.raw_dataset[i // self.replicate]
         if self.preprocessor is not None:
             output = self.preprocessor(output)
 
         return output
 
-
-class GeoFMSubset(Subset):
-    """Custom subset class that retains dataset attributes."""
-
-    def __init__(self, dataset, indices):
-        super().__init__(dataset, indices)
-
-        # Copy relevant attributes from the original dataset
-        self.__dict__.update(dataset.__dict__)
-
-    def filter_by_indices(self, indices):
-        """Apply filtering by indices directly in this subset."""
-        return GeoFMSubset(self.dataset, indices)

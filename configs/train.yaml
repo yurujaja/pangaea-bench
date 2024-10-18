@@ -18,7 +18,7 @@ limited_label_train: 1
 limited_label_val: 1
 limited_label_strategy: stratified  # Options: stratified, oversampled, random
 stratification_bins: 3 #  number of bins for stratified sampling, only for stratified
-
+data_replicate: 1
 
 
 defaults:

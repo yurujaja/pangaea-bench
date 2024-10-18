@@ -105,7 +105,7 @@ class HLSBurnScars(RawGeoFMDataset):
 
         self.split_mapping = {
             "train": "training",
-            "val": "validation",
+            "val": "training",
             "test": "validation",
         }
 

@@ -161,32 +161,34 @@ def main(cfg: DictConfig) -> None:
         # get datasets
         raw_train_dataset: RawGeoFMDataset = instantiate(cfg.dataset, split="train")
         raw_val_dataset: RawGeoFMDataset = instantiate(cfg.dataset, split="val")
-        train_dataset = GeoFMDataset(raw_train_dataset, train_preprocessor)
-        val_dataset = GeoFMDataset(raw_val_dataset, val_preprocessor)
-
-        logger.info("Built {} dataset.".format(cfg.dataset.dataset_name))
 
         if 0 < cfg.limited_label_train < 1:
             indices = get_subset_indices(
-                train_dataset,
+                raw_train_dataset,
                 task=task_name,
                 strategy=cfg.limited_label_strategy,
                 label_fraction=cfg.limited_label_train,
                 num_bins=cfg.stratification_bins,
                 logger=logger,
             )
-            train_dataset = GeoFMSubset(train_dataset, indices)
+            raw_train_dataset = GeoFMSubset(raw_train_dataset, indices)
 
         if 0 < cfg.limited_label_val < 1:
             indices = get_subset_indices(
-                val_dataset,
+                raw_val_dataset,
                 task=task_name,
                 strategy=cfg.limited_label_strategy,
                 label_fraction=cfg.limited_label_val,
                 num_bins=cfg.stratification_bins,
                 logger=logger,
             )
-            val_dataset = GeoFMSubset(val_dataset, indices)
+            raw_val_dataset = GeoFMSubset(raw_val_dataset, indices)
+        
+        
+        train_dataset = GeoFMDataset(raw_train_dataset, train_preprocessor, cfg.data_replicate)
+        val_dataset = GeoFMDataset(raw_val_dataset, val_preprocessor, cfg.data_replicate)
+
+        logger.info("Built {} dataset.".format(cfg.dataset.dataset_name))
 
         logger.info(
             f"Total number of train patches: {len(train_dataset)}\n"
