@@ -155,7 +155,10 @@ class GeoFMDataset(Dataset):
         self.__dict__.update(dataset.__dict__)
         self.raw_dataset = dataset
         self.preprocessor = preprocessor
+        if replicate is not None and not isinstance(replicate, int) and replicate >= 1 :
+            raise ValueError(f"replicate must be in")
         self.replicate = replicate if replicate is not None else 1
+        
 
     def __len__(self) -> int:
         """Returns the length of the dataset.
