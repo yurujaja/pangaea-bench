@@ -159,7 +159,7 @@ This document provides a detailed overview of the datasets used in this reposito
    encoder=remoteclip \
    decoder=seg_upernet\
    preprocessing=seg_default \
-   criterion=cross_entropy \
+   criterion=dice \
    task=segmentation
   ```
 - Here is an example to run change detection:
@@ -170,7 +170,7 @@ This document provides a detailed overview of the datasets used in this reposito
    encoder=remoteclip \
    decoder=seg_siamupernet_conc\
    preprocessing=seg_default \
-   criterion=cross_entropy \
+   criterion=dice \
    task=change_detection
   ```
 
