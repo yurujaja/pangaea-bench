@@ -2,6 +2,7 @@ import os as os
 import pathlib
 import pprint
 import time
+import hashlib
 
 import hydra
 import torch
@@ -38,6 +39,7 @@ def get_exp_info(hydra_config: HydraConf) -> dict[str, str]:
         str: experiment information.
     """
     choices = OmegaConf.to_container(hydra_config.runtime.choices)
+    cfg_hash = hashlib.sha1(OmegaConf.to_yaml(hydra_config).encode(), usedforsecurity=False).hexdigest()[:6]
     timestamp = time.strftime("%Y%m%d_%H%M%S", time.localtime())
     fm = choices["encoder"]
     decoder = choices["decoder"]
@@ -49,7 +51,7 @@ def get_exp_info(hydra_config: HydraConf) -> dict[str, str]:
         "decoder": decoder,
         "ds": ds,
         "task": task,
-        "exp_name": f"{timestamp}_{fm}_{decoder}_{ds}",
+        "exp_name": f"{timestamp}_{cfg_hash}_{fm}_{decoder}_{ds}",
     }
     return exp_info
 
