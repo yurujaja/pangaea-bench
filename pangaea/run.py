@@ -249,7 +249,7 @@ def main(cfg: DictConfig) -> None:
         )
         # resume training if model_checkpoint is provided
         if cfg.ckpt_dir is not None:
-            trainer.load_model(cfg.resume_from)
+            trainer.load_model(cfg.ckpt_dir)
 
         trainer.train()
 
