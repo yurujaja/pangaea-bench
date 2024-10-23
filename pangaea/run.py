@@ -23,6 +23,7 @@ from pangaea.utils.subset_sampler import get_subset_indices
 from pangaea.utils.utils import (
     fix_seed,
     get_best_model_ckpt_path,
+    get_final_model_ckpt_path,
     get_generator,
     seed_worker,
 )
@@ -245,7 +246,7 @@ def main(cfg: DictConfig) -> None:
         )
         # resume training if model_checkpoint is provided
         if cfg.ckpt_dir is not None:
-            trainer.load_model(cfg.resume_from)
+            trainer.load_model(cfg.ckpt_dir)
 
         trainer.train()
 
@@ -274,7 +275,7 @@ def main(cfg: DictConfig) -> None:
     test_evaluator: Evaluator = instantiate(
         cfg.task.evaluator, val_loader=test_loader, exp_dir=exp_dir, device=device
     )
-    best_model_ckpt_path = get_best_model_ckpt_path(exp_dir)
+    best_model_ckpt_path = get_final_model_ckpt_path(exp_dir)
     test_evaluator.evaluate(decoder, "best_model", best_model_ckpt_path)
 
     if cfg.use_wandb and rank == 0:
