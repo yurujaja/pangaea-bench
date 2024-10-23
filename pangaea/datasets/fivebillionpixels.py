@@ -102,7 +102,7 @@ class FiveBillionPixels(RawGeoFMDataset):
         self.auto_download = auto_download
 
         self._image_dir = sorted(
-            glob(os.path.join(self._base_dir, self.split, "imgs", "*.tif"))
+            glob(os.path.join(self._base_dir, self.split, "images", "*.tif"))
         )
         self._label_dir = sorted(
             glob(os.path.join(self._base_dir, self.split, "labels", "*.tif"))
