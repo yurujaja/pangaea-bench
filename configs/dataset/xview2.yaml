@@ -6,6 +6,7 @@ auto_download: False
 img_size: 1024
 multi_temporal: False
 multi_modal: False
+oversample_building_damage: True
 
 # classes
 ignore_index: -1
