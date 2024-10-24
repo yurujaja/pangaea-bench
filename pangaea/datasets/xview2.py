@@ -39,6 +39,7 @@ class xView2(RawGeoFMDataset):
         data_max: dict[str, list[str]],
         download_url: str,
         auto_download: bool,
+        oversample_building_damage: bool
     ):
         """Initialize the xView2 dataset.
         Link: https://xview2.org/dataset
@@ -70,6 +71,7 @@ class xView2(RawGeoFMDataset):
             e.g. {"s2": [b1_max, ..., bn_max], "s1": [b1_max, ..., bn_max]}
             download_url (str): url to download the dataset.
             auto_download (bool): whether to download the dataset automatically.
+            oversample_building_damage (bool): whether to oversample images with building damage
         """
         super(xView2, self).__init__(
             split=split,
@@ -105,6 +107,7 @@ class xView2(RawGeoFMDataset):
         self.ignore_index = ignore_index
         self.download_url = download_url
         self.auto_download = auto_download
+        self.oversample_building_damage = oversample_building_damage
 
         self.all_files = self.get_all_files()
 
@@ -124,7 +127,7 @@ class xView2(RawGeoFMDataset):
         if self.split != "test":
             train_val_idcs = self.get_stratified_train_val_split(all_files)
             
-            if self.split == "train":
+            if self.split == "train" and self.oversample_building_damage:
                 train_val_idcs[self.split] = self.oversample_building_files(all_files, train_val_idcs[self.split])
 
             
