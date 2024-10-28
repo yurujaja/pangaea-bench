@@ -351,11 +351,11 @@ class NormalizeMinMax(BasePreprocessor):
         self,
         **meta,
     ) -> None:
-        """Initialize the NormalizeMeanStd.
+        """Initialize the NormalizeMinMax.
         Args:
             meta: statistics/info of the input data and target encoder
-                data_min: global maximum value of incoming data
-                data_sax: global minimum value of incoming data
+                data_min: global minimum value of incoming data
+                data_max: global maximum value of incoming data
         """
         super().__init__()
 
@@ -365,7 +365,7 @@ class NormalizeMinMax(BasePreprocessor):
     def __call__(
         self, data: dict[str, torch.Tensor | dict[str, torch.Tensor]]
     ) -> dict[str, torch.Tensor | dict[str, torch.Tensor]]:
-        """Apply Mean/Std Normalization to the data.
+        """Apply Min/Max Normalization to the data.
         Args:
             data (dict): input data.
         Returns:
