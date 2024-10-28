@@ -381,9 +381,8 @@ class NormalizeMinMax(BasePreprocessor):
         """
 
         for k in self.data_min.keys():
-            size = (-1,) + data["image"][k].shape[1:]
-            data["image"][k].sub_(self.data_min[k].view(size)).div_(
-                (self.data_max[k] - self.data_min[k]).view(size)
+            data["image"][k].sub_(self.data_min[k].view(-1, 1, 1, 1)).div_(
+                (self.data_max[k] - self.data_min[k]).view(-1, 1, 1, 1)
             )
         return data
 
