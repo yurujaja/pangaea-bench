@@ -1,0 +1,26 @@
+_target_: pangaea.encoders.vit_encoder.VIT_EncoderMT
+encoder_weights: ./pretrained_models/jx_vit_base_p16_224-80ecf9dd.pt
+download_url: https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-vitjx/jx_vit_base_p16_224-80ecf9dd.pth
+
+multi_temporal: ${dataset.multi_temporal}
+embed_dim: 768
+input_size: 224
+patch_size: 16
+depth: 12
+num_heads: 12
+mlp_ratio: 4
+
+input_bands:
+  optical:
+    - B4
+    - B3
+    - B2
+
+  
+output_layers:
+  - 3
+  - 5
+  - 7
+  - 11
+
+output_dim: 768
