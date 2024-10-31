@@ -76,7 +76,6 @@ class Trainer:
             for name in ["loss", "data_time", "batch_time", "eval_time"]
         }
         self.training_metrics = {}
-        self.best_ckpt = None
         self.best_metric_comp = operator.gt
         self.num_classes = self.train_loader.dataset.num_classes
 
@@ -105,7 +104,7 @@ class Trainer:
             if epoch % self.eval_interval == 0:
                 metrics, used_time = self.evaluator(self.model, f"epoch {epoch}")
                 self.training_stats["eval_time"].update(used_time)
-                self.set_best_checkpoint(metrics, epoch)
+                self.save_best_checkpoint(metrics, epoch)
 
             self.logger.info("============ Starting epoch %i ... ============" % epoch)
             # set sampler
@@ -117,16 +116,10 @@ class Trainer:
 
         metrics, used_time = self.evaluator(self.model, "final model")
         self.training_stats["eval_time"].update(used_time)
-        self.set_best_checkpoint(metrics, self.n_epochs)
+        self.save_best_checkpoint(metrics, self.n_epochs)
 
         # save last model
         self.save_model(self.n_epochs, is_final=True)
-
-        # save best model
-        if self.best_ckpt:
-            self.save_model(
-                self.best_ckpt["epoch"], is_best=True, checkpoint=self.best_ckpt
-            )
 
     def train_one_epoch(self, epoch: int) -> None:
         """Train model for one epoch.
@@ -186,7 +179,7 @@ class Trainer:
             end_time = time.time()
 
     def get_checkpoint(self, epoch: int) -> dict[str, dict | int]:
-        """Create a checkpoint dictionary.
+        """Create a checkpoint dictionary, containing references to the pytorch tensors.
 
         Args:
             epoch (int): number of the epoch.
@@ -201,7 +194,7 @@ class Trainer:
             "scaler": self.scaler.state_dict(),
             "epoch": epoch,
         }
-        return copy.deepcopy(checkpoint)
+        return checkpoint
 
     def save_model(
         self,
@@ -222,8 +215,8 @@ class Trainer:
             torch.distributed.barrier()
             return
         checkpoint = self.get_checkpoint(epoch) if checkpoint is None else checkpoint
-        suffix = "_best" if is_best else "_final" if is_final else ""
-        checkpoint_path = os.path.join(self.exp_dir, f"checkpoint_{epoch}{suffix}.pth")
+        suffix = "_best" if is_best else f"{epoch}_final" if is_final else f"{epoch}"
+        checkpoint_path = os.path.join(self.exp_dir, f"checkpoint_{suffix}.pth")
         torch.save(checkpoint, checkpoint_path)
         self.logger.info(
             f"Epoch {epoch} | Training checkpoint saved at {checkpoint_path}"
@@ -267,7 +260,7 @@ class Trainer:
         """
         raise NotImplementedError
 
-    def set_best_checkpoint(
+    def save_best_checkpoint(
         self, eval_metrics: dict[float, list[float]], epoch: int
     ) -> None:
         """Update the best checkpoint according to the evaluation metrics.
@@ -281,7 +274,10 @@ class Trainer:
             curr_metric = curr_metric[0] if self.num_classes == 1 else np.mean(curr_metric)
         if self.best_metric_comp(curr_metric, self.best_metric):
             self.best_metric = curr_metric
-            self.best_ckpt = self.get_checkpoint(epoch)
+            best_ckpt = self.get_checkpoint(epoch)
+            self.save_model(
+                epoch, is_best=True, checkpoint=best_ckpt
+            )
 
     @torch.no_grad()
     def compute_logging_metrics(

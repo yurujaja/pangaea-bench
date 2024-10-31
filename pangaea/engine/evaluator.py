@@ -290,7 +290,7 @@ class SegEvaluator(Evaluator):
         self.logger.info(recall_str)
         self.logger.info(macc_str)
 
-        if self.use_wandb:
+        if self.use_wandb and self.rank == 0:
             wandb.log(
                 {
                     f"{self.split}_mIoU": metrics["mIoU"],
@@ -400,5 +400,5 @@ class RegEvaluator(Evaluator):
         rmse = "-------------------\n" + 'RMSE \t{:>7}'.format('%.3f' % metrics['RMSE'])
         self.logger.info(header + mse + rmse)
 
-        if self.use_wandb:
+        if self.use_wandb and self.rank == 0:
             wandb.log({f"{self.split}_MSE": metrics["MSE"], f"{self.split}_RMSE": metrics["RMSE"]})
