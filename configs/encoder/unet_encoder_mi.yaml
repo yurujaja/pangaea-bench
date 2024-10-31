@@ -1,0 +1,15 @@
+_target_:  pangaea.encoders.unet_encoder.UNetMT
+encoder_weights: null
+download_url: null
+input_size: ${dataset.img_size}
+multi_temporal: ${dataset.multi_temporal}
+topology: [64, 128, 256, 512,]
+
+input_bands: ${dataset.bands}
+
+output_dim:
+  - 64
+  - 128
+  - 256
+  - 512
+
