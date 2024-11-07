@@ -1,16 +1,15 @@
 _target_: pangaea.datasets.ai4smallfarms.AI4SmallFarms
 dataset_name: AI4SmallFarms
 root_path: ./data/ai4smallfarms
-dataverse_api_token: 753e72e8-c746-4860-9d0c-3aec872d888a
+download_url: https://phys-techsciences.datastations.nl
 auto_download: True
 
-img_size: 807
+img_size: 496
 multi_temporal: False
 multi_modal: False
-limited_label: False
 
 ignore_index: -1
-num_classes: 2
+num_classes: 1
 classes:
   - Background
   - Crop Field
