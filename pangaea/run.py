@@ -24,6 +24,7 @@ from pangaea.utils.subset_sampler import get_subset_indices
 from pangaea.utils.utils import (
     fix_seed,
     get_best_model_ckpt_path,
+    get_final_model_ckpt_path,
     get_generator,
     seed_worker,
 )
@@ -278,8 +279,12 @@ def main(cfg: DictConfig) -> None:
     test_evaluator: Evaluator = instantiate(
         cfg.task.evaluator, val_loader=test_loader, exp_dir=exp_dir, device=device
     )
-    best_model_ckpt_path = get_best_model_ckpt_path(exp_dir)
-    test_evaluator.evaluate(decoder, "best_model", best_model_ckpt_path)
+
+    if cfg.use_final_ckpt:
+        model_ckpt_path = get_final_model_ckpt_path(exp_dir)
+    else:
+        model_ckpt_path = get_best_model_ckpt_path(exp_dir)
+    test_evaluator.evaluate(decoder, "test_model", model_ckpt_path)
 
     if cfg.use_wandb and rank == 0:
         wandb.finish()

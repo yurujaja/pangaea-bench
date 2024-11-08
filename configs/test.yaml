@@ -9,6 +9,7 @@ batch_size: 8
 
 
 # EXPERIMENT
+use_final_ckpt: false
 finetune: false
 ckpt_dir: ???
 
