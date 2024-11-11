@@ -4,7 +4,7 @@ root_path: ./data/Biomassters
 download_url: 
 auto_download: False
 img_size: 256
-temp: 6 #6 (select month to use if single temporal (multi_temp : 1))
+temp: 6 #6 (select month to use if single temporal (multi_temporal : 1))
 multi_temporal: 12
 multi_modal: True
 
@@ -35,12 +35,12 @@ bands:
     - B12
     - CLP
   sar:
-    - ASC_VV
-    - ASC_VH
+    - VV #set band name to match the input band name of the model e.g. VV for CROMA, ASC_VV for DOFA
+    - VH #set band name to match the input band name of the model e.g. VH for CROMA, ASC_VH for DOFA
     - DSC_VV
     - DSC_VH
 
-# TODO: fix the normalization 
+# TODO: add mean and std normalization values 
 data_mean:
   optical: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
   sar: [0, 0, 0, 0]

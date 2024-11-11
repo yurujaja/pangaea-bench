@@ -372,16 +372,16 @@ class RegEvaluator(Evaluator):
             if self.inference_mode == "sliding":
                 input_size = model.module.encoder.input_size
                 logits = self.sliding_inference(model, image, input_size, output_shape=target.shape[-2:],
-                                                max_batch=self.sliding_inference_batch)
+                                                max_batch=self.sliding_inference_batch).squeeze(dim=1)
             elif self.inference_mode == "whole":
                 logits = model(image, output_shape=target.shape[-2:]).squeeze(dim=1)
             else:
                 raise NotImplementedError((f"Inference mode {self.inference_mode} is not implemented."))
 
-            mse += F.mse_loss(logits, target, reduction='sum')
+            mse += F.mse_loss(logits, target)
 
         torch.distributed.all_reduce(mse, op=torch.distributed.ReduceOp.SUM)
-        mse = mse / len(self.val_loader.dataset)
+        mse = mse / len(self.val_loader)
 
         metrics = {"MSE": mse.item(), "RMSE": torch.sqrt(mse).item()}
         self.log_metrics(metrics)
