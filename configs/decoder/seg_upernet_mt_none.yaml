@@ -1,0 +1,11 @@
+_target_: pangaea.decoders.upernet.SegMTUPerNet
+
+# overwritten in run
+encoder: null
+num_classes: ${dataset.num_classes}
+multi_temporal: ${dataset.multi_temporal}
+finetune: ${finetune}
+
+# to adapt
+channels: 512
+multi_temporal_strategy: none
