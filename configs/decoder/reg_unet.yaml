@@ -1,0 +1,5 @@
+_target_: pangaea.decoders.unet.UNet
+
+encoder: null
+num_classes: 1
+finetune: True # ${finetune}
