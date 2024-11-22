@@ -1,0 +1,21 @@
+_target_: pangaea.encoders.vit_encoder.VIT_Encoder
+encoder_weights: null
+download_url: null
+
+embed_dim: 768
+input_size: 224
+patch_size: 16
+depth: 12
+num_heads: 12
+mlp_ratio: 4
+
+input_bands: ${dataset.bands}
+
+  
+output_layers:
+  - 3
+  - 5
+  - 7
+  - 11
+
+output_dim: 768

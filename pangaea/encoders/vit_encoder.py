@@ -56,8 +56,9 @@ class VIT_Encoder(Encoder):
         )
 
         self.patch_size = patch_size
+        self.in_chans = len(input_bands["optical"])
         self.patch_embed = PatchEmbed(
-            input_size, patch_size, in_chans=3, embed_dim=embed_dim
+            input_size, patch_size, in_chans=self.in_chans, embed_dim=embed_dim
         )
         num_patches = self.patch_embed.num_patches
 
@@ -113,6 +114,8 @@ class VIT_Encoder(Encoder):
         return output
 
     def load_encoder_weights(self, logger: Logger) -> None:
+        if self.encoder_weights is None:
+            return
         pretrained_model = torch.load(self.encoder_weights, map_location="cpu")
         k = pretrained_model.keys()
         pretrained_encoder = {}
@@ -167,7 +170,7 @@ class VIT_EncoderMT(Encoder):
         )
 
         self.patch_size = patch_size
-        self.in_channels = 3
+        self.in_channels = len(input_bands["optical"])
         self.patch_embed = PatchEmbed(
             input_size, patch_size, in_chans=self.in_channels, embed_dim=embed_dim
         )
@@ -233,6 +236,8 @@ class VIT_EncoderMT(Encoder):
         return output
 
     def load_encoder_weights(self, logger: Logger) -> None:
+        if self.encoder_weights is None:
+            return
         pretrained_model = torch.load(self.encoder_weights, map_location="cpu")
         k = pretrained_model.keys()
         pretrained_encoder = {}
