@@ -158,77 +158,77 @@ class Potsdam(RawGeoFMDataset):
 
     @staticmethod
     def download(self, silent=False):
-        # s = requests.session()
-        # # fetch tokens
-        # response = s.get(self.download_url)
-        # html = response.text
+        s = requests.session()
+        # fetch tokens
+        response = s.get(self.download_url)
+        html = response.text
 
-        # # sfcrsf_token = response.headers.get("Set-Cookie").split(";")[0].split("=")[1]
-        # crsf_middleware_token = html.split("name=\"csrfmiddlewaretoken\" value=\"")[1].split("\"")[0]
-        # token = html.split("name=\"token\" value=\"")[1].split("\"")[0]
+        # sfcrsf_token = response.headers.get("Set-Cookie").split(";")[0].split("=")[1]
+        crsf_middleware_token = html.split("name=\"csrfmiddlewaretoken\" value=\"")[1].split("\"")[0]
+        token = html.split("name=\"token\" value=\"")[1].split("\"")[0]
 
-        # data = {
-        #         "csrfmiddlewaretoken": crsf_middleware_token,
-        #         "token": token,
-        #         "password": self.download_password,
-        #     }
+        data = {
+                "csrfmiddlewaretoken": crsf_middleware_token,
+                "token": token,
+                "password": self.download_password,
+            }
 
 
-        # out_dir = self.root_path
-        # # ensure the directory exists
-        # os.makedirs(out_dir, exist_ok=True)
+        out_dir = self.root_path
+        # ensure the directory exists
+        os.makedirs(out_dir, exist_ok=True)
 
-        # pbar = DownloadProgressBar()
+        pbar = DownloadProgressBar()
 
-        # try:
-        #     with s.post(self.download_url+"?dl=1", data=data, stream=True, headers={'Content-Type': 'application/x-www-form-urlencoded'}) as response:
-        #         response.raise_for_status()
+        try:
+            with s.post(self.download_url+"?dl=1", data=data, stream=True, headers={'Content-Type': 'application/x-www-form-urlencoded'}) as response:
+                response.raise_for_status()
 
-        #         tot_size = int(response.headers['Content-Length'])
-        #         with open(os.path.join(out_dir, "potsdam.zip"), 'wb') as f:
-        #             for i, chunk in enumerate(response.iter_content(chunk_size=8192)):
-        #                 f.write(chunk)
-        #                 pbar(i,8192,tot_size)
+                tot_size = int(response.headers['Content-Length'])
+                with open(os.path.join(out_dir, "potsdam.zip"), 'wb') as f:
+                    for i, chunk in enumerate(response.iter_content(chunk_size=8192)):
+                        f.write(chunk)
+                        pbar(i,8192,tot_size)
                 
-        # except requests.exceptions.HTTPError as e:
-        #     print('Error while downloading dataset: The server couldn\'t fulfill the request.')
-        #     print('Error code: ', e.code)
-        #     return
+        except requests.exceptions.HTTPError as e:
+            print('Error while downloading dataset: The server couldn\'t fulfill the request.')
+            print('Error code: ', e.code)
+            return
 
-        # except requests.exceptions.InvalidURL as e:
-        #     print('Error while downloading dataset: Failed to reach a server.')
-        #     print('Reason: ', e.reason)
-        #     return
+        except requests.exceptions.InvalidURL as e:
+            print('Error while downloading dataset: Failed to reach a server.')
+            print('Reason: ', e.reason)
+            return
         
         out_dir = self.root_path
         # unzip
-        # print("Extracting inner archives...")
-        # with zipfile.ZipFile(os.path.join(out_dir, "potsdam.zip"), 'r') as zip_ref:
-        #     zip_ref.extract("Potsdam/5_Labels_for_participants.zip", os.path.join(out_dir, "raw"))
-        #     zip_ref.extract("Potsdam/5_Labels_all.zip", os.path.join(out_dir, "raw"))
-        #     zip_ref.extract("Potsdam/3_Ortho_IRRG.zip", os.path.join(out_dir, "raw"))
+        print("Extracting inner archives...")
+        with zipfile.ZipFile(os.path.join(out_dir, "potsdam.zip"), 'r') as zip_ref:
+            zip_ref.extract("Potsdam/5_Labels_for_participants.zip", os.path.join(out_dir, "raw"))
+            zip_ref.extract("Potsdam/5_Labels_all.zip", os.path.join(out_dir, "raw"))
+            zip_ref.extract("Potsdam/3_Ortho_IRRG.zip", os.path.join(out_dir, "raw"))
 
-        # print("Extracting train labels...")
-        # with zipfile.ZipFile(os.path.join(out_dir, "raw", "Potsdam", "5_Labels_for_participants.zip"), 'r') as zip_ref:
-        #     zip_ref.extractall(os.path.join(out_dir,"raw", "5_Labels_for_participants"))
+        print("Extracting train labels...")
+        with zipfile.ZipFile(os.path.join(out_dir, "raw", "Potsdam", "5_Labels_for_participants.zip"), 'r') as zip_ref:
+            zip_ref.extractall(os.path.join(out_dir,"raw", "5_Labels_for_participants"))
 
-        # print("Extracting test labels...")
-        # with zipfile.ZipFile(os.path.join(out_dir, "raw","Potsdam", "5_Labels_all.zip"), 'r') as zip_ref:
-        #     zip_ref.extractall(os.path.join(out_dir,"raw", "5_Labels_all"))
+        print("Extracting test labels...")
+        with zipfile.ZipFile(os.path.join(out_dir, "raw","Potsdam", "5_Labels_all.zip"), 'r') as zip_ref:
+            zip_ref.extractall(os.path.join(out_dir,"raw", "5_Labels_all"))
         
-        # print("Extracting images...")
-        # with zipfile.ZipFile(os.path.join(out_dir, "raw","Potsdam", "3_Ortho_IRRG.zip"), 'r') as zip_ref:
-        #     zip_ref.extractall(os.path.join(out_dir,"raw", "3_Ortho_IRRG"))
+        print("Extracting images...")
+        with zipfile.ZipFile(os.path.join(out_dir, "raw","Potsdam", "3_Ortho_IRRG.zip"), 'r') as zip_ref:
+            zip_ref.extractall(os.path.join(out_dir,"raw", "3_Ortho_IRRG"))
         
-        # os.rename(os.path.join(out_dir, "raw", "3_Ortho_IRRG", "3_Ortho_IRRG"), os.path.join(out_dir, "raw", "3_Ortho_IRRG", "3_Ortho_IRRG_1"))
-        # shutil.move(os.path.join(out_dir, "raw", "3_Ortho_IRRG", "3_Ortho_IRRG_1"), os.path.join(out_dir, "raw"))
-        # os.removedirs(os.path.join(out_dir, "raw", "3_Ortho_IRRG"))
-        # os.rename(os.path.join(out_dir, "raw", "3_Ortho_IRRG_1"), os.path.join(out_dir, "raw", "3_Ortho_IRRG"))
+        os.rename(os.path.join(out_dir, "raw", "3_Ortho_IRRG", "3_Ortho_IRRG"), os.path.join(out_dir, "raw", "3_Ortho_IRRG", "3_Ortho_IRRG_1"))
+        shutil.move(os.path.join(out_dir, "raw", "3_Ortho_IRRG", "3_Ortho_IRRG_1"), os.path.join(out_dir, "raw"))
+        os.removedirs(os.path.join(out_dir, "raw", "3_Ortho_IRRG"))
+        os.rename(os.path.join(out_dir, "raw", "3_Ortho_IRRG_1"), os.path.join(out_dir, "raw", "3_Ortho_IRRG"))
 
-        # os.rename(os.path.join(out_dir, "raw", "5_Labels_for_participants", "5_Labels_for_participants"), os.path.join(out_dir, "raw", "5_Labels_for_participants_1"))
-        # shutil.move(os.path.join(out_dir, "raw", "5_Labels_for_participants", "5_Labels_for_participants_1"), os.path.join(out_dir, "raw"))
-        # os.removedirs(os.path.join(out_dir, "raw", "5_Labels_for_participants"))
-        # os.rename(os.path.join(out_dir, "raw", "5_Labels_for_participants_1"), os.path.join(out_dir, "raw", "5_Labels_for_participants"))
+        os.rename(os.path.join(out_dir, "raw", "5_Labels_for_participants", "5_Labels_for_participants"), os.path.join(out_dir, "raw", "5_Labels_for_participants_1"))
+        shutil.move(os.path.join(out_dir, "raw", "5_Labels_for_participants", "5_Labels_for_participants_1"), os.path.join(out_dir, "raw"))
+        os.removedirs(os.path.join(out_dir, "raw", "5_Labels_for_participants"))
+        os.rename(os.path.join(out_dir, "raw", "5_Labels_for_participants_1"), os.path.join(out_dir, "raw", "5_Labels_for_participants"))
 
         images = os.listdir(os.path.join(out_dir, "raw", "3_Ortho_IRRG"))
         labels = os.listdir(os.path.join(out_dir, "raw", "5_Labels_all"))
@@ -239,10 +239,10 @@ class Potsdam(RawGeoFMDataset):
         train_numbers = [image_number(filename) for filename in labels_train]
         test_numbers = [image_number(filename) for filename in labels if image_number(filename) not in train_numbers]
 
-        # os.makedirs(f"{out_dir}/train/images")
-        # os.makedirs(f"{out_dir}/train/labels")
-        # os.makedirs(f"{out_dir}/test/images")
-        # os.makedirs(f"{out_dir}/test/labels")
+        os.makedirs(f"{out_dir}/train/images")
+        os.makedirs(f"{out_dir}/train/labels")
+        os.makedirs(f"{out_dir}/test/images")
+        os.makedirs(f"{out_dir}/test/labels")
         print("tiling train images...")
         i = 0
         for full_size_image_number in tqdm(train_numbers):
@@ -293,10 +293,3 @@ def image_filename(number:str) -> str:
 
 def label_filename(number:str) -> str:
     return f"top_potsdam_{number}_label.tif"
-
-if __name__ == "__main__":
-    config = OmegaConf.load("configs/dataset/potsdam.yaml")
-    del config._target_
-    dataset = Potsdam(**config, split="train")
-    # dataset.download(dataset)
-    plt.imsave("oui.png",dataset[0]["target"])
