@@ -321,7 +321,7 @@ We appreciate all contributions. Please refer to [Contributing Guidelines](.gith
 
 ## 🧮 Some results
 
-<img src=".github/boxplot.png" alt="results" width="90%">
+<img src=".github/boxplot.png" alt="results" width="60%">
 
 Check the paper for all the insights!
 
