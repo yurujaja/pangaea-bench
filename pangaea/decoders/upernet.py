@@ -1,3 +1,5 @@
+# Adapted from https://github.com/open-mmlab/mmsegmentation/blob/main/mmseg/models/decode_heads/uper_head.py
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
