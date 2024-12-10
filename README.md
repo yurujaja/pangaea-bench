@@ -2,6 +2,8 @@
 
 # PANGAEA: A Global and Inclusive Benchmark for Geospatial Foundation Models
 
+🔥 The [pre-print](https://arxiv.org/abs/2412.04204) is out!
+
 ## 📚 Introduction
 
 While geospatial foundation models (GFMs) have proliferated rapidly, their evaluations remain inconsistent and narrow. Existing works often utilize suboptimal downstream datasets (e.g., EuroSAT) and tasks (e.g., land cover classification), which constrain comparability and real-world usability. Additionally, a lack of diversity in evaluation protocols, including image resolution and sensor types, further complicates the extensive assessments of GFM performance. 
@@ -35,12 +37,12 @@ And the following **datasets**:
 |:-------------------:|:--------:|:------:|:----:|:-------:|:--------:|
 | [HLS Burn Scars](https://huggingface.co/datasets/ibm-nasa-geospatial/hls_burn_scars) | [link](https://huggingface.co/datasets/ibm-nasa-geospatial/hls_burn_scars) | Wildfire | Semantic Segmentation | HLS (Harmonized Landsat Sentinel-2) | USA |
 |        [MADOS](https://www.sciencedirect.com/science/article/pii/S0924271624000625)        |  [link](https://marine-pollution.github.io/index.html)        |  Marine      |  Semantic Segmentation    |    S2   | Global   |
-|        [PASTIS-HD](https://arxiv.org/abs/2404.08351)       |    [link](https://huggingface.co/datasets/IGNF/PASTIS-HD)       |   Agriculture     |  Semantic Segmentation    |    S1, S2, SPOT-6  | France   |
+|        [PASTIS-R](https://arxiv.org/abs/2404.08351)       |    [link](https://huggingface.co/datasets/IGNF/PASTIS-HD)       |   Agriculture     |  Semantic Segmentation    |    S1, S2, SPOT-6  | France   |
 |     [Sen1Floods11](http://openaccess.thecvf.com/content_CVPRW_2020/html/w11/Bonafilia_Sen1Floods11_A_Georeferenced_Dataset_to_Train_and_Test_Deep_Learning_CVPRW_2020_paper.html)    | [link](https://github.com/cloudtostreet/Sen1Floods11) |  Flood |Semantic Segmentation  | S1, S2 | Global |
 |        [xView2](https://openaccess.thecvf.com/content_CVPRW_2019/html/cv4gc/Gupta_Creating_xBD_A_Dataset_for_Assessing_Building_Damage_from_Satellite_CVPRW_2019_paper.html)       | [link](https://xview2.org/dataset) | HADR | Change Detection | Maxar | Global   |
 | [Five Billion Pixels](https://www.sciencedirect.com/science/article/pii/S0924271622003264) |  [original version](https://x-ytong.github.io/project/Five-Billion-Pixels.html) <br> (custom version coming soon)        |  (Urban) Land Cover     |  Semantic Segmentation    |    Gaofen-2     | China    |
 |   [DynamicEarthNet](https://arxiv.org/pdf/2203.12560)   |   [link](https://mediatum.ub.tum.de/1650201)        |    (Urban) Land Cover    |   Semantic Segmentation   |   PlanetFusion      | Global   |
-|   [CropTypeMapping](https://openaccess.thecvf.com/content_CVPRW_2019/papers/cv4gc/Rustowicz_Semantic_Segmentation_of_Crop_Type_in_Africa_A_Novel_Dataset_CVPRW_2019_paper.pdf) |   [link](https://sustainlab-group.github.io/sustainbench/docs/datasets/sdg2/crop_type_mapping_ghana-ss.html#download) | Agriculture |Semantic Segmentation |S1, S2, Planet|South Sudan|
+|   [CropTypeMapping-South Sudan](https://openaccess.thecvf.com/content_CVPRW_2019/papers/cv4gc/Rustowicz_Semantic_Segmentation_of_Crop_Type_in_Africa_A_Novel_Dataset_CVPRW_2019_paper.pdf) |   [link](https://sustainlab-group.github.io/sustainbench/docs/datasets/sdg2/crop_type_mapping_ghana-ss.html#download) | Agriculture |Semantic Segmentation |S1, S2, Planet|South Sudan|
 |      [SpaceNet 7](https://openaccess.thecvf.com/content/CVPR2021/papers/Van_Etten_The_Multi-Temporal_Urban_Development_SpaceNet_Dataset_CVPR_2021_paper.pdf)      |    [link](https://spacenet.ai/sn7-challenge/)      |    Urban    |   Change detection/ <br> Semantic Segmentation   |     Planet    | Global   |
 |    [AI4SmallFarms](https://ieeexplore.ieee.org/document/10278130)  | [link](https://doi.org/10.17026/dans-xy6-ngg6)  |  Agriculture     |  Semantic segmentation  |   S2   | Cambodia/Vietnam |
 |     [BioMassters](https://papers.nips.cc/paper_files/paper/2023/file/40daf2a00278c4bea1b26cd4c8a654f8-Paper-Datasets_and_Benchmarks.pdf)     |   [link](https://huggingface.co/datasets/nascetti-a/BioMassters)       | Forest       | Regression   |  S1, S2 | Finland   |
@@ -52,7 +54,7 @@ The repository supports the following **tasks** using geospatial (foundation) mo
  - [Single Temporal Regression](#single-temporal-regression)
  - [Multi-Temporal Regression](#multi-temporal-regression)
 
-It is also possible to train some [supervised baselines](#-fully-supervised-baseline), based on UNet.
+It is also possible to train some [supervised baselines](#-fully-supervised-baseline), based on UNet and ViT.
 
 ## 🗺️ Datasets details
 Please refer to [**Dataset Guide**](DATASET_GUIDE.md) to understand the processing requirements and commands specific to each dataset.
@@ -62,7 +64,7 @@ If you want to fast-prototype your model, maybe you want to run fast experiments
 ## 🛠️ Setup
 Clone the repository:
 ```
-git clone https://github.com/yurujaja/pangaea-bench.git
+git clone https://github.com/VMarsocci/pangaea-bench.git
 cd pangaea-bench
 ```
 
@@ -175,7 +177,7 @@ torchrun --nnodes=1 --nproc_per_node=1 pangaea/run.py \
    --config-name=train \
    dataset=croptypemapping \
    encoder=satlasnet_mi \
-   decoder=seg_upernet_mt_ltae decoder.multi_temporal_strategy=null \
+   decoder=seg_upernet_mt_ltae \
    preprocessing=seg_resize \
    criterion=cross_entropy \
    task=segmentation
@@ -258,8 +260,8 @@ torchrun --nnodes=1 --nproc_per_node=1 pangaea/run.py \
 
 ### 💻 Fully Supervised Baseline 
 
-The repo supports also training fully supervised baselines (e.g. UNet). To run these, follow the same command line rules as for other models. Keep in mind that setting finetune=True is necessary since this fully supervised approach trains the model from scratch. 
-An example for single temporal semantic segmentation is provided (Sen1Floods11 dataset):
+The repo supports also training fully supervised baselines (i.e. UNet and ViT). To run these, follow the same command line rules as for other models. Keep in mind that setting finetune=True is necessary since this fully supervised approach trains the model from scratch. 
+An example for single temporal semantic segmentation with UNet is provided (Sen1Floods11 dataset):
 ```
 torchrun --nnodes=1 --nproc_per_node=1 pangaea/run.py \
    --config-name=train \
@@ -271,7 +273,21 @@ torchrun --nnodes=1 --nproc_per_node=1 pangaea/run.py \
    task=segmentation \
    finetune=True
 ```
-For the moment, there is no multi-temporal baseline supported.
+There is no multi-temporal UNet supported.
+
+An example for multi-temporal semantic segmentation with ViT is provided (CropTypeMapping-SS dataset):
+```
+torchrun --nnodes=1 --nproc_per_node=1 pangaea/run.py \
+   --config-name=train \
+   dataset=croptypemapping \
+   encoder=vit_scratch \
+   decoder=seg_upernet_mt_ltae \
+   preprocessing=seg_default \
+   criterion=cross_entropy \
+   task=segmentation \
+   task.evaluator.inference_mode=whole \
+   finetune=true
+```
 
 ## 🔧 Customization
 
@@ -296,36 +312,33 @@ torchrun pangaea/run.py --config-name=test ckpt_dir=path_to_ckpt_dir
 ## ✏️ Contributing
 We appreciate all contributions. Please refer to [Contributing Guidelines](.github/CONTRIBUTING.md).
 
-## ⚠️ Warnings
+## ⚠️ TO DO
 
-Some features are under construction:
- - the automatic download is working for all the datasets and models' weights but, respectively, **Five Billion Pixels**, **BioMassters**, and **GFM**.
+ - host all weights/datasets/subsets on HF (the automatic download is working for all the datasets and models' weights but, respectively, **Five Billion Pixels**, **BioMassters**, and **GFM**. The GFM pretrained model can be downloaded from [OneDrive](https://onedrive.live.com/?authkey=%21AIx%5FHoX7JG4Ai18&id=93B3D3BDA9EFE744%21100937&cid=93B3D3BDA9EFE744).)
+ - add hyperparameters search ([Optuna](https://optuna.org/))
+ - support automatic running of all the experiments
+ - create an Arena to fast benchmark all the GFMs
 
+## 🧮 Some results
 
-## 🧮 Some first results
+<img src=".github/boxplot.png" alt="results" width="60%">
 
-A pre-print is coming soon... Stay tuned!
+Check the paper for all the insights!
 
-| Encoder | Dataset       | Epochs | mIoU   |
-|---------|---------------|--------|--------|
-| Prithvi | MADOS         | 80     | 53.455 |
-| Prithvi | HLSBurnScars  | 80     | 86.208 |
-| Prithvi | Sen1Floods11  | 80     | 87.217 |
-| Prithvi | AI4SmallFarms | 80     | 33.796 |
-
-NOTE: if you want to benchmark the results of your model, for a fair comparison do not change the hparams in the configs! When the pre-print will be out, we will publish also a set of "benchmark-configs".
+NOTE: if you want to benchmark the results of your model, for a fair comparison do not change the hparams in the configs! Soon we will publish also a set of "benchmark-configs", to support automatic running.
 
 ## 📝 Citation
 
-If you use this software in your work, please cite:
+If you find this work useful, please cite:
 
 ```
-@misc{pangaea,
-  author = {Pangaea Team},
-  title = {Pangaea},
-  year = {2024},
-  publisher = {GitHub},
-  journal = {GitHub repository},
-  howpublished = {\url{https://github.com/yurujaja/pangaea-bench}},
+@misc{marsocci2024pangaeaglobalinclusivebenchmark,
+      title={PANGAEA: A Global and Inclusive Benchmark for Geospatial Foundation Models}, 
+      author={Valerio Marsocci and Yuru Jia and Georges Le Bellier and David Kerekes and Liang Zeng and Sebastian Hafner and Sebastian Gerard and Eric Brune and Ritu Yadav and Ali Shibli and Heng Fang and Yifang Ban and Maarten Vergauwen and Nicolas Audebert and Andrea Nascetti},
+      year={2024},
+      eprint={2412.04204},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2412.04204}, 
 }
 ```

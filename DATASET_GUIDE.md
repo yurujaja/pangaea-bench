@@ -37,10 +37,9 @@ This document provides a detailed overview of the datasets used in this reposito
    task=segmentation
   ```
   
-### PASTIS
+### PASTIS-R
 
 - The code supports automatic downloading of the dataset into `./data` folder.
-- SPOT-6 images are available for single-temporal semantic segmentation, otherwise the basic experimental setup for this dataset is a multi-temporal multi-modal semantic segmentation task.
 - Images are 128x128 patches, so a resize is needed to match input_size requirements of the encoders.
 - For models that don't support multi-temporal data, each time frame is processed separately for feature extraction and then mapped into a single representation. This setup requires the configuration file `configs/decoder/seg_upernet_mt_ltae.yaml`. Additionally, in the dataset configuration, specify the number of time frames, for example, `multi_temporal: 6`. Below is a CLI example for running the experiment using the RemoteCLIP pretrained encoder and multi-temporal UPerNet with L-TAE processing of temporal information:
 
@@ -52,6 +51,7 @@ This document provides a detailed overview of the datasets used in this reposito
    decoder=seg_upernet_mt_ltae \
    preprocessing=seg_resize \
    criterion=cross_entropy \
+   task.evaluator.inference_mode=whole \  
    task=segmentation
   ```
   
@@ -142,7 +142,8 @@ This document provides a detailed overview of the datasets used in this reposito
    decoder=seg_upernet_mt_ltae \
    preprocessing=seg_resize \
    criterion=cross_entropy \
-   task=segmentation
+   task=segmentation \
+   task.evaluator.inference_mode=whole 
   ```
 
 ### SpaceNet 7
@@ -159,7 +160,7 @@ This document provides a detailed overview of the datasets used in this reposito
    encoder=remoteclip \
    decoder=seg_upernet\
    preprocessing=seg_default \
-   criterion=cross_entropy \
+   criterion=dice \
    task=segmentation
   ```
 - Here is an example to run change detection:
@@ -170,7 +171,7 @@ This document provides a detailed overview of the datasets used in this reposito
    encoder=remoteclip \
    decoder=seg_siamupernet_conc\
    preprocessing=seg_default \
-   criterion=cross_entropy \
+   criterion=dice \
    task=change_detection
   ```
 
